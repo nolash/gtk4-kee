@@ -1,3 +1,3 @@
-src/*.ui
+src/gtk/*.ui
 testdata_mdb
 *\~
