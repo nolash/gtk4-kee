@@ -11,17 +11,11 @@ static void startup(GtkApplication *app, gpointer user_data) {
 }
 
 static void activate(GtkApplication *app, gpointer user_data) {
-	struct ui_container *ui;
-
-	ui = (struct ui_container*)user_data;
-	ui_build(app, ui);
+	ui_build(app, user_data);
 }
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
-	struct ui_container *ui;
-
-	ui = (struct ui_container*)user_data;
-	ui_free(ui);
+	ui_free(user_data);
 }
 
 int main(int argc, char **argv) {
