@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -8,11 +9,28 @@
 #include "debug.h"
 #include "settings.h"
 
+#define KEE_SETTINGS_DATANAME "kee"
+#define KEE_SETTINGS_CAP 4096
 
 /**
  * \todo make xdg optional
  */
 int settings_new_from_xdg(struct kee_settings *z) {
+	xdgHandle xdg;
+	const char *s;
+	
+	xdgInitHandle(&xdg);
+
+	memset(z, 0, sizeof(struct kee_settings));
+
+	z->data = malloc(KEE_SETTINGS_CAP);
+
+	s = xdgDataHome(&xdg);
+	sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_DATANAME);
+
+	s = xdgRuntimeDirectory(&xdg);
+	sprintf((char*)z->run, "%s/%s", s, KEE_SETTINGS_DATANAME);
+
 	return ERR_OK;
 }
 
@@ -64,4 +82,8 @@ int settings_set(struct kee_settings *z, enum SettingsType typ, unsigned char* v
 			return ERR_FAIL;
 	}
 	return ERR_OK;
+}
+
+void settings_free(struct kee_settings *z) {
+	free(z->data);
 }

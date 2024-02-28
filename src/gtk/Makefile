@@ -2,7 +2,7 @@ OBJS := $(patsubst %.c,%.o,$(filter-out main.c,$(wildcard *.c)))
 LINKOBJS := $(wildcard ../*.o) $(OBJS) ../aux/varint/varint.o
 INCLUDES := `pkg-config --cflags gtk4` -I..
 CFLAGS +=  $(INCLUDES) -g3 -Wall
-LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt` -lb64
+LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir` -lb64
 LDFLAGS += $(LIBS)
 
 all: resource $(OBJS)

@@ -9,12 +9,12 @@ subs: glade
 	make -C src
 
 glade:
-	gtk4-builder-tool simplify --3to4 glade.ui > src/main.ui
+	gtk4-builder-tool simplify --3to4 glade.ui > src/gtk/main.ui
 
 clean:
 	make -C src clean
 	make -C src/gtk clean
-	rm -vf src/aux/varint/*.o
+	make -C src/aux clean
 
 run: gtk all
 	G_MESSAGES_DEBUG=all  ./src/gtk/a.out

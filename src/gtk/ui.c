@@ -1,9 +1,16 @@
 #include <gtk/gtk.h>
-#include "ui.h"
 
-/***
- * \todo change file to resource
- */
+#include "ui.h"
+#include "err.h"
+
+
+int ui_init(struct ui_container *ui) {
+	ui->gapp = gtk_application_new ("org.defalsify.Kee", G_APPLICATION_DEFAULT_FLAGS);
+	if (ui->gapp == NULL) {
+		return ERR_FAIL;
+	}
+	return ERR_OK;
+}
 
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
 }
