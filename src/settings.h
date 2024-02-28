@@ -51,4 +51,6 @@ unsigned char *settings_get(struct kee_settings *z, enum SettingsType typ);
  */
 int settings_set(struct kee_settings *z, enum SettingsType typ, unsigned char* v);
 
+int settings_new_from_xdg(struct kee_settings *z);
+
 #endif // KEE_SETTINGS

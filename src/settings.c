@@ -9,8 +9,9 @@
 #include "debug.h"
 #include "settings.h"
 
-#define KEE_SETTINGS_DATANAME "kee"
+#define KEE_SETTINGS_NAME "kee"
 #define KEE_SETTINGS_CAP 4096
+#define KEE_SETTINGS_ITEM_CAP 1024
 
 /**
  * \todo make xdg optional
@@ -18,18 +19,24 @@
 int settings_new_from_xdg(struct kee_settings *z) {
 	xdgHandle xdg;
 	const char *s;
+	unsigned char *p;
 	
 	xdgInitHandle(&xdg);
 
 	memset(z, 0, sizeof(struct kee_settings));
 
 	z->data = malloc(KEE_SETTINGS_CAP);
+	p = z->data;
+	p += KEE_SETTINGS_ITEM_CAP;
+	z->run = p;
+	p += KEE_SETTINGS_ITEM_CAP;
+	z->locktime = p;
 
 	s = xdgDataHome(&xdg);
-	sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_DATANAME);
+	sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_NAME);
 
 	s = xdgRuntimeDirectory(&xdg);
-	sprintf((char*)z->run, "%s/%s", s, KEE_SETTINGS_DATANAME);
+	sprintf((char*)z->run, "%s/%s", s, KEE_SETTINGS_NAME);
 
 	return ERR_OK;
 }

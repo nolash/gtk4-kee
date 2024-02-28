@@ -4,6 +4,7 @@
 #include "ui.h"
 #include "context.h"
 #include "menu.h"
+#include "settings.h"
 
 
 static void startup(GtkApplication *app, gpointer user_data) {
@@ -30,6 +31,9 @@ int main(int argc, char **argv) {
 	}
 
 	kee_context_new(&ctx, &ui);
+
+	settings_new_from_xdg(&ctx.settings);
+	settings_init(&ctx.settings);
 	db_connect(&ctx.db, "./testdata_mdb");
 
 	g_signal_connect (ui.gapp, "startup", G_CALLBACK (startup), &ui);
