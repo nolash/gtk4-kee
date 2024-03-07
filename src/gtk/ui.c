@@ -1,14 +1,19 @@
 #include <gtk/gtk.h>
+#include <gst/gst.h>
 
 #include "ui.h"
 #include "err.h"
+#include "scan.h"
 
 
 int ui_init(struct ui_container *ui) {
+	gtk_init();
+	gst_init(0, NULL);
 	ui->gapp = gtk_application_new ("org.defalsify.Kee", G_APPLICATION_DEFAULT_FLAGS);
 	if (ui->gapp == NULL) {
 		return ERR_FAIL;
 	}
+	//scan_init(&ui->scan);
 	return ERR_OK;
 }
 

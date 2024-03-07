@@ -4,7 +4,11 @@
 
 
 static void act_scan(GSimpleAction *act, GVariant *param, GApplication *app) {
+	//GDBusConnection *conn;
+
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "scan clicked");
+	//conn = g_application_get_dbus_connection(app);
+
 }
 
 static void act_quit(GSimpleAction *act, GVariant *param, GApplication *app) {

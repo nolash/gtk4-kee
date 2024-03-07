@@ -17,7 +17,7 @@ clean:
 	make -C src/aux clean
 
 run: gtk all
-	G_MESSAGES_DEBUG=all  ./src/gtk/a.out
+	G_MESSAGES_DEBUG=all ./src/gtk/a.out
 
 debug: gtk all
 	G_DEBUG=3 G_MESSAGES_DEBUG=all ./src/gtk/a.out
