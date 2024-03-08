@@ -107,3 +107,8 @@ void ui_free(struct ui_container *ui) {
 	//g_object_unref(ui->unlock);
 	//g_object_unref(ui->win);
 }
+
+int ui_state_change(struct ui_container *ui, int set, int reset) {
+	ui->state |= set;
+	return ui->state;	
+}
