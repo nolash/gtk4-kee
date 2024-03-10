@@ -5,6 +5,8 @@
 #include "ui.h"
 #include "err.h"
 #include "scan.h"
+#include "settings.h"
+#include "context.h"
 
 
 int ui_init(struct ui_container *ui) {
@@ -175,13 +177,14 @@ gboolean ui_scan_code_handler(GstBus *bus, GstMessage *msg, gpointer user_data) 
 	return true;
 }
 
-GtkWidget* ui_build_scan_attach(struct ui_container *ui) {
+GtkWidget* ui_build_scan_attach(struct ui_container *ui, const char *device) {
 	int r;
 	struct kee_scanner *scan;
 	GtkWidget *view;
 
 	scan = &ui->scan;
-	r = scan_init(scan);
+	scan_init(scan, device);
+	r = scan_begin(scan);
 	if (r) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail scan setup");
 		return NULL;
@@ -192,9 +195,16 @@ GtkWidget* ui_build_scan_attach(struct ui_container *ui) {
 	return view;
 }
 
-void ui_handle_scan(GtkApplication *app, struct ui_container *ui) {
+//void ui_handle_scan(GtkApplication *app, struct ui_container *ui) {
+void ui_handle_scan(GtkApplication *app, struct kee_context *ctx) {
+	struct ui_container *ui;
+	unsigned char *s;
+
+	ui = (struct ui_container*)ctx->front;
+	s = settings_get(ctx->settings, SETTINGS_VIDEO);
+
 	if (!(ui->state & KEE_UI_STATE_SCAN_INIT)) {
-		ui_build_scan_attach(ui);
+		ui_build_scan_attach(ui, (const char*)s);
 
 	}
 	ui_state_change(ui, KEE_UI_STATE_SCANNING | KEE_UI_STATE_SCAN_INIT, 0);

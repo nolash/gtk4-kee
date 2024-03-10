@@ -31,6 +31,8 @@ int settings_new_from_xdg(struct kee_settings *z) {
 	z->run = p;
 	p += KEE_SETTINGS_ITEM_CAP;
 	z->locktime = p;
+	p += KEE_SETTINGS_ITEM_CAP;
+	z->video_device = p;
 
 	s = xdgDataHome(&xdg);
 	sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_NAME);
@@ -41,9 +43,13 @@ int settings_new_from_xdg(struct kee_settings *z) {
 	return ERR_OK;
 }
 
+/***
+ * \todo verify default video exists
+ */
 int settings_init(struct kee_settings *z) {
 	int r;
 	char s[1024];
+	char *ss;
 	
 	r = mkdir((char*)z->data, S_IRUSR | S_IWUSR);
 	if (r) {
@@ -54,6 +60,12 @@ int settings_init(struct kee_settings *z) {
 	}
 	sprintf(s, "datadir: %s\nrundir: %s", z->data, z->run);
 	debug_log(DEBUG_DEBUG, s);
+
+	ss = getenv("KEE_VIDEO");
+	if (!ss) {
+		ss = "/dev/video0";
+	}
+	strcpy((char*)z->video_device, ss);
 
 	return ERR_OK;
 }
@@ -68,6 +80,9 @@ unsigned char *settings_get(struct kee_settings *z, enum SettingsType typ) {
 			break;
 		case SETTINGS_LOCKTIME:
 			return z->locktime;
+			break;
+		case SETTINGS_VIDEO:
+			return z->video_device;
 			break;
 		default:
 			return (unsigned char*)"";

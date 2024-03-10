@@ -1,8 +1,8 @@
 #ifndef _KEE_GTK_MENU_H
 #define _KEE_GTK_MENU_H
 
-#include "ui.h"
+#include "kee-uicontext.h"
 
-void menu_setup(struct ui_container *ui);
+void menu_setup(KeeUicontext *ctx);
 
 #endif // _KEE_GTK_MENU_H

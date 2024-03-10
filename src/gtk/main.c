@@ -9,12 +9,12 @@
 #include "settings.h"
 
 
-static void startup(GtkApplication *app, gpointer user_data) {
-	menu_setup(user_data);
+static void startup(GtkApplication *app, KeeUicontext *ctx) {
+	menu_setup(ctx);
 }
 
-static void activate(GtkApplication *app, gpointer user_data) {
-	ui_build(app, user_data);
+static void activate(GtkApplication *app, struct ui_container *ui) {
+	ui_build(app, ui);
 }
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
@@ -25,6 +25,7 @@ static void deactivate(GtkApplication *app, gpointer user_data) {
 int main(int argc, char **argv) {
 	int r;
 	KeeUicontext *uctx;
+	struct kee_settings settings;
 	struct kee_context ctx;
 	struct ui_container ui;
 
@@ -33,17 +34,19 @@ int main(int argc, char **argv) {
 		return r;
 	}
 
-	kee_context_new(&ctx, &ui);
-	uctx = g_object_new(KEE_TYPE_UICONTEXT, "ui_container", &ui, "core_context", &ctx, NULL);
+	//settings_new_from_xdg(&ctx.settings);
+	settings_new_from_xdg(&settings);
+	//settings_init(&ctx.settings);
+	settings_init(&settings);
 
-	settings_new_from_xdg(&ctx.settings);
-	settings_init(&ctx.settings);
+	kee_context_new(&ctx, &ui, &settings);
+	uctx = g_object_new(KEE_TYPE_UICONTEXT, "ui_container", &ui, "core_context", &ctx, NULL);
 	db_connect(&ctx.db, "./testdata_mdb");
 
 	g_signal_connect (ui.gapp, "startup", G_CALLBACK (startup), uctx);
 	g_signal_connect (ui.gapp, "activate", G_CALLBACK (activate), &ui);
 	g_signal_connect (ui.gapp, "shutdown", G_CALLBACK (deactivate), uctx);
-	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ui);
+	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ctx);
 
 	r = g_application_run (G_APPLICATION (ui.gapp), argc, argv);
 

@@ -10,9 +10,12 @@ struct kee_scanner {
 	GstElement *source;
 	GstElement *video_sink;
 	GtkImage *snap;
+	char *device;
 };
 
-int scan_init(struct kee_scanner *scan);
+void scan_init(struct kee_scanner *scan, const char *device);
+int scan_begin(struct kee_scanner *scan);
+void scan_free(struct kee_scanner *scan);
 void scan_set_handler(struct kee_scanner *scan, gboolean(*fn)(GstBus *bus, GstMessage *msg, gpointer user_data));
 
 #endif // _KEE_GTK_SCAN_H

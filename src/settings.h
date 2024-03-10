@@ -10,6 +10,7 @@ struct kee_settings {
 	unsigned char *data;
 	unsigned char *run;
 	unsigned char *locktime;
+	unsigned char *video_device;
 };
 
 /**
@@ -23,6 +24,9 @@ enum SettingsType {
 	SETTINGS_RUN = 0x02,
 	/// Milliseconds a key will stay unlocked since last application use.
 	SETTINGS_LOCKTIME = 0x10,
+	/// Default video device to use
+	SETTINGS_VIDEO = 0x20,
+
 };
 
 /**

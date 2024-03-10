@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 
 #include "scan.h"
+#include "settings.h"
 
 
 typedef enum {
@@ -22,6 +23,7 @@ struct ui_container {
 	GtkListView *front_view;
 	GtkBox *front_scan;
 	struct kee_scanner scan;
+	struct kee_context *ctx;
 	int state;
 };
 
@@ -30,6 +32,6 @@ void ui_build(GtkApplication *app, struct ui_container *ui);
 int ui_state_change(struct ui_container *ui, int set, int reset);
 void ui_free(struct ui_container *ui);
 
-void ui_handle_scan(GtkApplication *app, struct ui_container *ui);
+void ui_handle_scan(GtkApplication *app, struct kee_context *ctx);
 
 #endif // _UI_H
