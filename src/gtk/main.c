@@ -22,7 +22,6 @@ static void deactivate(GtkApplication *app, gpointer user_data) {
 	ui_free(user_data);
 }
 
-
 int main(int argc, char **argv) {
 	int r;
 	KeeUicontext *uctx;
@@ -36,7 +35,6 @@ int main(int argc, char **argv) {
 
 	kee_context_new(&ctx, &ui);
 	uctx = g_object_new(KEE_TYPE_UICONTEXT, "ui_container", &ui, "core_context", &ctx, NULL);
-	g_object_set(&uctx, "app", ui.gapp, NULL);
 
 	settings_new_from_xdg(&ctx.settings);
 	settings_init(&ctx.settings);
@@ -45,10 +43,9 @@ int main(int argc, char **argv) {
 	g_signal_connect (ui.gapp, "startup", G_CALLBACK (startup), uctx);
 	g_signal_connect (ui.gapp, "activate", G_CALLBACK (activate), &ui);
 	g_signal_connect (ui.gapp, "shutdown", G_CALLBACK (deactivate), uctx);
-	//g_signal_connect (uctx, "scan_want", G_CALLBACK( tmpscan ), NULL);
+	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ui);
 
 	r = g_application_run (G_APPLICATION (ui.gapp), argc, argv);
-
 
 	g_object_unref(ui.gapp);
 	return r;

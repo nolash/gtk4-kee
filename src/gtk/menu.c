@@ -3,16 +3,20 @@
 #include "kee-uicontext.h"
 
 
-static void act_scan(GSimpleAction *act, GVariant *param, GApplication *app) {
+static void act_scan(GSimpleAction *act, GVariant *param, KeeUicontext *ui) {
 	//GDBusConnection *conn;
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "scan clicked");
+	kee_uicontext_scanstart(ui);
 	//conn = g_application_get_dbus_connection(app);
 
 }
 
-static void act_quit(GSimpleAction *act, GVariant *param, GApplication *app) {
-	g_application_quit(app);
+static void act_quit(GSimpleAction *act, GVariant *param, KeeUicontext *ui) {
+	GApplication *gapp;
+	g_object_get(ui, "app", &gapp, NULL);
+
+	g_application_quit(gapp);
 }
 
 //void menu_setup(struct ui_container *ui) {
@@ -39,11 +43,11 @@ void menu_setup(KeeUicontext *ui) {
 
 	act = g_simple_action_new("quit", NULL);
 	g_action_map_add_action(G_ACTION_MAP(gapp), G_ACTION(act));
-	g_signal_connect(act, "activate", G_CALLBACK(act_quit), gapp);
+	g_signal_connect(act, "activate", G_CALLBACK(act_quit), ui);
 
 	act = g_simple_action_new("scan", NULL);
 	g_action_map_add_action(G_ACTION_MAP(gapp), G_ACTION(act));
-	g_signal_connect(act, "activate", G_CALLBACK(act_scan), gapp);
+	g_signal_connect(act, "activate", G_CALLBACK(act_scan), ui);
 
 	g_menu_item_set_submenu(menu_item_menu, G_MENU_MODEL(menu));
 	g_object_unref(menu);

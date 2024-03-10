@@ -93,13 +93,14 @@ static void kee_uicontext_class_init(KeeUicontextClass *kls) {
 
 static void kee_uicontext_init(KeeUicontext *self) {
 	//KeeUicontextPrivate *o = kee_uicontext_get_instance_private(self);
-
 }
 
 void kee_uicontext_scanstart(KeeUicontext *o) {
 	if (KEE_UI_STATE_IS_SCANNING(o->ui)) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "already in scanning state");
 		return;
 	}
+	ui_state_change(o->ui, KEE_UI_STATE_SCANNING, 0);
 	g_signal_emit(o, kee_sigs[SCAN_WANT], 0);
 }
 

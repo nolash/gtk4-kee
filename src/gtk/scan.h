@@ -13,5 +13,6 @@ struct kee_scanner {
 };
 
 int scan_init(struct kee_scanner *scan);
+void scan_set_handler(struct kee_scanner *scan, gboolean(*fn)(GstBus *bus, GstMessage *msg, gpointer user_data));
 
 #endif // _KEE_GTK_SCAN_H

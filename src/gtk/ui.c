@@ -1,3 +1,4 @@
+#include <string.h>
 #include <gtk/gtk.h>
 #include <gst/gst.h>
 
@@ -13,7 +14,7 @@ int ui_init(struct ui_container *ui) {
 	if (ui->gapp == NULL) {
 		return ERR_FAIL;
 	}
-	//scan_init(&ui->scan);
+	ui->state = 0;
 	return ERR_OK;
 }
 
@@ -46,7 +47,19 @@ GtkWidget* ui_build_unlock(struct ui_container *ui) {
 	return GTK_WIDGET(box);
 }
 
-GtkWidget* ui_build_view(struct ui_container *ui) {
+static GtkWidget* ui_build_scan(struct ui_container *ui) {
+	GtkWidget *label;
+
+	ui->front_scan = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 10));
+
+	label = gtk_label_new("please scan qr code");
+	gtk_box_append(GTK_BOX(ui->front_scan), label);
+
+	return GTK_WIDGET(ui->front_scan);
+}
+
+
+static GtkWidget* ui_build_view(struct ui_container *ui) {
 	GtkSelectionModel *sel;
 	GtkListItemFactory *factory;
 
@@ -60,8 +73,7 @@ GtkWidget* ui_build_view(struct ui_container *ui) {
 }
 
 void ui_build(GtkApplication *app, struct ui_container *ui) {
-	GtkWidget *unlock;
-	GtkWidget *view;
+	GtkWidget *widget;
 
 	ui->win = GTK_APPLICATION_WINDOW(gtk_application_window_new (app));
 	ui->stack = GTK_STACK(gtk_stack_new());
@@ -72,12 +84,14 @@ void ui_build(GtkApplication *app, struct ui_container *ui) {
 	gtk_window_set_child(GTK_WINDOW(ui->win), GTK_WIDGET(ui->stack));
 	gtk_application_window_set_show_menubar(GTK_APPLICATION_WINDOW(ui->win), TRUE);
 
-	unlock = ui_build_unlock(ui);
-	gtk_stack_add_child(ui->stack, unlock);
-	view = ui_build_view(ui);
-	gtk_stack_add_child(ui->stack, view);
+	widget = ui_build_unlock(ui);
+	gtk_stack_add_child(ui->stack, widget);
+	gtk_stack_set_visible_child(GTK_STACK(ui->stack), widget);
+	widget = ui_build_view(ui);
+	gtk_stack_add_child(ui->stack, widget);
+	widget = ui_build_scan(ui);
+	gtk_stack_add_child(ui->stack, widget);
 
-	gtk_stack_set_visible_child(GTK_STACK(ui->stack), unlock);
 	//gtk_stack_set_visible_child(GTK_STACK(ui->stack), view);
 
 	gtk_window_present(GTK_WINDOW (ui->win));
@@ -111,4 +125,78 @@ void ui_free(struct ui_container *ui) {
 int ui_state_change(struct ui_container *ui, int set, int reset) {
 	ui->state |= set;
 	return ui->state;	
+}
+
+gboolean ui_scan_code_handler(GstBus *bus, GstMessage *msg, gpointer user_data) {
+	GError *err;
+	gchar *debug_info;
+	GstState oldstate;
+	GstState newstate;
+	GstState pendingstate;
+	const gchar *src;
+	const gchar *code;
+	const GstStructure *strctr;
+	//struct _gst_data *data;
+	//GstStateChangeReturn rsc;
+
+	//data = (struct _gst_data*)user_data;
+
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "scan msg got");
+
+	switch (GST_MESSAGE_TYPE (msg)) {
+		case GST_MESSAGE_ERROR:
+			gst_message_parse_error(msg, &err, &debug_info);
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "logg %s: %s", GST_OBJECT_NAME(msg->src), err->message);
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "debug %s", debug_info ? debug_info : "none");
+			g_clear_error(&err);
+			g_free(debug_info);
+			break;
+		case GST_MESSAGE_EOS:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "eos");
+			break;
+		case GST_MESSAGE_STATE_CHANGED:
+			gst_message_parse_state_changed(msg, &oldstate, &newstate, &pendingstate);
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "state change: %s -> %s", gst_element_state_get_name(oldstate), gst_element_state_get_name(newstate));
+			break;
+		case GST_MESSAGE_ELEMENT:
+			src = gst_object_get_name(msg->src);
+			if (strcmp(src, "zbar")) {
+				break;
+			}
+			strctr = gst_message_get_structure(msg);
+			code = gst_structure_get_string(strctr, "symbol");
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "message %s: %d (%s) - decoded: %s", src, msg->type, gst_message_type_get_name(msg->type), code);
+			break;
+		default:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "unknown message (ext %d): %s", GST_MESSAGE_TYPE_IS_EXTENDED(msg), GST_MESSAGE_TYPE_NAME(msg));
+			break;
+	}
+
+	return true;
+}
+
+GtkWidget* ui_build_scan_attach(struct ui_container *ui) {
+	int r;
+	struct kee_scanner *scan;
+	GtkWidget *view;
+
+	scan = &ui->scan;
+	r = scan_init(scan);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail scan setup");
+		return NULL;
+	}
+	view = GTK_WIDGET(scan->video_view);
+	gtk_box_append(GTK_BOX(ui->front_scan), view);
+	scan_set_handler(scan, ui_scan_code_handler);
+	return view;
+}
+
+void ui_handle_scan(GtkApplication *app, struct ui_container *ui) {
+	if (!(ui->state & KEE_UI_STATE_SCAN_INIT)) {
+		ui_build_scan_attach(ui);
+
+	}
+	ui_state_change(ui, KEE_UI_STATE_SCANNING | KEE_UI_STATE_SCAN_INIT, 0);
+	gtk_stack_set_visible_child(GTK_STACK(ui->stack), GTK_WIDGET(ui->front_scan));
 }
