@@ -23,7 +23,7 @@ int ui_init(struct ui_container *ui) {
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
 }
 
-static void unlock_click(GtkWidget *button, gpointer user_data) {
+static void ui_handle_unlock_click(GtkWidget *button, gpointer user_data) {
 	struct ui_container *ui;
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "click");
@@ -31,6 +31,16 @@ static void unlock_click(GtkWidget *button, gpointer user_data) {
 	ui = (struct ui_container*)user_data;
 	gtk_stack_set_visible_child(ui->stack, GTK_WIDGET(ui->front_view));
 }
+
+static void ui_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, struct kee_context *ctx) {
+	GtkLabel *label;
+	char *s;
+	
+	label = gtk_drop_down_get_selected_item(chooser);
+	s = g_object_get_data(G_OBJECT(label), "devpath");
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "dropdown changed: %s -> %s", spec->name, s);
+}
+
 
 GtkWidget* ui_build_unlock(struct ui_container *ui) {
 	GtkWidget *box;
@@ -44,7 +54,7 @@ GtkWidget* ui_build_unlock(struct ui_container *ui) {
 
 	button = gtk_button_new_with_label("create");
 	gtk_box_append(GTK_BOX(box), button);
-	g_signal_connect (button, "clicked", G_CALLBACK (unlock_click), ui);
+	g_signal_connect (button, "clicked", G_CALLBACK (ui_handle_unlock_click), ui);
 
 	return GTK_WIDGET(box);
 }
@@ -75,6 +85,8 @@ static GtkWidget* ui_build_scan_videochooser(struct kee_context *ctx) {
 		}
 		camera_device = camera_device->next;	
 	}
+
+	g_signal_connect(chooser, "notify::selected-item", G_CALLBACK (ui_handle_camera_change), ctx);
 	return chooser;
 }
 
