@@ -7,6 +7,7 @@
 #include "context.h"
 #include "menu.h"
 #include "settings.h"
+#include "camera.h"
 
 
 static void startup(GtkApplication *app, KeeUicontext *ctx) {
@@ -28,6 +29,12 @@ int main(int argc, char **argv) {
 	struct kee_settings settings;
 	struct kee_context ctx;
 	struct ui_container ui;
+	struct kee_camera_devices camera_devices;
+
+	r = kee_camera_scan(&camera_devices);
+	if (r) {
+		return r;
+	}
 
 	r = ui_init(&ui);
 	if (r) {
@@ -51,5 +58,6 @@ int main(int argc, char **argv) {
 	r = g_application_run (G_APPLICATION (ui.gapp), argc, argv);
 
 	g_object_unref(ui.gapp);
+	kee_camera_free(&camera_devices);
 	return r;
 }

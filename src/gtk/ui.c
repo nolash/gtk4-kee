@@ -49,6 +49,10 @@ GtkWidget* ui_build_unlock(struct ui_container *ui) {
 	return GTK_WIDGET(box);
 }
 
+//static GtkWidget* ui_build_scan_videochooser(struct ui_container *ui) {
+//	return NULL;
+//}
+
 static GtkWidget* ui_build_scan(struct ui_container *ui) {
 	GtkWidget *label;
 
