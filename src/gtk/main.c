@@ -14,8 +14,8 @@ static void startup(GtkApplication *app, KeeUicontext *ctx) {
 	menu_setup(ctx);
 }
 
-static void activate(GtkApplication *app, struct ui_container *ui) {
-	ui_build(app, ui);
+static void activate(GtkApplication *app, struct kee_context *ctx) {
+	ui_build(app, ctx);
 }
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
@@ -29,12 +29,6 @@ int main(int argc, char **argv) {
 	struct kee_settings settings;
 	struct kee_context ctx;
 	struct ui_container ui;
-	struct kee_camera_devices camera_devices;
-
-	r = kee_camera_scan(&camera_devices);
-	if (r) {
-		return r;
-	}
 
 	r = ui_init(&ui);
 	if (r) {
@@ -51,13 +45,13 @@ int main(int argc, char **argv) {
 	db_connect(&ctx.db, "./testdata_mdb");
 
 	g_signal_connect (ui.gapp, "startup", G_CALLBACK (startup), uctx);
-	g_signal_connect (ui.gapp, "activate", G_CALLBACK (activate), &ui);
+	g_signal_connect (ui.gapp, "activate", G_CALLBACK (activate), &ctx);
 	g_signal_connect (ui.gapp, "shutdown", G_CALLBACK (deactivate), uctx);
 	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ctx);
 
 	r = g_application_run (G_APPLICATION (ui.gapp), argc, argv);
 
 	g_object_unref(ui.gapp);
-	kee_camera_free(&camera_devices);
+	kee_context_free(&ctx);
 	return r;
 }

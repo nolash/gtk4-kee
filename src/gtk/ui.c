@@ -78,8 +78,11 @@ static GtkWidget* ui_build_view(struct ui_container *ui) {
 	return GTK_WIDGET(ui->front_view);
 }
 
-void ui_build(GtkApplication *app, struct ui_container *ui) {
+void ui_build(GtkApplication *app, struct kee_context *ctx) {
 	GtkWidget *widget;
+	struct ui_container *ui;
+
+	ui = (struct ui_container*)ctx->front;
 
 	ui->win = GTK_APPLICATION_WINDOW(gtk_application_window_new (app));
 	ui->stack = GTK_STACK(gtk_stack_new());

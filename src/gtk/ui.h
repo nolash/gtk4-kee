@@ -28,7 +28,7 @@ struct ui_container {
 };
 
 int ui_init(struct ui_container *ui);
-void ui_build(GtkApplication *app, struct ui_container *ui);
+void ui_build(GtkApplication *app, struct kee_context *ctx); 
 int ui_state_change(struct ui_container *ui, int set, int reset);
 void ui_free(struct ui_container *ui);
 
