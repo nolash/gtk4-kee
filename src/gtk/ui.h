@@ -20,6 +20,7 @@ struct ui_container {
 	GtkApplicationWindow *win;
 	GtkStack *stack;
 	GListModel *front_list;
+	GListModel *camera_list;
 	GtkListView *front_view;
 	GtkBox *front_scan;
 	struct kee_scanner scan;

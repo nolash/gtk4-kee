@@ -49,17 +49,45 @@ GtkWidget* ui_build_unlock(struct ui_container *ui) {
 	return GTK_WIDGET(box);
 }
 
-//static GtkWidget* ui_build_scan_videochooser(struct ui_container *ui) {
-//	return NULL;
-//}
-
-static GtkWidget* ui_build_scan(struct ui_container *ui) {
+static GtkWidget* ui_build_scan_videochooser(struct kee_context *ctx) {
+	GtkWidget *chooser;
 	GtkWidget *label;
+	GtkExpression *exp_label;
+	//GtkExpression *exp_item;
+	//GClosure *gclosure;
+	struct kee_camera_devices *camera_device;
+	struct ui_container *ui;
 
+	ui = (struct ui_container*)ctx->front;
+	ui->camera_list = G_LIST_MODEL(g_list_store_new(GTK_TYPE_LABEL));
+
+	exp_label = gtk_property_expression_new(GTK_TYPE_LABEL, NULL, "label");
+	//exp_item = gtk_closure_expression_new(G_TYPE_STRING, gclosure, 1, &exp_label);
+
+	chooser = gtk_drop_down_new(G_LIST_MODEL(ui->camera_list), exp_label);
+	camera_device = &ctx->camera_devices;
+	while(1) {
+		label = gtk_label_new(camera_device->label);
+		g_object_set_data(G_OBJECT(label), "devpath", camera_device->path);
+		g_list_store_append(G_LIST_STORE(ui->camera_list), GTK_LABEL(label));
+		if (camera_device->next == NULL) {
+			break;
+		}
+		camera_device = camera_device->next;	
+	}
+	return chooser;
+}
+
+//static GtkWidget* ui_build_scan(struct ui_container *ui) {
+static GtkWidget* ui_build_scan(struct kee_context *ctx) {
+	GtkWidget *chooser;
+	struct ui_container *ui;
+
+	ui = (struct ui_container*)ctx->front;
 	ui->front_scan = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 10));
 
-	label = gtk_label_new("please scan qr code");
-	gtk_box_append(GTK_BOX(ui->front_scan), label);
+	chooser = ui_build_scan_videochooser(ctx);
+	gtk_box_append(GTK_BOX(ui->front_scan), chooser);
 
 	return GTK_WIDGET(ui->front_scan);
 }
@@ -77,6 +105,7 @@ static GtkWidget* ui_build_view(struct ui_container *ui) {
 
 	return GTK_WIDGET(ui->front_view);
 }
+
 
 void ui_build(GtkApplication *app, struct kee_context *ctx) {
 	GtkWidget *widget;
@@ -98,7 +127,7 @@ void ui_build(GtkApplication *app, struct kee_context *ctx) {
 	gtk_stack_set_visible_child(GTK_STACK(ui->stack), widget);
 	widget = ui_build_view(ui);
 	gtk_stack_add_child(ui->stack, widget);
-	widget = ui_build_scan(ui);
+	widget = ui_build_scan(ctx);
 	gtk_stack_add_child(ui->stack, widget);
 
 	//gtk_stack_set_visible_child(GTK_STACK(ui->stack), view);
