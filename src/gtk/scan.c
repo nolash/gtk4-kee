@@ -5,16 +5,13 @@
 
 #include "scan.h"
 #include "err.h"
+#include "kee-uicontext.h"
 
 
 void scan_init(struct kee_scanner *scan, const char *device) {
 	memset(scan, 0, sizeof(struct kee_scanner));
 	scan->device = malloc(strlen(device) + 1);
 	strcpy(scan->device, device);
-}
-
-void scan_free(struct kee_scanner *scan) {
-	free(scan->device);
 }
 
 int scan_begin(struct kee_scanner *scan) {
@@ -112,8 +109,21 @@ int scan_begin(struct kee_scanner *scan) {
 }
 
 void scan_set_handler(struct kee_scanner *scan, gboolean(*fn)(GstBus *bus, GstMessage *msg, gpointer user_data)) {
-	GstBus *bus;
+	scan->bus = gst_element_get_bus(scan->pipeline);
+	gst_bus_add_watch(scan->bus, fn, scan);
+}
 
-	bus = gst_element_get_bus(scan->pipeline);
-	gst_bus_add_watch(bus, fn, scan);
+void scan_act(GSimpleAction *act, GVariant *param, KeeUicontext *ui) {
+	//GDBusConnection *conn;
+
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "scan clicked");
+	kee_uicontext_scanstart(ui);
+	//conn = g_application_get_dbus_connection(app);
+}
+
+void scan_free(struct kee_scanner *scan) {
+	gst_object_unref(scan->bus);
+	gst_element_set_state(scan->pipeline, GST_STATE_NULL);
+	gst_object_unref(scan->pipeline);
+	free(scan->device);
 }

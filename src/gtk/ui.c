@@ -35,10 +35,15 @@ static void ui_handle_unlock_click(GtkWidget *button, gpointer user_data) {
 static void ui_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, struct kee_context *ctx) {
 	GtkLabel *label;
 	char *s;
+	struct ui_container *ui;
+
+	ui = (struct ui_container*)ctx->front;
 	
 	label = gtk_drop_down_get_selected_item(chooser);
 	s = g_object_get_data(G_OBJECT(label), "devpath");
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "dropdown changed: %s -> %s", spec->name, s);
+	settings_set(ctx->settings, SETTINGS_VIDEO, (unsigned char*)s);
+	ui_handle_scan(ui->gapp, ctx);
 }
 
 
@@ -243,7 +248,6 @@ GtkWidget* ui_build_scan_attach(struct ui_container *ui, const char *device) {
 	return view;
 }
 
-//void ui_handle_scan(GtkApplication *app, struct ui_container *ui) {
 void ui_handle_scan(GtkApplication *app, struct kee_context *ctx) {
 	struct ui_container *ui;
 	unsigned char *s;
@@ -251,10 +255,11 @@ void ui_handle_scan(GtkApplication *app, struct kee_context *ctx) {
 	ui = (struct ui_container*)ctx->front;
 	s = settings_get(ctx->settings, SETTINGS_VIDEO);
 
-	if (!(ui->state & KEE_UI_STATE_SCAN_INIT)) {
-		ui_build_scan_attach(ui, (const char*)s);
-
+	if (ui->state & KEE_UI_STATE_SCAN_INIT) {
+		scan_free(&ui->scan);
 	}
+
+	ui_build_scan_attach(ui, (const char*)s);
 	ui_state_change(ui, KEE_UI_STATE_SCANNING | KEE_UI_STATE_SCAN_INIT, 0);
 	gtk_stack_set_visible_child(GTK_STACK(ui->stack), GTK_WIDGET(ui->front_scan));
 }

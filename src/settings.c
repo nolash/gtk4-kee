@@ -100,6 +100,10 @@ int settings_set(struct kee_settings *z, enum SettingsType typ, unsigned char* v
 		case SETTINGS_LOCKTIME:
 			z->locktime = v;
 			break;
+		case SETTINGS_VIDEO:
+			z->video_device = v;
+			break;
+
 		default:
 			return ERR_FAIL;
 	}
