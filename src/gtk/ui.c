@@ -251,12 +251,15 @@ GtkWidget* ui_build_scan_attach(struct ui_container *ui, const char *device) {
 void ui_handle_scan(GtkApplication *app, struct kee_context *ctx) {
 	struct ui_container *ui;
 	unsigned char *s;
+	struct kee_scanner *scan;
 
 	ui = (struct ui_container*)ctx->front;
 	s = settings_get(ctx->settings, SETTINGS_VIDEO);
-
+	scan = &ui->scan;
+	
 	if (ui->state & KEE_UI_STATE_SCAN_INIT) {
-		scan_free(&ui->scan);
+		gtk_box_remove(ui->front_scan, GTK_WIDGET(scan->video_view));
+		scan_free(scan);
 	}
 
 	ui_build_scan_attach(ui, (const char*)s);
