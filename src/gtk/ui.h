@@ -15,7 +15,7 @@ struct ui_container {
 	GListModel *camera_list;
 	GtkBox *front_scan;
 	GtkHeaderBar *head;
-	struct kee_scanner scan;
+	//struct kee_scanner scan;
 	struct kee_context *ctx;
 	int state;
 };
@@ -26,6 +26,7 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx);
 int ui_state_change(struct ui_container *ui, int set, int reset);
 void ui_free(struct ui_container *ui);
 
-void ui_handle_scan(GtkApplication *app, struct kee_context *ctx);
+//void ui_handle_scan(GtkApplication *app, struct kee_context *ctx);
+void ui_handle_scan(GtkApplication *app, KeeUicontext *uctx);
 
 #endif // _UI_H

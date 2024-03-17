@@ -48,7 +48,8 @@ int main(int argc, char **argv) {
 	g_signal_connect (ui.gapp, "startup", G_CALLBACK (startup), uctx);
 	g_signal_connect (ui.gapp, "activate", G_CALLBACK (activate), uctx);
 	g_signal_connect (ui.gapp, "shutdown", G_CALLBACK (deactivate), uctx);
-	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ctx);
+	//g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ctx);
+	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , uctx);
 
 	r = g_application_run (G_APPLICATION (ui.gapp), argc, argv);
 

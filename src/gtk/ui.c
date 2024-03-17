@@ -22,6 +22,8 @@ int ui_init(struct ui_container *ui) {
 	}
 	ui->state = 0;
 	ui->front_list = G_LIST_MODEL(gtk_string_list_new(NULL));
+	ui->front_scan = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 10));
+	ui->camera_list = G_LIST_MODEL(g_list_store_new(GTK_TYPE_LABEL));
 	return ERR_OK;
 }
 
@@ -37,18 +39,22 @@ static void ui_handle_unlock_click(GtkWidget *button, gpointer user_data) {
 	//gtk_stack_set_visible_child(ui->stack, GTK_WIDGET(ui->front_view));
 }
 
-static void ui_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, struct kee_context *ctx) {
+//static void ui_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, struct kee_context *ctx) {
+static void ui_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, KeeUicontext *uctx) {
 	GtkLabel *label;
 	char *s;
-	struct ui_container *ui;
+	//struct ui_container *ui;
 
-	ui = (struct ui_container*)ctx->front;
+	//ui = (struct ui_container*)ctx->front;
 	
 	label = gtk_drop_down_get_selected_item(chooser);
 	s = g_object_get_data(G_OBJECT(label), "devpath");
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "dropdown changed: %s -> %s", spec->name, s);
-	settings_set(ctx->settings, SETTINGS_VIDEO, (unsigned char*)s);
-	ui_handle_scan(ui->gapp, ctx);
+
+	kee_uicontext_scanchange(uctx, s);
+	
+	//ui_handle_scan(ui->gapp, ctx);
+	//ui_handle_scan(uctx);
 }
 
 
@@ -69,53 +75,46 @@ GtkWidget* ui_build_unlock(KeeUicontext *uctx) {
 	return GTK_WIDGET(box);
 }
 
-static GtkWidget* ui_build_scan_videochooser(struct kee_context *ctx) {
+//static GtkWidget* ui_build_scan_videochooser(struct kee_context *ctx) {
+static GtkWidget* ui_build_scan_videochooser(KeeUicontext *uctx) {
 	GtkWidget *chooser;
-	GtkWidget *label;
 	GtkExpression *exp_label;
+	GListModel *camera_list;
 	//GtkExpression *exp_item;
 	//GClosure *gclosure;
-	struct kee_camera_devices *camera_device;
-	struct ui_container *ui;
 
-	ui = (struct ui_container*)ctx->front;
-	ui->camera_list = G_LIST_MODEL(g_list_store_new(GTK_TYPE_LABEL));
+	//ui = (struct ui_container*)ctx->front;
 
 	exp_label = gtk_property_expression_new(GTK_TYPE_LABEL, NULL, "label");
 	//exp_item = gtk_closure_expression_new(G_TYPE_STRING, gclosure, 1, &exp_label);
 
-	chooser = gtk_drop_down_new(G_LIST_MODEL(ui->camera_list), exp_label);
-	camera_device = &ctx->camera_devices;
-	while(1) {
-		label = gtk_label_new(camera_device->label);
-		g_object_set_data(G_OBJECT(label), "devpath", camera_device->path);
-		g_list_store_append(G_LIST_STORE(ui->camera_list), GTK_LABEL(label));
-		if (camera_device->next == NULL) {
-			break;
-		}
-		camera_device = camera_device->next;	
-	}
+	g_object_get(uctx, "camera_list", &camera_list, NULL);
+	chooser = gtk_drop_down_new(camera_list, exp_label);
 
-	g_signal_connect(chooser, "notify::selected-item", G_CALLBACK (ui_handle_camera_change), ctx);
+	
+	g_signal_connect(chooser, "notify::selected-item", G_CALLBACK (ui_handle_camera_change), uctx);
 	return chooser;
 }
 
-////static GtkWidget* ui_build_scan(struct ui_container *ui) {
-////static GtkWidget* ui_build_scan(struct kee_context *ctx) {
-//static GtkWidget* ui_build_scan(KeeUicontext *uctx) {
-//	GtkWidget *chooser;
-//	struct ui_container *ui;
-//
-//	ui = (struct ui_container*)ctx->front;
-//	ui->front_scan = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 10));
-//
-//	chooser = ui_build_scan_videochooser(ctx);
-//	gtk_box_append(GTK_BOX(ui->front_scan), chooser);
-//
-//	return GTK_WIDGET(ui->front_scan);
-//}
-//
-//
+//static GtkWidget* ui_build_scan(struct ui_container *ui) {
+//static GtkWidget* ui_build_scan(struct kee_context *ctx) {
+static GtkWidget* ui_build_scan(KeeUicontext *uctx) {
+	GtkWidget *chooser;
+	GtkWidget *box;
+	//struct ui_container *ui;
+
+	//ui = (struct ui_container*)ctx->front;
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+	chooser = ui_build_scan_videochooser(uctx);
+	gtk_box_append(GTK_BOX(box), chooser);
+
+	g_object_set(uctx, "camera_view", box, NULL);	
+
+	return GTK_WIDGET(box);
+}
+
+
 //static GtkWidget* ui_build_view(struct ui_container *ui) {
 static GtkWidget* ui_build_view(KeeUicontext *uctx) {
 	GtkListItemFactory *factory;
@@ -151,8 +150,8 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 
 	widget = ui_build_view(uctx);
 	gtk_stack_add_child(GTK_STACK(stack), widget);
-	//widget = ui_build_scan(uctx);
-	//gtk_stack_add_child(stack, widget);
+	widget = ui_build_scan(uctx);
+	gtk_stack_add_child(GTK_STACK(stack), widget);
 
 	//g_object_get(uctx, "ui_window", win, NULL);
 	gtk_window_set_child(GTK_WINDOW(win), GTK_WIDGET(stack));
@@ -239,39 +238,59 @@ gboolean ui_scan_code_handler(GstBus *bus, GstMessage *msg, gpointer user_data) 
 	return true;
 }
 
-GtkWidget* ui_build_scan_attach(struct ui_container *ui, const char *device) {
-	int r;
-	struct kee_scanner *scan;
-	GtkWidget *view;
+//GtkWidget* ui_build_scan_attach(GtkWidget *front_scan, const char *device) {
+//	int r;
+//	struct kee_scanner scan;
+//	GtkWidget *view;
+//
+//	//scan = &ui->scan;
+//	scan_init(&scan, device);
+//	r = scan_begin(&scan);
+//	if (r) {
+//		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail scan setup");
+//		return NULL;
+//	}
+//	view = GTK_WIDGET(scan.video_view);
+//	gtk_box_append(GTK_BOX(front_scan), view);
+//	scan_set_handler(&scan, ui_scan_code_handler);
+//	return view;
+//}
 
-	scan = &ui->scan;
-	scan_init(scan, device);
-	r = scan_begin(scan);
+//void ui_handle_scan(GtkApplication *app, struct kee_context *ctx) {
+void ui_handle_scan(GtkApplication *app, KeeUicontext *uctx) {
+	int r;
+	GtkWidget *front_scan;
+	struct kee_scanner scan;
+	char *device;
+	GtkWidget *view;
+	//struct kee_scanner *scan;
+
+	//ui = (struct ui_container*)ctx->front;
+	//s = settings_get(ctx->settings, SETTINGS_VIDEO);
+	//scan = &ui->scan;
+
+	g_object_get(uctx, "camera_device", &device, NULL);	
+	//g_object_get(uctx, "camera_scan", &scan, NULL);	
+	g_object_get(uctx, "camera_view", &front_scan, NULL);	
+	
+	//if (ui->state & KEE_ST_SCAN_INIT) {
+//	if (scan.video_view) {
+//		gtk_box_remove(GTK_BOX(front_scan), GTK_WIDGET(scan.video_view));
+//		scan_free(&scan);
+//	}
+
+	scan_init(&scan, device);
+	r = scan_begin(&scan);
 	if (r) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail scan setup");
-		return NULL;
+		return;
 	}
-	view = GTK_WIDGET(scan->video_view);
-	gtk_box_append(GTK_BOX(ui->front_scan), view);
-	scan_set_handler(scan, ui_scan_code_handler);
-	return view;
-}
+	view = GTK_WIDGET(scan.video_view);
+	gtk_box_append(GTK_BOX(front_scan), view);
+	scan_set_handler(&scan, ui_scan_code_handler);
 
-void ui_handle_scan(GtkApplication *app, struct kee_context *ctx) {
-	struct ui_container *ui;
-	unsigned char *s;
-	struct kee_scanner *scan;
-
-	ui = (struct ui_container*)ctx->front;
-	s = settings_get(ctx->settings, SETTINGS_VIDEO);
-	scan = &ui->scan;
-	
-	if (ui->state & KEE_ST_SCAN_INIT) {
-		gtk_box_remove(ui->front_scan, GTK_WIDGET(scan->video_view));
-		scan_free(scan);
-	}
-
-	ui_build_scan_attach(ui, (const char*)s);
-	ui_state_change(ui, KEE_ST_SCAN_INIT, 0);
-	gtk_stack_set_visible_child(GTK_STACK(ui->stack), GTK_WIDGET(ui->front_scan));
+//	ui_build_scan_attach(uctx, (const char*)s);
+	//ui_state_change(ui, KEE_ST_SCAN_INIT, 0);
+	//gtk_stack_set_visible_child(GTK_STACK(ui->stack), GTK_WIDGET(front_scan));
+	g_object_set(uctx, "ui_push", GTK_BOX(front_scan), NULL);
 }
