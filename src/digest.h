@@ -1,6 +1,10 @@
 #ifndef _KEE_DIGEST_H
 #define _KEE_DIGEST_H
 
+enum DigestErr {
+	ERR_DIGESTFAIL = 1,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif

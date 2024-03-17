@@ -1,0 +1,14 @@
+#ifndef _KEE_STATE_H
+#define _KEE_STATE_H
+
+#define KEE_ST_CTRL 0x0100
+#define KEE_ST_CTRL_MAN 0x0101
+#define KEE_ST_CTRL_MACHINE 0x0102
+#define KEE_ST_CTRL_TRANSPORT 0x0104
+
+#define KEE_ST_SCAN 0x0200
+#define KEE_ST_SCAN_INIT 0x0201
+#define KEE_ST_SCAN_SEARCH 0x0202
+
+#define KEE_IS_SCANNING(c) c->state & KEE_ST_SCAN_SEARCH
+#endif // _KEE_STATE_H

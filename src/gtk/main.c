@@ -10,12 +10,12 @@
 #include "camera.h"
 
 
-static void startup(GtkApplication *app, KeeUicontext *ctx) {
-	menu_setup(ctx);
+static void startup(GtkApplication *app, KeeUicontext *uctx) {
+	menu_setup(uctx);
 }
 
-static void activate(GtkApplication *app, struct kee_context *ctx) {
-	ui_build(app, ctx);
+static void activate(GtkApplication *app, KeeUicontext *uctx) {
+	ui_build(app, uctx);
 }
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
@@ -42,10 +42,10 @@ int main(int argc, char **argv) {
 
 	kee_context_new(&ctx, &ui, &settings);
 	uctx = g_object_new(KEE_TYPE_UICONTEXT, "ui_container", &ui, "core_context", &ctx, NULL);
-	db_connect(&ctx.db, "./testdata_mdb");
+	//db_connect(&ctx.db, "./testdata_mdb");
 
 	g_signal_connect (ui.gapp, "startup", G_CALLBACK (startup), uctx);
-	g_signal_connect (ui.gapp, "activate", G_CALLBACK (activate), &ctx);
+	g_signal_connect (ui.gapp, "activate", G_CALLBACK (activate), uctx);
 	g_signal_connect (ui.gapp, "shutdown", G_CALLBACK (deactivate), uctx);
 	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ctx);
 

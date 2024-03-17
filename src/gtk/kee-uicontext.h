@@ -2,6 +2,7 @@
 #define _GTK_KEE_UICONTEXT_H
 
 #include <glib-object.h>
+#include "context.h"
 
 G_BEGIN_DECLS
 
@@ -18,6 +19,8 @@ enum KEE_SIGS {
 enum KEE_PROPS {
 	CORE_CONTEXT = 1,
 	UI_CONTAINER,
+	UI_HEADER,
+	UI_WINDOW,
 	GAPP,
 	KEE_N_PROPS,
 };

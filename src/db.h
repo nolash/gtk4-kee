@@ -11,6 +11,12 @@
 #define DB_VALUE_SIZE_LIMIT 1048576
 #endif
 
+enum DbErr {
+	ERR_DB_FAIL = 1,
+	ERR_DB_NOMATCH,
+	ERR_DB_INVALID,
+};
+
 /**
  * \brief Key prefixes used for database storage.
  *

@@ -5,15 +5,7 @@
 
 #include "scan.h"
 #include "settings.h"
-
-
-typedef enum {
-	KEE_UI_STATE_INIT = 1,
-	KEE_UI_STATE_SCAN_INIT = 2,
-	KEE_UI_STATE_SCANNING = 4,
-} UiState;
-
-#define KEE_UI_STATE_IS_SCANNING(c) c->state & KEE_UI_STATE_SCANNING
+#include "kee-uicontext.h"
 
 struct ui_container {
 	GtkApplication *gapp;
@@ -23,13 +15,14 @@ struct ui_container {
 	GListModel *camera_list;
 	GtkListView *front_view;
 	GtkBox *front_scan;
+	GtkHeaderBar *head;
 	struct kee_scanner scan;
 	struct kee_context *ctx;
 	int state;
 };
 
 int ui_init(struct ui_container *ui);
-void ui_build(GtkApplication *app, struct kee_context *ctx); 
+void ui_build(GtkApplication *app, KeeUicontext *uctx);
 int ui_state_change(struct ui_container *ui, int set, int reset);
 void ui_free(struct ui_container *ui);
 

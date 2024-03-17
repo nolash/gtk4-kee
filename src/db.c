@@ -4,6 +4,7 @@
 #include <gcrypt.h>
 #include <time.h>
 #include "db.h"
+#include "digest.h"
 #include "err.h"
 #include "endian.h"
 
