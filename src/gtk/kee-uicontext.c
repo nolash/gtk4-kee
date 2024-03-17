@@ -65,6 +65,11 @@ static void kee_uicontext_get_property(GObject *oo, guint property_id, GValue *v
 		case UI_WINDOW:
 			ui = (struct ui_container*)o->ctx->front;
 			g_value_set_pointer(value, ui->win);
+			break;
+		case UI_LIST:
+			ui = (struct ui_container*)o->ctx->front;
+			g_value_set_object(value, ui->front_list);
+			break;
 		default:
 			G_OBJECT_WARN_INVALID_PROPERTY_ID(oo, property_id, pspec);
 			break;
@@ -111,6 +116,12 @@ static void kee_uicontext_class_init(KeeUicontextClass *kls) {
 			"UI application window",
 			GTK_TYPE_WINDOW,
 			G_PARAM_WRITABLE | G_PARAM_READABLE);
+	kee_props[UI_LIST] = g_param_spec_object(
+			"ui_list",
+			"UI item list",
+			"UI item list",
+			G_TYPE_LIST_MODEL,
+			G_PARAM_READABLE);
 	kee_props[GAPP] = g_param_spec_pointer(
 			"app",
 			"Gapplication object",

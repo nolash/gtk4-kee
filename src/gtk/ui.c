@@ -10,6 +10,9 @@
 #include "state.h"
 
 
+static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
+}
+
 int ui_init(struct ui_container *ui) {
 	gtk_init();
 	gst_init(0, NULL);
@@ -18,19 +21,20 @@ int ui_init(struct ui_container *ui) {
 		return ERR_FAIL;
 	}
 	ui->state = 0;
+	ui->front_list = G_LIST_MODEL(gtk_string_list_new(NULL));
 	return ERR_OK;
 }
 
-//static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
-//}
+int ui_setup(KeeUicontext *ctx) {
+	return ERR_OK;	
+}
+
 
 static void ui_handle_unlock_click(GtkWidget *button, gpointer user_data) {
-	struct ui_container *ui;
-
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "click");
 
-	ui = (struct ui_container*)user_data;
-	gtk_stack_set_visible_child(ui->stack, GTK_WIDGET(ui->front_view));
+	//ui = (struct ui_container*)user_data;
+	//gtk_stack_set_visible_child(ui->stack, GTK_WIDGET(ui->front_view));
 }
 
 static void ui_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, struct kee_context *ctx) {
@@ -112,19 +116,22 @@ static GtkWidget* ui_build_scan_videochooser(struct kee_context *ctx) {
 //}
 //
 //
-////static GtkWidget* ui_build_view(struct ui_container *ui) {
-//static GtkWidget* ui_build_view(KeeUicontext *uctx) {
-//	GtkSelectionModel *sel;
-//	GtkListItemFactory *factory;
-//
-//	ui->front_list = G_LIST_MODEL(gtk_string_list_new(NULL));
-//	sel = GTK_SELECTION_MODEL(gtk_single_selection_new(ui->front_list));
-//	factory = gtk_signal_list_item_factory_new();
-//	g_signal_connect(factory, "setup", G_CALLBACK(new_item), NULL);
-//	ui->front_view = GTK_LIST_VIEW(gtk_list_view_new(GTK_SELECTION_MODEL(sel), factory));
-//
-//	return GTK_WIDGET(ui->front_view);
-//}
+//static GtkWidget* ui_build_view(struct ui_container *ui) {
+static GtkWidget* ui_build_view(KeeUicontext *uctx) {
+	GtkListItemFactory *factory;
+	GtkSelectionModel *sel;
+	GListModel *front_list;
+	GtkListView *front_view;
+
+	factory = gtk_signal_list_item_factory_new();
+	g_signal_connect(factory, "setup", G_CALLBACK(new_item), NULL);
+
+	g_object_get(uctx, "ui_list", &front_list, NULL);
+	sel = GTK_SELECTION_MODEL(gtk_single_selection_new(front_list));
+	front_view = GTK_LIST_VIEW(gtk_list_view_new(GTK_SELECTION_MODEL(sel), factory));
+
+	return GTK_WIDGET(front_view);
+}
 
 
 void ui_build(GtkApplication *app, KeeUicontext *uctx) {
@@ -140,13 +147,14 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	
 	widget = ui_build_unlock(uctx);
 	gtk_stack_add_child(GTK_STACK(stack), widget);
-	//widget = ui_build_view(uctx);
-	//gtk_stack_add_child(GTK_STACK(stack), widget);
+	gtk_stack_set_visible_child(GTK_STACK(stack), widget);
+
+	widget = ui_build_view(uctx);
+	gtk_stack_add_child(GTK_STACK(stack), widget);
 	//widget = ui_build_scan(uctx);
 	//gtk_stack_add_child(stack, widget);
 
 	//g_object_get(uctx, "ui_window", win, NULL);
-	gtk_stack_set_visible_child(GTK_STACK(stack), widget);
 	gtk_window_set_child(GTK_WINDOW(win), GTK_WIDGET(stack));
 	g_object_set(uctx, "ui_window", GTK_WINDOW(win), NULL);
 
