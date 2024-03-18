@@ -3,6 +3,6 @@
 
 #include "kee-uicontext.h"
 
-void menu_setup(KeeUicontext *ctx);
+void header_setup(GtkApplication *gapp, KeeUicontext *uctx);
 
 #endif // _KEE_GTK_MENU_H

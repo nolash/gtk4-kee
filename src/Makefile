@@ -17,4 +17,10 @@ aux:
 clean:
 	rm -vf *.o
 
+dev:
+	$(CC) $(CFLAGS) -c settings.c -o settings.o $(LDFLAGS)
+	$(CC) $(CFLAGS) -c context.c -o context.o $(LDFLAGS)
+	$(CC) $(CFLAGS) -c camera.c -o camera.o $(LDFLAGS)
+	make -C gtk dev
+
 .PHONY: clean aux

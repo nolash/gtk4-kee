@@ -113,11 +113,11 @@ void scan_set_handler(struct kee_scanner *scan, gboolean(*fn)(GstBus *bus, GstMe
 	gst_bus_add_watch(scan->bus, fn, scan);
 }
 
-void scan_act(GSimpleAction *act, GVariant *param, KeeUicontext *ui) {
+void scan_act(GSimpleAction *act, GVariant *param, KeeUicontext *uctx) {
 	//GDBusConnection *conn;
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "scan clicked");
-	kee_uicontext_scanstart(ui);
+	kee_uicontext_scanstart(uctx);
 	//conn = g_application_get_dbus_connection(app);
 }
 

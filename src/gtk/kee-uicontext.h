@@ -4,6 +4,11 @@
 #include <glib-object.h>
 #include "context.h"
 
+#define KEE_W_FRONTLIST "frontlist"
+#define KEE_W_CAMERA_VIEWFINDER "camera_view"
+#define KEE_W_WINDOW "win"
+#define KEE_W_HEADER "header"
+
 G_BEGIN_DECLS
 
 typedef struct {
@@ -19,15 +24,15 @@ enum KEE_SIGS {
 
 enum KEE_PROPS {
 	CORE_CONTEXT = 1,
-	UI_CONTAINER,
-	UI_HEADER,
-	UI_LIST,
-	UI_WINDOW,
-	UI_PUSH,
+//	UI_CONTAINER,
+//	UI_HEADER,
+//	UI_LIST,
+//	UI_WINDOW,
+//	UI_PUSH,
 	CAMERA_LIST,
-	CAMERA_SCAN,
-	CAMERA_DEVICE,
-	CAMERA_VIEW,
+//	CAMERA_SCAN,
+//	CAMERA_DEVICE,
+//	CAMERA_VIEW,
 	GAPP,
 	KEE_N_PROPS,
 };
