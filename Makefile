@@ -21,3 +21,6 @@ run: gtk all
 
 debug: gtk all
 	G_DEBUG=3 G_MESSAGES_DEBUG=all ./src/gtk/a.out
+
+test: gtk all
+	make -C src/gtk/tests

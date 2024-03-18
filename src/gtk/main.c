@@ -11,6 +11,7 @@
 
 
 static void startup(GtkApplication *app, KeeUicontext *uctx) {
+	kee_uicontext_scaninit(uctx);
 	menu_setup(uctx);
 	ui_setup(uctx);
 }

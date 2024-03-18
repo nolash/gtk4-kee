@@ -200,8 +200,24 @@ static void kee_uicontext_class_init(KeeUicontextClass *kls) {
 	g_object_class_install_properties(o, KEE_N_PROPS, kee_props);
 }
 
-static void kee_uicontext_init(KeeUicontext *self) {
+static void kee_uicontext_init(KeeUicontext *o) {
 	//KeeUicontextPrivate *o = kee_uicontext_get_instance_private(self);
+}
+
+void kee_uicontext_scaninit(KeeUicontext *o) {
+	struct kee_camera_devices *camera_device;
+	GtkWidget *label;
+
+	camera_device = &o->ctx->camera_devices;
+	while(1) {
+		label = gtk_label_new(camera_device->label);
+		g_object_set_data(G_OBJECT(label), "devpath", camera_device->path);
+		kee_uicontext_scanadd(o, GTK_LABEL(label));
+		if (camera_device->next == NULL) {
+			break;
+		}
+		camera_device = camera_device->next;
+	}
 }
 
 void kee_uicontext_scanchange(KeeUicontext *o, const char *device) {
@@ -215,25 +231,11 @@ void kee_uicontext_scanadd(KeeUicontext *o, GtkLabel *label) {
 }
 
 void kee_uicontext_scanstart(KeeUicontext *o) {
-	GtkWidget *label;
-	struct kee_camera_devices *camera_device;
-
 	if (KEE_IS_SCANNING(o->ui)) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "already in scanning state");
 		return;
 	}
 
-	camera_device = &o->ctx->camera_devices;
-	while(1) {
-		label = gtk_label_new(camera_device->label);
-		g_object_set_data(G_OBJECT(label), "devpath", camera_device->path);
-		g_list_store_append(G_LIST_STORE(o->ui->camera_list), GTK_LABEL(label));
-		kee_uicontext_scanadd(o, GTK_LABEL(label));
-		if (camera_device->next == NULL) {
-			break;
-		}
-		camera_device = camera_device->next;
-	}
 	ui_state_change(o->ui, KEE_ST_SCAN_SEARCH, 0);
 	g_signal_emit(o, kee_sigs[SCAN_WANT], 0);
 }

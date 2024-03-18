@@ -8,6 +8,7 @@
 #include "settings.h"
 #include "context.h"
 #include "state.h"
+#include "view.h"
 
 
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
@@ -109,7 +110,7 @@ static GtkWidget* ui_build_scan(KeeUicontext *uctx) {
 	chooser = ui_build_scan_videochooser(uctx);
 	gtk_box_append(GTK_BOX(box), chooser);
 
-	g_object_set(uctx, "camera_view", box, NULL);	
+	g_object_set(uctx, "camera_view", box, NULL);
 
 	return GTK_WIDGET(box);
 }
@@ -139,19 +140,27 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	GtkWidget *stack;
 
 	win = gtk_application_window_new (app);
-	stack = gtk_stack_new();
 
 	gtk_window_set_title (GTK_WINDOW (win), "kee");
 	gtk_window_set_default_size (GTK_WINDOW (win), 800, 600);
 	
+	stack = gtk_stack_new();
+	kee_view_init(GTK_STACK(stack));
+
 	widget = ui_build_unlock(uctx);
-	gtk_stack_add_child(GTK_STACK(stack), widget);
-	gtk_stack_set_visible_child(GTK_STACK(stack), widget);
+	kee_view_add(widget, "unlock");
+	//gtk_stack_add_child(GTK_STACK(stack), widget);
+	//gtk_stack_set_visible_child(GTK_STACK(stack), widget);
 
 	widget = ui_build_view(uctx);
-	gtk_stack_add_child(GTK_STACK(stack), widget);
+	kee_view_add(widget, "view");
+	//gtk_stack_add_child(GTK_STACK(stack), widget);
 	widget = ui_build_scan(uctx);
-	gtk_stack_add_child(GTK_STACK(stack), widget);
+	kee_view_add(widget, "scan");
+	//gtk_stack_add_child(GTK_STACK(stack), widget);
+	//
+	kee_view_next("view");
+	kee_view_next("unlock");
 
 	//g_object_get(uctx, "ui_window", win, NULL);
 	gtk_window_set_child(GTK_WINDOW(win), GTK_WIDGET(stack));

@@ -10,7 +10,7 @@
 struct ui_container {
 	GtkApplication *gapp;
 	GtkApplicationWindow *win;
-	GtkStack *stack;
+	//GtkStack *stack;
 	GListModel *front_list;
 	GListModel *camera_list;
 	GtkBox *front_scan;

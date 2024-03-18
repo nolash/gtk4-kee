@@ -36,6 +36,7 @@ enum KEE_PROPS {
 G_DECLARE_FINAL_TYPE(KeeUicontext, kee_uicontext, KEE, UICONTEXT, GObject)
 
 KeeUicontext* kee_uicontext_new(void);
+void kee_uicontext_scaninit(KeeUicontext *o);
 void kee_uicontext_scanstart(KeeUicontext *o);
 void kee_uicontext_scanadd(KeeUicontext *o, GtkLabel *label);
 void kee_uicontext_scanchange(KeeUicontext *o, const char *devices);
