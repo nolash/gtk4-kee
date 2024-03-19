@@ -125,6 +125,18 @@ static void kee_uicontext_class_init(KeeUicontextClass *kls) {
 			G_TYPE_POINTER
 	);
 
+//	kee_sigs[KEE_S_IMPORT] = g_signal_new("state", 
+//			G_TYPE_FROM_CLASS(o),
+//			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+//			0,
+//			NULL,
+//			NULL,
+//			NULL,
+//			G_TYPE_NONE,
+//			0,
+//			NULL
+//	);
+
 	kee_sigs[KEE_S_SCAN_CHANGE] = g_signal_newv("scan", 
 			G_TYPE_FROM_CLASS(o),
 			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
@@ -278,6 +290,10 @@ void kee_uicontext_scanstart(KeeUicontext *o) {
 //
 //	ui_state_change(o->ui, KEE_ST_SCAN_SEARCH, 0);
 	g_signal_emit(o, kee_sigs[KEE_S_SCAN_CHANGE], 0);
+}
+
+void kee_uicontext_import(KeeUicontext *o) {
+	g_signal_emit(o, kee_sigs[KEE_S_IMPORT], 0);
 }
 //
 //KeeState kee_uicontext_state(KeeUicontext *o) {

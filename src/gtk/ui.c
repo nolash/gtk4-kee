@@ -19,31 +19,17 @@ static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer us
 static void scan_menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
 }
 
+static void act_import(GAction *act, GVariant *param, GtkStack *stack) {
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "act impot");
+	gtk_stack_set_visible_child_name(stack, "import");
+}
+
 static void act_scan_select(GActionGroup *act, GtkActionBar *foot) {
 	GVariant *v;
 
 	v = g_action_group_get_action_state(act, "src");
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "have act select: %d", g_variant_get_uint32(v));
 }
-
-//int ui_init(struct ui_container *ui) {
-//	gtk_init();
-//	gst_init(0, NULL);
-//	ui->gapp = gtk_application_new ("org.defalsify.Kee", G_APPLICATION_DEFAULT_FLAGS);
-//	if (ui->gapp == NULL) {
-//		return ERR_FAIL;
-//	}
-//	ui->state = 0;
-//	ui->front_list = G_LIST_MODEL(gtk_string_list_new(NULL));
-//	ui->front_scan = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 10));
-//	ui->camera_list = G_LIST_MODEL(g_list_store_new(GTK_TYPE_LABEL));
-//	return ERR_OK;
-//}
-//
-//int ui_setup(KeeUicontext *ctx) {
-//	return ERR_OK;	
-//}
-
 
 void ui_handle_unlock(KeeUicontext *uctx, gpointer user_data) {
 	kee_state_t state_delta;
@@ -194,7 +180,10 @@ static GtkWidget* ui_build_scan(KeeUicontext *uctx) {
 	GtkWidget *chooser;
 	GtkWidget *box;
 	GtkWidget *widget;
+	GtkWidget *stack;
 	//struct ui_container *ui;
+
+	stack = gtk_stack_new();
 
 	//ui = (struct ui_container*)ctx->front;
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -208,11 +197,12 @@ static GtkWidget* ui_build_scan(KeeUicontext *uctx) {
 	//widget = g_object_get_data(G_OBJECT(uctx), KEE_W_FOOTER);
 	widget = ui_build_scan_footer(uctx);
 	gtk_box_append(GTK_BOX(box), widget);
+	gtk_stack_add_child(GTK_STACK(stack), box);
 
 	//g_object_set(uctx, "camera_view", box, NULL);
 	g_object_set_data(G_OBJECT(uctx), KEE_W_CAMERA_SCAN, box); // replace with state listen
 
-	return GTK_WIDGET(box);
+	return GTK_WIDGET(stack);
 }
 
 
@@ -240,6 +230,7 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	GtkWidget *widget;
 	GtkWidget *win;
 	GtkWidget *stack;
+	GSimpleAction *act;
 
 	win = gtk_application_window_new (app);
 
@@ -256,16 +247,23 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	kee_view_add(widget, "view");
 	
 	widget = ui_build_scan(uctx);
-	kee_view_add(widget, "scan");
+	kee_view_add(widget, "import");
 
-	//kee_view_next("view");
-	kee_view_next("scan");
+	kee_view_next("view");
 	kee_view_next("unlock");
 
+	act = g_simple_action_new("import", NULL);
+	g_action_map_add_action(G_ACTION_MAP(win), G_ACTION(act));
+	g_signal_connect(act, "activate", G_CALLBACK(act_import), stack);
 	
 	widget = g_object_get_data(G_OBJECT(uctx), KEE_W_HEADER);
 	gtk_window_set_titlebar(GTK_WINDOW(win), widget);
 	g_object_set_data(G_OBJECT(uctx), KEE_W_WINDOW, GTK_WINDOW(win));
+
+	widget = g_object_get_data(G_OBJECT(uctx), KEE_W_UI_MENU_QUICK_ADD);
+	gtk_widget_set_sensitive(widget, false);
+
+	//g_signal_connect (uctx, "import", G_CALLBACK(stack_handle_import), stack;
 
 	gtk_widget_set_vexpand(stack, true);
 
