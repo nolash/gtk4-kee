@@ -2,37 +2,31 @@
 #define _GTK_KEE_UICONTEXT_H
 
 #include <glib-object.h>
+
 #include "context.h"
+#include "state.h"
 
 #define KEE_W_FRONTLIST "frontlist"
 #define KEE_W_CAMERA_VIEWFINDER "camera_view"
 #define KEE_W_WINDOW "win"
 #define KEE_W_HEADER "header"
+#define KEE_W_PASSPHRASE "passphrase"
+
+#define KEE_ST_UI_HEAD_ADD 0x1
 
 G_BEGIN_DECLS
 
-typedef struct {
-	int ui;
-	int ctx;
-} KeeState;
 
 enum KEE_SIGS {
-	SCAN_WANT,
-	SCAN_CHANGE,
+	KEE_S_STATE_CHANGE,
+	KEE_S_SCAN_CHANGE,
+	KEE_S_KEY_UNLOCKED,
 	KEE_N_SIGS,
 };
 
 enum KEE_PROPS {
 	CORE_CONTEXT = 1,
-//	UI_CONTAINER,
-//	UI_HEADER,
-//	UI_LIST,
-//	UI_WINDOW,
-//	UI_PUSH,
 	CAMERA_LIST,
-//	CAMERA_SCAN,
-//	CAMERA_DEVICE,
-//	CAMERA_VIEW,
 	GAPP,
 	KEE_N_PROPS,
 };
@@ -45,7 +39,9 @@ void kee_uicontext_scaninit(KeeUicontext *o);
 void kee_uicontext_scanstart(KeeUicontext *o);
 void kee_uicontext_scanadd(KeeUicontext *o, GtkLabel *label);
 void kee_uicontext_scanchange(KeeUicontext *o, const char *devices);
-KeeState kee_uicontext_state(KeeUicontext *o);
+kee_state_t kee_uicontext_state(KeeUicontext *o);
+void kee_uicontext_unlock(KeeUicontext *o);
+void kee_uicontext_state_change(KeeUicontext *o, kee_state_t *add, kee_state_t *sub);
 
 G_END_DECLS
 

@@ -10,10 +10,13 @@
 //#include "camera.h"
 
 
+static void state_log(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state) {
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "new state hint: %d", state_hint);
+}
+
 static void startup(GtkApplication *app, KeeUicontext *uctx) {
 	kee_uicontext_scaninit(uctx);
-	header_setup(app, uctx);
-	//ui_setup(uctx);
+	menu_setup(app, uctx);
 }
 
 
@@ -23,7 +26,6 @@ static void activate(GtkApplication *app, KeeUicontext *uctx) {
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
 	g_object_unref(user_data);
-	//ui_free(user_data);
 }
 
 int main(int argc, char **argv) {
@@ -32,32 +34,22 @@ int main(int argc, char **argv) {
 	struct kee_settings settings;
 	struct kee_context ctx;
 	GtkApplication *gapp;
-	//struct ui_container ui;
-
-	//r = ui_init(&ui);
-	//if (r) {
-	//	return r;
-	//}
 
 	gapp = gtk_application_new ("org.defalsify.Kee", G_APPLICATION_DEFAULT_FLAGS);
 
-	//settings_new_from_xdg(&ctx.settings);
 	settings_new_from_xdg(&settings);
-	//settings_init(&ctx.settings);
 	settings_init(&settings);
 
-	//kee_context_new(&ctx, &ui, &settings);
-	//uctx = g_object_new(KEE_TYPE_UICONTEXT, "ui_container", &ui, "core_context", &ctx, NULL);
 	uctx = g_object_new(KEE_TYPE_UICONTEXT, "gtk_application", gapp, "core_context", &ctx, NULL);
 	//db_connect(&ctx.db, "./testdata_mdb");
 
 	g_signal_connect (gapp, "startup", G_CALLBACK (startup), uctx);
 	g_signal_connect (gapp, "activate", G_CALLBACK (activate), uctx);
 	g_signal_connect (gapp, "shutdown", G_CALLBACK (deactivate), uctx);
-//	//g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , &ctx);
-//	g_signal_connect (uctx, "scan_want", G_CALLBACK( ui_handle_scan) , uctx);
+	g_signal_connect (uctx, "scan", G_CALLBACK( ui_handle_scan) , uctx);
+	g_signal_connect (uctx, "unlock", G_CALLBACK(ui_handle_unlock), uctx);
+	g_signal_connect (uctx, "state", G_CALLBACK(state_log), NULL);
 
-//	r = g_application_run (G_APPLICATION (ui.gapp), argc, argv);
 	r = g_application_run (G_APPLICATION (gapp), argc, argv);
 
 	g_object_unref(gapp);

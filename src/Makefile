@@ -21,6 +21,7 @@ dev:
 	$(CC) $(CFLAGS) -c settings.c -o settings.o $(LDFLAGS)
 	$(CC) $(CFLAGS) -c context.c -o context.o $(LDFLAGS)
 	$(CC) $(CFLAGS) -c camera.c -o camera.o $(LDFLAGS)
+	$(CC) $(CFLAGS) -c state.c -o state.o
 	make -C gtk dev
 
 .PHONY: clean aux

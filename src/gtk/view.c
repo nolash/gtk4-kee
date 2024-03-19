@@ -26,3 +26,9 @@ int kee_view_next(const char *label) {
 	gtk_stack_set_visible_child(view.stack, widget);
 	return ERR_OK;
 }
+
+int kee_view_prev() {
+	kee_nav_pop(&view.nav);
+	gtk_stack_set_visible_child(view.stack, view.nav.now);
+	return ERR_OK;
+}

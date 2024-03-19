@@ -10,5 +10,18 @@
 #define KEE_ST_SCAN_INIT 0x0201
 #define KEE_ST_SCAN_SEARCH 0x0202
 
+#define KEE_ST_HINT_KEY 0x01
+#define KEE_ST_HINT_UI_MENU 0x10
+
 #define KEE_IS_SCANNING(c) c->state & KEE_ST_SCAN_SEARCH
+
+typedef struct {
+	long ui_menu;
+	long key;
+} kee_state_t;
+
+void kee_state_zero(kee_state_t *state);
+char kee_state_add(kee_state_t *target, kee_state_t *delta);
+char kee_state_sub(kee_state_t *target, kee_state_t *delta);
+
 #endif // _KEE_STATE_H

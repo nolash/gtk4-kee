@@ -20,6 +20,7 @@ struct _KeeUicontext {
 	struct kee_context *ctx;
 	GListModel *camera_list;
 	GtkApplication *gapp;
+	kee_state_t state;
 };
 
 G_DEFINE_TYPE(KeeUicontext, kee_uicontext, G_TYPE_OBJECT)
@@ -110,7 +111,21 @@ static void kee_uicontext_get_property(GObject *oo, guint property_id, GValue *v
 static void kee_uicontext_class_init(KeeUicontextClass *kls) {
 	GObjectClass *o = G_OBJECT_CLASS(kls);
 
-	kee_sigs[SCAN_WANT] = g_signal_newv("scan_want", 
+	kee_sigs[KEE_S_STATE_CHANGE] = g_signal_new("state", 
+			G_TYPE_FROM_CLASS(o),
+			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+			0,
+			NULL,
+			NULL,
+			NULL,
+			G_TYPE_NONE,
+			3,
+			G_TYPE_CHAR,
+			G_TYPE_POINTER,
+			G_TYPE_POINTER
+	);
+
+	kee_sigs[KEE_S_SCAN_CHANGE] = g_signal_newv("scan", 
 			G_TYPE_FROM_CLASS(o),
 			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
 			NULL,
@@ -122,10 +137,10 @@ static void kee_uicontext_class_init(KeeUicontextClass *kls) {
 			NULL
 	);
 
-	kee_sigs[SCAN_CHANGE] = g_signal_newv("scan_change", 
+	kee_sigs[KEE_S_KEY_UNLOCKED] = g_signal_new("unlock",
 			G_TYPE_FROM_CLASS(o),
 			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
-			NULL,
+			0,
 			NULL,
 			NULL,
 			NULL,
@@ -230,11 +245,29 @@ void kee_uicontext_scaninit(KeeUicontext *o) {
 void kee_uicontext_scanchange(KeeUicontext *o, const char *device) {
 	settings_set(o->ctx->settings, SETTINGS_VIDEO, (unsigned char*)device);
 	//ui_state_change(o->ui, KEE_ST_SCAN_SEARCH, 0);
-	g_signal_emit(o, kee_sigs[SCAN_WANT], 0);
+	g_signal_emit(o, kee_sigs[KEE_S_SCAN_CHANGE], 0);
 }
 
 void kee_uicontext_scanadd(KeeUicontext *o, GtkLabel *label) {
 	g_list_store_append(G_LIST_STORE(o->camera_list), label);
+}
+
+void kee_uicontext_unlock(KeeUicontext *o) {
+	g_signal_emit(o, kee_sigs[KEE_S_KEY_UNLOCKED], 0);
+}
+
+void kee_uicontext_state_change(KeeUicontext *o, kee_state_t *add, kee_state_t *sub) {
+	kee_state_t old_state;
+	char hint;
+
+	hint = 0;
+	if (add) {
+		hint = kee_state_add(&o->state, add);
+	}
+
+	memcpy(&old_state, &o->state, sizeof(kee_state_t));
+
+	g_signal_emit(o, kee_sigs[KEE_S_STATE_CHANGE], 0, hint, &o->state, &old_state);
 }
 
 void kee_uicontext_scanstart(KeeUicontext *o) {
@@ -244,7 +277,7 @@ void kee_uicontext_scanstart(KeeUicontext *o) {
 //	}
 //
 //	ui_state_change(o->ui, KEE_ST_SCAN_SEARCH, 0);
-	g_signal_emit(o, kee_sigs[SCAN_WANT], 0);
+	g_signal_emit(o, kee_sigs[KEE_S_SCAN_CHANGE], 0);
 }
 //
 //KeeState kee_uicontext_state(KeeUicontext *o) {

@@ -33,11 +33,34 @@ static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer us
 //}
 
 
-static void ui_handle_unlock_click(GtkWidget *button, gpointer user_data) {
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "click");
+void ui_handle_unlock(KeeUicontext *uctx, gpointer user_data) {
+	kee_state_t state_delta;
+
+	kee_state_zero(&state_delta);
+
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "key is unlocked");
+	kee_view_prev();
+
+	state_delta.ui_menu |= KEE_ST_UI_HEAD_ADD;
+	kee_uicontext_state_change(uctx, &state_delta, NULL);
+}
+
+
+//static void ui_handle_unlock_click(GtkWidget *button, gpointer user_data) {
+static void ui_handle_unlock_click(GtkWidget *button, KeeUicontext *uctx) {
+	GtkEntryBuffer *buf;
+	const char *passphrase;
 
 	//ui = (struct ui_container*)user_data;
 	//gtk_stack_set_visible_child(ui->stack, GTK_WIDGET(ui->front_view));
+
+	buf = g_object_get_data(G_OBJECT(uctx), "passphrase");
+	passphrase = gtk_entry_buffer_get_text(buf);
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "click");
+
+	kee_uicontext_unlock(uctx);
+
+	gtk_entry_buffer_delete_text(buf, 0, gtk_entry_buffer_get_length(buf));
 }
 
 //static void ui_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, struct kee_context *ctx) {
@@ -63,11 +86,16 @@ GtkWidget* ui_build_unlock(KeeUicontext *uctx) {
 	GtkWidget *box;
 	GtkWidget *entry;
 	GtkWidget *button;
+	GtkEntryBuffer *buf;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
 	entry = gtk_entry_new();
 	gtk_box_append(GTK_BOX(box), entry);
+	buf = gtk_entry_get_buffer(GTK_ENTRY(entry));
+	gtk_entry_set_input_purpose(GTK_ENTRY(entry), GTK_INPUT_PURPOSE_PASSWORD);
+	gtk_entry_set_visibility(GTK_ENTRY(entry), false);
+	g_object_set_data(G_OBJECT(uctx), "passphrase", buf);
 
 	button = gtk_button_new_with_label("create");
 	gtk_box_append(GTK_BOX(box), button);
