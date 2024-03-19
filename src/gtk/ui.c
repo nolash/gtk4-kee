@@ -19,6 +19,13 @@ static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer us
 static void scan_menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
 }
 
+static void act_scan_select(GActionGroup *act, GtkActionBar *foot) {
+	GVariant *v;
+
+	v = g_action_group_get_action_state(act, "src");
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "have act select: %d", g_variant_get_uint32(v));
+}
+
 //int ui_init(struct ui_container *ui) {
 //	gtk_init();
 //	gst_init(0, NULL);
@@ -134,28 +141,48 @@ static GtkWidget* ui_build_scan_footer(KeeUicontext *uctx) {
 	GtkWidget *foot;
 	GtkWidget *butt;
 	GtkToggleButton *butt_prev;
+	GActionGroup *ag;
+	GAction *act;
+	GVariant *v;
 
 	foot = gtk_action_bar_new();
 
+	v = g_variant_new_uint32(0);
+	ag = G_ACTION_GROUP(g_simple_action_group_new());
+	act = G_ACTION(g_simple_action_new_stateful("src", G_VARIANT_TYPE_UINT32, v));
+	g_action_map_add_action(G_ACTION_MAP(ag), act);
+
+	v = g_variant_new_uint32(KEE_ACT_SCAN_QR);
 	butt = gtk_toggle_button_new();
 	gtk_button_set_icon_name(GTK_BUTTON(butt), "insert-image");
 	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
+	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(butt), true);
 
 	butt_prev = GTK_TOGGLE_BUTTON(butt);
+	v = g_variant_new_uint32(KEE_ACT_SCAN_FILE);
 	butt = gtk_toggle_button_new();
 	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
 	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-new");
 	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
+	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
 
 	butt_prev = GTK_TOGGLE_BUTTON(butt);
+	v = g_variant_new_uint32(KEE_ACT_SCAN_TEXT);
 	butt = gtk_toggle_button_new();
 	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
 	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-save");
 	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
+	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
+
+	g_signal_connect(ag, "action-state-changed", G_CALLBACK(act_scan_select), ag);
 
 	g_object_set_data(G_OBJECT(uctx), KEE_W_FOOTER, GTK_ACTION_BAR(foot));
-	gtk_widget_set_visible(foot, false);
+
+	gtk_widget_insert_action_group(foot, "import", ag);
 
 	g_signal_connect (uctx, "state", G_CALLBACK(scan_menu_handle_state), foot);
 	return foot;
@@ -231,7 +258,8 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	widget = ui_build_scan(uctx);
 	kee_view_add(widget, "scan");
 
-	kee_view_next("view");
+	//kee_view_next("view");
+	kee_view_next("scan");
 	kee_view_next("unlock");
 
 	

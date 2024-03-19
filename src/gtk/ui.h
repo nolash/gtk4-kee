@@ -3,6 +3,12 @@
 
 #include <gtk/gtk.h>
 
+enum KeeActScan {
+	KEE_ACT_SCAN_QR = 1,
+	KEE_ACT_SCAN_FILE,
+	KEE_ACT_SCAN_TEXT
+};
+
 #include "kee-uicontext.h"
 
 void ui_build(GtkApplication *app, KeeUicontext *uctx);
