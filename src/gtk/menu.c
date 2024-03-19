@@ -71,34 +71,6 @@ static GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp, KeeUico
 	return butt;
 }
 
-static void footer_setup(GtkApplication *gapp, KeeUicontext *uctx) {
-	GtkWidget *foot;
-	GtkWidget *butt;
-	GtkToggleButton *butt_prev;
-
-	foot = gtk_action_bar_new();
-
-	butt = gtk_toggle_button_new();
-	gtk_button_set_icon_name(GTK_BUTTON(butt), "insert-image");
-	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(butt), true);
-
-	butt_prev = GTK_TOGGLE_BUTTON(butt);
-	butt = gtk_toggle_button_new();
-	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
-	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-new");
-	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
-
-	butt_prev = GTK_TOGGLE_BUTTON(butt);
-	butt = gtk_toggle_button_new();
-	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
-	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-save");
-	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
-
-	g_object_set_data(G_OBJECT(uctx), KEE_W_FOOTER, GTK_ACTION_BAR(foot));
-
-	g_signal_connect (uctx, "state", G_CALLBACK(menu_handle_state), foot);
-}
 
 static void header_setup(GtkApplication *gapp, KeeUicontext *uctx) {
 	GtkWidget *head;
@@ -125,5 +97,4 @@ static void header_setup(GtkApplication *gapp, KeeUicontext *uctx) {
 
 void menu_setup(GtkApplication *gapp, KeeUicontext *uctx) {
 	header_setup(gapp, uctx);
-	footer_setup(gapp, uctx);
 }

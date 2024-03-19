@@ -8,6 +8,7 @@
 
 #define KEE_W_FRONTLIST "frontlist"
 #define KEE_W_CAMERA_VIEWFINDER "camera_view"
+#define KEE_W_CAMERA_SCAN "camera_scan"
 #define KEE_W_WINDOW "win"
 #define KEE_W_PASSPHRASE "passphrase"
 

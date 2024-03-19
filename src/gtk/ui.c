@@ -15,6 +15,10 @@
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
 }
 
+
+static void scan_menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
+}
+
 //int ui_init(struct ui_container *ui) {
 //	gtk_init();
 //	gst_init(0, NULL);
@@ -126,11 +130,43 @@ static GtkWidget* ui_build_scan_videochooser(KeeUicontext *uctx) {
 	return chooser;
 }
 
+static GtkWidget* ui_build_scan_footer(KeeUicontext *uctx) {
+	GtkWidget *foot;
+	GtkWidget *butt;
+	GtkToggleButton *butt_prev;
+
+	foot = gtk_action_bar_new();
+
+	butt = gtk_toggle_button_new();
+	gtk_button_set_icon_name(GTK_BUTTON(butt), "insert-image");
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(butt), true);
+
+	butt_prev = GTK_TOGGLE_BUTTON(butt);
+	butt = gtk_toggle_button_new();
+	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
+	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-new");
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+
+	butt_prev = GTK_TOGGLE_BUTTON(butt);
+	butt = gtk_toggle_button_new();
+	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
+	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-save");
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+
+	g_object_set_data(G_OBJECT(uctx), KEE_W_FOOTER, GTK_ACTION_BAR(foot));
+	gtk_widget_set_visible(foot, false);
+
+	g_signal_connect (uctx, "state", G_CALLBACK(scan_menu_handle_state), foot);
+	return foot;
+}
+
 //static GtkWidget* ui_build_scan(struct ui_container *ui) {
 //static GtkWidget* ui_build_scan(struct kee_context *ctx) {
 static GtkWidget* ui_build_scan(KeeUicontext *uctx) {
 	GtkWidget *chooser;
 	GtkWidget *box;
+	GtkWidget *widget;
 	//struct ui_container *ui;
 
 	//ui = (struct ui_container*)ctx->front;
@@ -139,8 +175,15 @@ static GtkWidget* ui_build_scan(KeeUicontext *uctx) {
 	chooser = ui_build_scan_videochooser(uctx);
 	gtk_box_append(GTK_BOX(box), chooser);
 
+	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	g_object_set_data(G_OBJECT(uctx), KEE_W_CAMERA_VIEWFINDER, widget);
+
+	//widget = g_object_get_data(G_OBJECT(uctx), KEE_W_FOOTER);
+	widget = ui_build_scan_footer(uctx);
+	gtk_box_append(GTK_BOX(box), widget);
+
 	//g_object_set(uctx, "camera_view", box, NULL);
-	g_object_set_data(G_OBJECT(uctx), KEE_W_CAMERA_VIEWFINDER, box);
+	g_object_set_data(G_OBJECT(uctx), KEE_W_CAMERA_SCAN, box); // replace with state listen
 
 	return GTK_WIDGET(box);
 }
@@ -169,13 +212,12 @@ static GtkWidget* ui_build_view(KeeUicontext *uctx) {
 void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	GtkWidget *widget;
 	GtkWidget *win;
-	GtkWidget *box;
 	GtkWidget *stack;
 
 	win = gtk_application_window_new (app);
 
 	gtk_window_set_title (GTK_WINDOW (win), "kee");
-	gtk_window_set_default_size (GTK_WINDOW (win), 800, 600);
+	gtk_window_set_default_size (GTK_WINDOW (win), 720, 1440);
 
 	stack = gtk_stack_new();
 	kee_view_init(GTK_STACK(stack));
@@ -197,14 +239,9 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	gtk_window_set_titlebar(GTK_WINDOW(win), widget);
 	g_object_set_data(G_OBJECT(uctx), KEE_W_WINDOW, GTK_WINDOW(win));
 
-	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	gtk_widget_set_vexpand(box, true);
-	gtk_box_append(GTK_BOX(box), stack);
+	gtk_widget_set_vexpand(stack, true);
 
-	widget = g_object_get_data(G_OBJECT(uctx), KEE_W_FOOTER);
-	gtk_box_append(GTK_BOX(box), widget);
-
-	gtk_window_set_child(GTK_WINDOW(win), box);
+	gtk_window_set_child(GTK_WINDOW(win), stack);
 
 	gtk_window_present(GTK_WINDOW (win));
 }
