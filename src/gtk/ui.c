@@ -9,6 +9,7 @@
 #include "context.h"
 #include "state.h"
 #include "view.h"
+#include "menu.h"
 
 
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
@@ -168,13 +169,14 @@ static GtkWidget* ui_build_view(KeeUicontext *uctx) {
 void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	GtkWidget *widget;
 	GtkWidget *win;
+	GtkWidget *box;
 	GtkWidget *stack;
 
 	win = gtk_application_window_new (app);
 
 	gtk_window_set_title (GTK_WINDOW (win), "kee");
 	gtk_window_set_default_size (GTK_WINDOW (win), 800, 600);
-	
+
 	stack = gtk_stack_new();
 	kee_view_init(GTK_STACK(stack));
 
@@ -190,11 +192,19 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	kee_view_next("view");
 	kee_view_next("unlock");
 
-	gtk_window_set_child(GTK_WINDOW(win), GTK_WIDGET(stack));
 	
 	widget = g_object_get_data(G_OBJECT(uctx), KEE_W_HEADER);
 	gtk_window_set_titlebar(GTK_WINDOW(win), widget);
 	g_object_set_data(G_OBJECT(uctx), KEE_W_WINDOW, GTK_WINDOW(win));
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_widget_set_vexpand(box, true);
+	gtk_box_append(GTK_BOX(box), stack);
+
+	widget = g_object_get_data(G_OBJECT(uctx), KEE_W_FOOTER);
+	gtk_box_append(GTK_BOX(box), widget);
+
+	gtk_window_set_child(GTK_WINDOW(win), box);
 
 	gtk_window_present(GTK_WINDOW (win));
 }

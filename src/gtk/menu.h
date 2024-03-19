@@ -3,6 +3,9 @@
 
 #include "kee-uicontext.h"
 
+#define KEE_W_HEADER "header"
+#define KEE_W_FOOTER "footer"
+
 #define KEE_W_UI_MENU_QUICK_ADD "quick_add"
 #define KEE_W_UI_MENU_ACT_IMPORT "act_import"
 

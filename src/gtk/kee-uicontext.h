@@ -9,7 +9,6 @@
 #define KEE_W_FRONTLIST "frontlist"
 #define KEE_W_CAMERA_VIEWFINDER "camera_view"
 #define KEE_W_WINDOW "win"
-#define KEE_W_HEADER "header"
 #define KEE_W_PASSPHRASE "passphrase"
 
 #define KEE_ST_UI_HEAD_ADD 0x1
