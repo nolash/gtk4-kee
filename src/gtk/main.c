@@ -16,9 +16,7 @@ static void state_log(KeeUicontext *uctx, char state_hint, kee_state_t *new_stat
 
 static void startup(GtkApplication *app, KeeUicontext *uctx) {
 	kee_uicontext_scaninit(uctx);
-	menu_setup(app, uctx);
 }
-
 
 static void activate(GtkApplication *app, KeeUicontext *uctx) {
 	ui_build(app, uctx);

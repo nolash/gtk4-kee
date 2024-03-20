@@ -15,6 +15,19 @@
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
 }
 
+static void win_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GtkWindow *win) {
+	GAction *act;
+
+	if (!(state_hint & KEE_ST_HINT_UI_MENU)) {
+		return;
+	}
+
+	if (new_state->ui_menu & KEE_ST_UI_HEAD_ADD) {
+		act = g_action_map_lookup_action(G_ACTION_MAP(win), "import");
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+	}
+}
+
 
 static void scan_menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
 }
@@ -230,9 +243,12 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 	GtkWidget *widget;
 	GtkWidget *win;
 	GtkWidget *stack;
+	GtkWidget *head;
 	GSimpleAction *act;
 
 	win = gtk_application_window_new (app);
+
+	head = header_setup(app, uctx);
 
 	gtk_window_set_title (GTK_WINDOW (win), "kee");
 	gtk_window_set_default_size (GTK_WINDOW (win), 720, 1440);
@@ -254,16 +270,15 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 
 	act = g_simple_action_new("import", NULL);
 	g_action_map_add_action(G_ACTION_MAP(win), G_ACTION(act));
+	g_simple_action_set_enabled(act, false);
 	g_signal_connect(act, "activate", G_CALLBACK(act_import), stack);
 	
-	widget = g_object_get_data(G_OBJECT(uctx), KEE_W_HEADER);
-	gtk_window_set_titlebar(GTK_WINDOW(win), widget);
+	gtk_window_set_titlebar(GTK_WINDOW(win), head);
 	g_object_set_data(G_OBJECT(uctx), KEE_W_WINDOW, GTK_WINDOW(win));
 
 	widget = g_object_get_data(G_OBJECT(uctx), KEE_W_UI_MENU_QUICK_ADD);
-	gtk_widget_set_sensitive(widget, false);
 
-	//g_signal_connect (uctx, "import", G_CALLBACK(stack_handle_import), stack;
+	g_signal_connect (uctx, "state", G_CALLBACK(win_handle_state), win);
 
 	gtk_widget_set_vexpand(stack, true);
 
@@ -291,17 +306,6 @@ void ui_build(GtkApplication *app, KeeUicontext *uctx) {
 //
 
 
-//void ui_free(struct ui_container *ui) {
-	//g_object_unref(ui->view);
-	//g_object_unref(ui->unlock);
-	//g_object_unref(ui->win);
-//}
-
-//int ui_state_change(struct ui_container *ui, int set, int reset) {
-//	ui->state |= set;
-//	return ui->state;	
-//}
-//
 //gboolean ui_scan_code_handler(GstBus *bus, GstMessage *msg, gpointer user_data) {
 //	GError *err;
 //	gchar *debug_info;

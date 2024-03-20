@@ -14,9 +14,7 @@ static void act_quit(GAction *act, GVariant *param, GApplication *gapp) {
 
 
 static void menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
-//	GtkApplication *gapp;
 	GtkWidget *widget;
-//	GAction *act;
 
 	if (!(state_hint & KEE_ST_HINT_UI_MENU)) {
 		return;
@@ -25,10 +23,6 @@ static void menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *
 	if (new_state->ui_menu & KEE_ST_UI_HEAD_ADD) {
 		widget = g_object_get_data(head, KEE_W_UI_MENU_QUICK_ADD);
 		gtk_actionable_set_action_name(GTK_ACTIONABLE(widget), "win.import");
-		gtk_widget_set_sensitive(widget, true);
-//		g_object_get(uctx, "gtk_application", &gapp, NULL);
-//		act = g_action_map_lookup_action(G_ACTION_MAP(gapp), "import");
-//		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 	}
 }
 
@@ -51,7 +45,6 @@ static GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp, KeeUico
 	act = g_simple_action_new("quit", NULL);
 	g_action_map_add_action(G_ACTION_MAP(gapp), G_ACTION(act));
 	g_signal_connect(act, "activate", G_CALLBACK(act_quit), gapp);
-
 	
 	butt = gtk_menu_button_new();
 	gtk_menu_button_set_menu_model(GTK_MENU_BUTTON(butt), G_MENU_MODEL(menu));
@@ -63,7 +56,7 @@ static GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp, KeeUico
 }
 
 
-static void header_setup(GtkApplication *gapp, KeeUicontext *uctx) {
+GtkWidget* header_setup(GtkApplication *gapp, KeeUicontext *uctx) {
 	GtkWidget *head;
 	GtkWidget *butt;
 	head = gtk_header_bar_new();
@@ -81,9 +74,9 @@ static void header_setup(GtkApplication *gapp, KeeUicontext *uctx) {
 	g_object_set_data(G_OBJECT(head), KEE_W_UI_MENU_QUICK_ADD, butt);
 
 	g_object_set_data(G_OBJECT(uctx), KEE_W_HEADER, GTK_HEADER_BAR(head));
-	g_object_set_data(G_OBJECT(uctx), KEE_W_UI_MENU_QUICK_ADD, GTK_BUTTON(butt)); // find a way to avoid ref through set data
 
 	g_signal_connect (uctx, "state", G_CALLBACK(menu_handle_state), head);
+	return head;
 }
 
 

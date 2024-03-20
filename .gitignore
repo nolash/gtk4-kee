@@ -3,3 +3,4 @@ src/gtk/*.ui
 testdata_mdb
 *\~
 **/test_*
+**/*.out
