@@ -1,4 +1,5 @@
 #include <string.h>
+
 #include <gtk/gtk.h>
 #include <gst/gst.h>
 
@@ -14,6 +15,24 @@
 
 
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
+}
+
+void ui_handle_import_data_focus(KeeImport *o, const char *data, GtkStack *stack) {
+	gtk_stack_set_visible_child_name(stack, KEE_ACT_SCAN_TEXT);
+}
+
+void ui_handle_import_data_text(KeeImport *o, const char *data, GtkTextBuffer *buf) {
+	gtk_text_buffer_set_text(buf, data, strlen(data));
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import data %s", data);
+}
+
+void ui_handle_import_data_accept(KeeImport *o, const char *data, GActionMap *am) {
+	GAction *act;
+
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import accept %s", data);
+
+	act = g_action_map_lookup_action(am, "import_data_accept");
+	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 }
 
 static void win_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GtkWindow *win) {
@@ -35,12 +54,19 @@ static void act_import(GAction *act, GVariant *param, GtkStack *stack) {
 	gtk_stack_set_visible_child_name(stack, "import");
 }
 
-static void act_scan_select(GActionGroup *act, GtkActionBar *foot) {
-	GVariant *v;
 
-	v = g_action_group_get_action_state(act, "src");
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "have act select: %d", g_variant_get_uint32(v));
+//static void act_scan_select(GActionGroup *act, GtkActionBar *foot) {
+// \todo why is there user_data in addition to pointer
+static void act_scan_select(GActionGroup *act, char *action_name, gpointer user_data, GtkStack *stack) {
+	GVariant *v;
+	const char *s;
+
+	v = g_action_group_get_action_state(act, action_name);
+	s = g_variant_get_string(v, NULL);
+	//g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "have act select: %d", g_variant_get_string(v));
+	gtk_stack_set_visible_child_name(stack, s);
 }
+
 
 void ui_handle_unlock(KeeUicontext *uctx, gpointer user_data) {
 	kee_state_t state_delta;
@@ -119,7 +145,7 @@ static GtkWidget* ui_build_scan_videochooser(KeeImport *import) {
 }
 
 
-static GtkWidget* ui_build_scan_footer(KeeImport *import) {
+static GtkWidget* ui_build_scan_footer(KeeImport *import, GtkStack *stack) {
 	GtkWidget *foot;
 	GtkWidget *butt;
 	GtkToggleButton *butt_prev;
@@ -129,12 +155,12 @@ static GtkWidget* ui_build_scan_footer(KeeImport *import) {
 
 	foot = gtk_action_bar_new();
 
-	v = g_variant_new_uint32(0);
+	v = g_variant_new_string("");
 	ag = G_ACTION_GROUP(g_simple_action_group_new());
-	act = G_ACTION(g_simple_action_new_stateful("src", G_VARIANT_TYPE_UINT32, v));
+	act = G_ACTION(g_simple_action_new_stateful("src", G_VARIANT_TYPE_STRING, v));
 	g_action_map_add_action(G_ACTION_MAP(ag), act);
 
-	v = g_variant_new_uint32(KEE_ACT_SCAN_QR);
+	v = g_variant_new_string(KEE_ACT_SCAN_QR);
 	butt = gtk_toggle_button_new();
 	gtk_button_set_icon_name(GTK_BUTTON(butt), "insert-image");
 	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
@@ -143,7 +169,7 @@ static GtkWidget* ui_build_scan_footer(KeeImport *import) {
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(butt), true);
 
 	butt_prev = GTK_TOGGLE_BUTTON(butt);
-	v = g_variant_new_uint32(KEE_ACT_SCAN_FILE);
+	v = g_variant_new_string(KEE_ACT_SCAN_TEXT);
 	butt = gtk_toggle_button_new();
 	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
 	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-new");
@@ -152,7 +178,7 @@ static GtkWidget* ui_build_scan_footer(KeeImport *import) {
 	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
 
 	butt_prev = GTK_TOGGLE_BUTTON(butt);
-	v = g_variant_new_uint32(KEE_ACT_SCAN_TEXT);
+	v = g_variant_new_string(KEE_ACT_SCAN_FILE);
 	butt = gtk_toggle_button_new();
 	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
 	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-save");
@@ -160,20 +186,52 @@ static GtkWidget* ui_build_scan_footer(KeeImport *import) {
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
 	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
 
-	g_signal_connect(ag, "action-state-changed", G_CALLBACK(act_scan_select), ag);
+	g_signal_connect(ag, "action-state-changed", G_CALLBACK(act_scan_select), stack);
 
 	gtk_widget_insert_action_group(foot, "import", ag);
 
 	return foot;
 }
 
+
+static GtkWidget* ui_build_import_text(GtkApplication *app, KeeImport *import, GtkStack *stack) {
+	GtkWidget *box;
+	GtkTextView *txt;
+	GtkWidget *butt;
+	GAction *act;
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+	txt = GTK_TEXT_VIEW(gtk_text_view_new());
+	gtk_widget_set_vexpand(GTK_WIDGET(txt), true);
+	gtk_box_append(GTK_BOX(box), GTK_WIDGET(txt));
+
+	act = G_ACTION(g_simple_action_new("import_data_accept", NULL));
+	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
+	g_action_map_add_action(G_ACTION_MAP(app), act);
+
+	butt = gtk_button_new_with_label("import");
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "app.import_data_accept");
+	gtk_box_append(GTK_BOX(box), butt);
+
+	g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import_data_text), gtk_text_view_get_buffer(txt));
+	g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import_data_accept), app); // replace with import
+	g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import_data_focus), stack);
+
+	return box;
+}
+
+
 void ui_build_scan(GtkApplication *app, KeeImport *import) {
 	GtkWidget *chooser;
+	GtkWidget *box_outer;
 	GtkWidget *box;
 	GtkWidget *widget;
-	GtkWidget *stack;
+	GtkStack *stack;
 
-	stack = gtk_stack_new();
+	box_outer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+	stack = kee_import_get_stack(import);
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
@@ -182,11 +240,19 @@ void ui_build_scan(GtkApplication *app, KeeImport *import) {
 
 	gtk_box_append(GTK_BOX(box), GTK_WIDGET(import));
 
-	widget = ui_build_scan_footer(import);
-	gtk_box_append(GTK_BOX(box), widget);
-	gtk_stack_add_child(GTK_STACK(stack), box);
+	gtk_stack_add_named(stack, box, KEE_ACT_SCAN_QR);
 
-	kee_view_add(stack, "import");
+	widget = ui_build_import_text(app, import, stack);
+	gtk_stack_add_named(stack, widget, KEE_ACT_SCAN_TEXT);
+
+	gtk_stack_set_visible_child_name(stack, KEE_ACT_SCAN_QR);
+
+	widget = ui_build_scan_footer(import, stack);
+
+	gtk_box_append(GTK_BOX(box_outer), GTK_WIDGET(stack));
+	gtk_box_append(GTK_BOX(box_outer), widget);
+
+	kee_view_add(box_outer, "import");
 }
 
 

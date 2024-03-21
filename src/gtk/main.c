@@ -55,7 +55,6 @@ int main(int argc, char **argv) {
 	g_signal_connect (gapp, "activate", G_CALLBACK (activate), uctx);
 	g_signal_connect (gapp, "activate", G_CALLBACK (activate_scan), import);
 	g_signal_connect (gapp, "shutdown", G_CALLBACK (deactivate), uctx);
-	g_signal_connect (uctx, "scan", G_CALLBACK( ui_handle_scan) , uctx);
 	g_signal_connect (uctx, "unlock", G_CALLBACK(ui_handle_unlock), uctx);
 	g_signal_connect (uctx, "state", G_CALLBACK(state_log), NULL);
 

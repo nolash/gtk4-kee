@@ -19,6 +19,7 @@ struct _KeeImport {
 	GListModel *camera_list;
 	struct kee_camera_devices camera_device;
 	struct kee_scanner scan;
+	GtkStack *stack;
 };
 
 G_DEFINE_TYPE(KeeImport, kee_import, GTK_TYPE_BOX);
@@ -39,12 +40,25 @@ static void kee_import_class_init(KeeImportClass *kls) {
 			0,
 			NULL
 	);
+
+	kee_sigs[KEE_S_IMPORT_DATA] = g_signal_new("data_available", 
+			G_TYPE_FROM_CLASS(o),
+			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+			0,
+			NULL,
+			NULL,
+			NULL,
+			G_TYPE_NONE,
+			1,
+			G_TYPE_STRING
+	);
 }
 
 static void kee_import_init(KeeImport *o) {
 	o->camera_list = G_LIST_MODEL(g_list_store_new(GTK_TYPE_LABEL));
 	kee_import_refresh(o);
 	memset(&o->scan, 0, sizeof(struct kee_scanner));
+	o->stack = gtk_stack_new();
 }
 
 static void kee_import_scanadd(KeeImport *o, GtkLabel *label) {
@@ -77,7 +91,6 @@ int kee_import_refresh(KeeImport *o) {
 
 static void kee_import_apply_viewfinder(KeeImport *o) { 
 	GtkWidget *p;
-	GtkWidget *label;
 
 	p = gtk_widget_get_first_child(GTK_WIDGET(o));
 	if (p) {
@@ -98,10 +111,13 @@ static gboolean kee_import_scan_code_handler(GstBus *bus, GstMessage *msg, gpoin
 	const gchar *src;
 	const gchar *code;
 	const GstStructure *strctr;
+	KeeImport *import;
 	//struct _gst_data *data;
 	//GstStateChangeReturn rsc;
 
 	//data = (struct _gst_data*)user_data;
+
+	import = KEE_IMPORT(user_data);
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "scan msg got");
 
@@ -128,9 +144,10 @@ static gboolean kee_import_scan_code_handler(GstBus *bus, GstMessage *msg, gpoin
 			strctr = gst_message_get_structure(msg);
 			code = gst_structure_get_string(strctr, "symbol");
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "message %s: %d (%s) - decoded: %s", src, msg->type, gst_message_type_get_name(msg->type), code);
-			break;
+			g_signal_emit(import, kee_sigs[KEE_S_IMPORT_DATA], 0, code);
+			return false;
 		default:
-			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "unknown message (ext %d): %s", GST_MESSAGE_TYPE_IS_EXTENDED(msg), GST_MESSAGE_TYPE_NAME(msg));
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "unhandled message (ext %d): %s", GST_MESSAGE_TYPE_IS_EXTENDED(msg), GST_MESSAGE_TYPE_NAME(msg));
 			break;
 	}
 
@@ -163,4 +180,8 @@ GListModel* kee_import_get_camera_list(KeeImport *o) {
 void kee_import_free(KeeImport *o) {
 	kee_camera_free(&o->camera_device);
 	scan_free(&o->scan);
+}
+
+GtkStack* kee_import_get_stack(KeeImport *o) {
+	return o->stack;
 }

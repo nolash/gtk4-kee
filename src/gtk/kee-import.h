@@ -10,6 +10,7 @@ G_DECLARE_FINAL_TYPE(KeeImport, kee_import, KEE, IMPORT, GtkBox)
 
 enum KEE_IMPORT_SIGS {
 	KEE_S_IMPORT_SCAN_CHANGE,
+	KEE_S_IMPORT_DATA,
 	KEE_N_IMPORT_SIGS,
 };
 
@@ -17,6 +18,7 @@ KeeImport* kee_import_new(void);
 int kee_import_refresh(KeeImport *im);
 GListModel* kee_import_get_camera_list(KeeImport *o);
 int kee_import_scanchange(KeeImport *o, const char *device);
+GtkStack* kee_import_get_stack(KeeImport *o);
 
 G_END_DECLS
 
