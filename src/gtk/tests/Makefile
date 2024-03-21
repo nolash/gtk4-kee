@@ -14,3 +14,6 @@ test_run: $(wildcard test_*)
 	./$<
 
 test: all test_run
+
+clean:
+	rm -vf test_*

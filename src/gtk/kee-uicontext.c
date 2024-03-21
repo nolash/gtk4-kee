@@ -11,9 +11,6 @@
 typedef struct {
 } KeeUicontextPrivate;
 
-/** 
- * \todo  parent can be gapplication object?
- */
 struct _KeeUicontext {
 	GObject parent;
 	//struct ui_container *ui;

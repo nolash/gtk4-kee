@@ -122,7 +122,9 @@ void scan_act(GSimpleAction *act, GVariant *param, KeeUicontext *uctx) {
 }
 
 void scan_free(struct kee_scanner *scan) {
-	gst_object_unref(scan->bus);
+	if (scan->bus) {
+		gst_object_unref(scan->bus);
+	}
 	gst_element_set_state(scan->pipeline, GST_STATE_NULL);
 	gst_object_unref(scan->pipeline);
 	free(scan->device);

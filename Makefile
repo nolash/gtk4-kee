@@ -13,8 +13,6 @@ glade:
 
 clean:
 	make -C src clean
-	make -C src/gtk clean
-	make -C src/aux clean
 
 run: gtk all
 	G_MESSAGES_DEBUG=all ./src/gtk/a.out

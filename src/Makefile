@@ -16,6 +16,8 @@ aux:
 
 clean:
 	rm -vf *.o
+	make -C gtk clean
+	make -C aux clean
 
 dev:
 	$(CC) $(CFLAGS) -c settings.c -o settings.o $(LDFLAGS)

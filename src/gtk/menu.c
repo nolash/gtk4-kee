@@ -14,16 +14,6 @@ static void act_quit(GAction *act, GVariant *param, GApplication *gapp) {
 
 
 static void menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
-	GtkWidget *widget;
-
-	if (!(state_hint & KEE_ST_HINT_UI_MENU)) {
-		return;
-	}
-
-	if (new_state->ui_menu & KEE_ST_UI_HEAD_ADD) {
-		widget = g_object_get_data(head, KEE_W_UI_MENU_QUICK_ADD);
-		gtk_actionable_set_action_name(GTK_ACTIONABLE(widget), "win.import");
-	}
 }
 
 
@@ -74,6 +64,7 @@ GtkWidget* header_setup(GtkApplication *gapp, KeeUicontext *uctx) {
 	g_object_set_data(G_OBJECT(head), KEE_W_UI_MENU_QUICK_ADD, butt);
 
 	g_object_set_data(G_OBJECT(uctx), KEE_W_HEADER, GTK_HEADER_BAR(head));
+
 
 	g_signal_connect (uctx, "state", G_CALLBACK(menu_handle_state), head);
 	return head;

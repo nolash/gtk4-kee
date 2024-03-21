@@ -1,3 +1,6 @@
+#ifndef _KEE_ERR_H
+#define _KEE_ERR_H
+
 /**
  * 
  * Error codes within context of the kee application and backend.
@@ -20,3 +23,5 @@ enum keeError {
 	ERR_INPUT_PROTECT,
 
 };
+
+#endif // _KEE_ERR_H

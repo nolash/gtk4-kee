@@ -18,6 +18,7 @@ clean:
 	rm -vf a.out
 	rm -vf a_dev.out
 	rm -vf resources.c
+	make -C tests clean
 
 resource:
 	glib-compile-resources kee.gresource.xml --target=resources.c --generate-source
@@ -30,4 +31,5 @@ dev:
 	$(CC) $(CFLAGS) -c ui.c -o ui.o
 	$(CC) $(CFLAGS) -c menu.c -o menu.o
 	$(CC) $(CFLAGS) -c kee-uicontext.c -o kee-uicontext.o
-	$(CC) $(CFLAGS) main.c -o a_dev.out ../settings.o ../camera.o ../context.o ../state.o ./kee-uicontext.o ./debug.o ./menu.o ./scan.o ./ui.o ./view.o ./nav.o $(LDFLAGS)
+	$(CC) $(CFLAGS) -c kee-import.c -o kee-import.o
+	$(CC) $(CFLAGS) main.c -o a_dev.out ../settings.o ../camera.o ../context.o ../state.o ./kee-uicontext.o ./kee-import.o ./debug.o ./menu.o ./scan.o ./ui.o ./view.o ./nav.o $(LDFLAGS)

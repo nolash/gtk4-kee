@@ -28,6 +28,7 @@ int kee_camera_scan(struct kee_camera_devices *devices) {
 		sprintf(p->path, "/dev/video%d", devnum);
 		fd = open(p->path, O_RDONLY);
 		if (fd < 0) {
+			p->path[0] = 0;
 			break;
 		}
 		r = ioctl(fd, VIDIOC_QUERYCAP, &video_cap);
