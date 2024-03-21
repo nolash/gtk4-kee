@@ -22,10 +22,3 @@ debug: gtk all
 
 test: gtk all
 	make -C src/gtk/tests
-
-dev:
-	make -C src dev
-
-debug_dev: dev
-	G_DEBUG=3 G_MESSAGES_DEBUG=all ./src/gtk/a_dev.out
-

@@ -58,7 +58,7 @@ static void kee_import_init(KeeImport *o) {
 	o->camera_list = G_LIST_MODEL(g_list_store_new(GTK_TYPE_LABEL));
 	kee_import_refresh(o);
 	memset(&o->scan, 0, sizeof(struct kee_scanner));
-	o->stack = gtk_stack_new();
+	o->stack = GTK_STACK(gtk_stack_new());
 }
 
 static void kee_import_scanadd(KeeImport *o, GtkLabel *label) {
@@ -169,7 +169,6 @@ int kee_import_scanchange(KeeImport *o, const char *device) {
 
 	o->scan.bus = gst_element_get_bus(o->scan.pipeline);
 	gst_bus_add_watch(o->scan.bus, kee_import_scan_code_handler, o);
-	//scan_set_handler(&o->scan, kee_import_scan_code_handler);
 	return ERR_OK;
 }
 
