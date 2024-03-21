@@ -47,10 +47,9 @@ int main(int argc, char **argv) {
 	settings_new_from_xdg(&settings);
 	settings_init(&settings);
 
-	//uctx = g_object_new(KEE_TYPE_UICONTEXT, "gtk_application", gapp, "core_context", &ctx, NULL);
+	uctx = g_object_new(KEE_TYPE_UICONTEXT, NULL);
 	import = g_object_new(KEE_TYPE_IMPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
 	//db_connect(&ctx.db, "./testdata_mdb");
-	uctx = NULL;
 
 	g_signal_connect (gapp, "startup", G_CALLBACK (startup), uctx);
 	g_signal_connect (gapp, "activate", G_CALLBACK (activate), uctx);

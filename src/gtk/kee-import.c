@@ -112,10 +112,6 @@ static gboolean kee_import_scan_code_handler(GstBus *bus, GstMessage *msg, gpoin
 	const gchar *code;
 	const GstStructure *strctr;
 	KeeImport *import;
-	//struct _gst_data *data;
-	//GstStateChangeReturn rsc;
-
-	//data = (struct _gst_data*)user_data;
 
 	import = KEE_IMPORT(user_data);
 

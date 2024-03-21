@@ -55,7 +55,6 @@ static void act_import(GAction *act, GVariant *param, GtkStack *stack) {
 }
 
 
-//static void act_scan_select(GActionGroup *act, GtkActionBar *foot) {
 // \todo why is there user_data in addition to pointer
 static void act_scan_select(GActionGroup *act, char *action_name, gpointer user_data, GtkStack *stack) {
 	GVariant *v;
@@ -63,7 +62,6 @@ static void act_scan_select(GActionGroup *act, char *action_name, gpointer user_
 
 	v = g_action_group_get_action_state(act, action_name);
 	s = g_variant_get_string(v, NULL);
-	//g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "have act select: %d", g_variant_get_string(v));
 	gtk_stack_set_visible_child_name(stack, s);
 }
 
@@ -137,7 +135,7 @@ static GtkWidget* ui_build_scan_videochooser(KeeImport *import) {
 
 	exp_label = gtk_property_expression_new(GTK_TYPE_LABEL, NULL, "label");
 
-	camera_list = kee_import_get_camera_list(import); //, "camera_list", &camera_list, NULL);
+	camera_list = kee_import_get_camera_list(import);
 	chooser = gtk_drop_down_new(camera_list, exp_label);
 
 	g_signal_connect(chooser, "notify::selected-item", G_CALLBACK (ui_handle_camera_change), import);
