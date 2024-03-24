@@ -13,6 +13,7 @@
 #include "menu.h"
 #include "kee-import.h"
 #include "kee-menu.h"
+#include "kee-key.h"
 
 
 static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
@@ -53,45 +54,6 @@ void ui_handle_unlock(KeeUicontext *uctx, gpointer user_data) {
 }
 
 
-static void ui_handle_unlock_click(GtkWidget *button, KeeUicontext *uctx) {
-	GtkEntryBuffer *buf;
-	const char *passphrase;
-
-	buf = g_object_get_data(G_OBJECT(uctx), "passphrase");
-	passphrase = gtk_entry_buffer_get_text(buf);
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "click");
-
-	kee_uicontext_unlock(uctx);
-
-	gtk_entry_buffer_delete_text(buf, 0, gtk_entry_buffer_get_length(buf));
-}
-
-
-
-GtkWidget* ui_build_unlock(KeeUicontext *uctx) {
-	GtkWidget *box;
-	GtkWidget *entry;
-	GtkWidget *button;
-	GtkEntryBuffer *buf;
-
-	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-
-	entry = gtk_entry_new();
-	gtk_box_append(GTK_BOX(box), entry);
-	buf = gtk_entry_get_buffer(GTK_ENTRY(entry));
-	gtk_entry_set_input_purpose(GTK_ENTRY(entry), GTK_INPUT_PURPOSE_PASSWORD);
-	gtk_entry_set_visibility(GTK_ENTRY(entry), false);
-	//g_object_set_data(G_OBJECT(uctx), "passphrase", buf);
-
-	button = gtk_button_new_with_label("create");
-	gtk_box_append(GTK_BOX(box), button);
-	g_signal_connect (button, "clicked", G_CALLBACK (ui_handle_unlock_click), uctx);
-
-	return GTK_WIDGET(box);
-}
-
-
-
 
 
 static GtkWidget* ui_build_view(KeeUicontext *uctx) {
@@ -115,22 +77,22 @@ static GtkWidget* ui_build_view(KeeUicontext *uctx) {
 
 void ui_build(GtkApplication *app) {
 	GtkWidget *widget;
-	GtkWidget *win;
-	GtkWidget *import;
+	KeeMenu *win;
+	KeeImport *import;
 
 	win = kee_menu_new(app); //g_object_new(KEE_TYPE_MENU, "application", app, NULL);
 
-	widget = ui_build_unlock(NULL);
-	kee_menu_add(KEE_MENU(win), "unlock", widget);
+	widget = GTK_WIDGET(kee_key_new());
+	kee_menu_add(win, "unlock", widget);
 
 	widget = ui_build_view(NULL);
-	kee_menu_add(KEE_MENU(win), "view", widget);
+	kee_menu_add(win, "view", widget);
 	
 	//widget = ui_build_scan(uctx);
 	//kee_view_add(widget, "import");
 
-	kee_menu_next(KEE_MENU(win), "view");
-	kee_menu_next(KEE_MENU(win), "unlock");
+	kee_menu_next(win, "view");
+	kee_menu_next(win, "unlock");
 	
 	//g_object_set_data(G_OBJECT(uctx), KEE_W_WINDOW, GTK_WINDOW(win));
 
@@ -140,7 +102,7 @@ void ui_build(GtkApplication *app) {
 
 	import = kee_import_new(win);
 	//import = g_object_new(KEE_TYPE_IMPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
-	kee_menu_add(win, "import", import);
+	kee_menu_add(win, "import", GTK_WIDGET(import));
 
 	gtk_window_present(GTK_WINDOW (win));
 }

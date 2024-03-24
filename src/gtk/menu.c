@@ -15,8 +15,8 @@ static void act_quit(GAction *act, GVariant *param, GApplication *gapp) {
 }
 
 
-static void menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
-}
+//static void menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state, GObject *head) {
+//}
 
 
 GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp) {

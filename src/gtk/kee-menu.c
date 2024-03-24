@@ -29,7 +29,7 @@ static void kee_menu_act_import(GAction *act, GVariant *param, GtkStack *stack) 
 }
 
 //static GParamSpec *kee_props[KEE_N_MENU_PROPS] = {NULL,};
-static guint kee_sigs[KEE_N_MENU_SIGS] = {0,};
+//static guint kee_sigs[KEE_N_MENU_SIGS] = {0,};
 
 static void kee_menu_class_init(KeeMenuClass *kls) {
 //	GObjectClass *o = G_OBJECT_CLASS(kls);
@@ -47,7 +47,7 @@ KeeMenu* kee_menu_new(GtkApplication *gapp) {
 	GSimpleAction *act;
 
 	o = g_object_new(KEE_TYPE_MENU, "application", gapp, NULL);
-	gtk_widget_set_vexpand(o->stack, true);
+	gtk_widget_set_vexpand(GTK_WIDGET(o->stack), true);
 
 	gapp = gtk_window_get_application(GTK_WINDOW(o));
 
@@ -72,7 +72,7 @@ KeeMenu* kee_menu_new(GtkApplication *gapp) {
 	gtk_window_set_title (GTK_WINDOW (o), "kee");
 	gtk_window_set_default_size (GTK_WINDOW (o), 720, 1440);
 
-	gtk_window_set_child(GTK_WINDOW(o), o->stack);
+	gtk_window_set_child(GTK_WINDOW(o), GTK_WIDGET(o->stack));
 
 	return o;
 }
@@ -98,6 +98,6 @@ int kee_menu_prev(KeeMenu *o) {
 	return ERR_OK;
 }
 
-GtkWidget* kee_menu_get_stack(KeeMenu *o) {
-	return o->stack;
-}
+//GtkWidget* kee_menu_get_stack(KeeMenu *o) {
+//	return GTK_WIDGET(o->stack);
+//}

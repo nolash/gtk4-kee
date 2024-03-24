@@ -223,28 +223,23 @@ static GtkWidget* kee_import_build_import_text(KeeImport *o, GtkStack *stack) {
 
 KeeImport* kee_import_new(KeeMenu *win) {
 	KeeImport *o;
-	GtkWidget *box_outer;
-	GtkWidget *box;
 	GtkWidget *widget;
 	GtkWidget *chooser;
-	GValue v; // = G_VALUE_INIT;
+	GValue v = G_VALUE_INIT;
 
 	o = g_object_new(KEE_TYPE_IMPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
-
 	g_value_init(&v, G_TYPE_OBJECT);
 	g_value_set_object(&v, win);
 	g_object_set_property(G_OBJECT(o), "window", &v);
 
-	box_outer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+	gtk_box_append(GTK_BOX(o), GTK_WIDGET(o->stack));
 
-	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+	//box_outer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 
+	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 	chooser = kee_import_build_scan_videochooser(o);
-	gtk_box_append(GTK_BOX(box), chooser);
-
-	gtk_box_append(GTK_BOX(box), GTK_WIDGET(o));
-
-	gtk_stack_add_named(o->stack, box, KEE_ACT_SCAN_QR);
+	gtk_box_append(GTK_BOX(widget), chooser);
+	gtk_stack_add_named(o->stack, widget, KEE_ACT_SCAN_QR);
 
 	widget = kee_import_build_import_text(o, o->stack);
 	gtk_stack_add_named(o->stack, widget, KEE_ACT_SCAN_TEXT);
@@ -252,11 +247,10 @@ KeeImport* kee_import_new(KeeMenu *win) {
 	gtk_stack_set_visible_child_name(o->stack, KEE_ACT_SCAN_QR);
 
 	widget = kee_import_build_scan_footer(o, o->stack);
+	gtk_box_append(GTK_BOX(o), widget);
 
-	gtk_box_append(GTK_BOX(box_outer), GTK_WIDGET(o->stack));
-	gtk_box_append(GTK_BOX(box_outer), widget);
-
-	return box_outer;
+	return o;
+	//return box_outer;
 }
 
 static void kee_import_scanadd(KeeImport *o, GtkLabel *label) {

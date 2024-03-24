@@ -2,6 +2,7 @@
 #define _GTK_KEE_IMPORT_H
 
 #include <glib-object.h>
+#include <gtk/gtk.h>
 
 #include "kee-menu.h"
 
