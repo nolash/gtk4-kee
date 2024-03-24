@@ -22,6 +22,8 @@ struct _KeeImport {
 	struct kee_camera_devices camera_device;
 	struct kee_scanner scan;
 	GtkStack *stack;
+	GtkBox *viewbox;
+	GtkWidget *toggler_text;
 };
 
 G_DEFINE_TYPE(KeeImport, kee_import, GTK_TYPE_BOX);
@@ -87,6 +89,7 @@ static void kee_import_init(KeeImport *o) {
 	kee_import_refresh(o);
 	memset(&o->scan, 0, sizeof(struct kee_scanner));
 	o->stack = GTK_STACK(gtk_stack_new());
+	o->viewbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
 }
 
 static void kee_import_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, KeeImport *import) {
@@ -101,7 +104,8 @@ static void kee_import_handle_camera_change(GtkDropDown *chooser, GParamSpec *sp
 }
 
 static void kee_import_handle_import_data_focus(KeeImport *o, const char *data, GtkStack *stack) {
-	gtk_stack_set_visible_child_name(stack, KEE_ACT_SCAN_TEXT);
+	//gtk_stack_set_visible_child_name(stack, KEE_ACT_SCAN_TEXT);
+	gtk_widget_activate(o->toggler_text);
 }
 
 static void kee_import_handle_import_data_text(KeeImport *o, const char *data, GtkTextBuffer *buf) {
@@ -109,10 +113,13 @@ static void kee_import_handle_import_data_text(KeeImport *o, const char *data, G
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import data %s", data);
 }
 
-static void kee_import_handle_import_data_accept(KeeImport *o, const char *data, GActionMap *am) {
+static void kee_import_handle_import_data_accept(KeeImport *o, const char *data) {
 	GAction *act;
+	GActionMap *am;
 
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import accept %s", data);
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import accept");
+
+	am = G_ACTION_MAP(gtk_window_get_application(GTK_WINDOW(o->win)));
 
 	act = g_action_map_lookup_action(am, "import_data_accept");
 	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
@@ -161,6 +168,7 @@ static GtkWidget* kee_import_build_scan_footer(KeeImport *import, GtkStack *stac
 	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
 	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
+	import->toggler_text = butt;
 
 	butt_prev = GTK_TOGGLE_BUTTON(butt);
 	v = g_variant_new_string(KEE_ACT_SCAN_FILE);
@@ -183,7 +191,6 @@ static GtkWidget* kee_import_build_scan_videochooser(KeeImport *o) {
 
 	exp_label = gtk_property_expression_new(GTK_TYPE_LABEL, NULL, "label");
 
-	//camera_list = kee_import_get_camera_list(import);
 	chooser = gtk_drop_down_new(o->camera_list, exp_label);
 
 	g_signal_connect(chooser, "notify::selected-item", G_CALLBACK (kee_import_handle_camera_change), o);
@@ -214,9 +221,9 @@ static GtkWidget* kee_import_build_import_text(KeeImport *o, GtkStack *stack) {
 	gtk_box_append(GTK_BOX(box), butt);
 
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_text), gtk_text_view_get_buffer(txt));
-	//g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import_data_accept), app); // replace with import
+	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_accept), NULL);
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_focus), stack);
-	//g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import_data_check), butt);
+	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_check), butt);
 
 	return box;
 }
@@ -234,11 +241,11 @@ KeeImport* kee_import_new(KeeMenu *win) {
 
 	gtk_box_append(GTK_BOX(o), GTK_WIDGET(o->stack));
 
-	//box_outer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-
 	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
 	chooser = kee_import_build_scan_videochooser(o);
 	gtk_box_append(GTK_BOX(widget), chooser);
+	gtk_box_append(GTK_BOX(widget), GTK_WIDGET(o->viewbox));
+
 	gtk_stack_add_named(o->stack, widget, KEE_ACT_SCAN_QR);
 
 	widget = kee_import_build_import_text(o, o->stack);
@@ -250,7 +257,6 @@ KeeImport* kee_import_new(KeeMenu *win) {
 	gtk_box_append(GTK_BOX(o), widget);
 
 	return o;
-	//return box_outer;
 }
 
 static void kee_import_scanadd(KeeImport *o, GtkLabel *label) {
@@ -284,13 +290,13 @@ int kee_import_refresh(KeeImport *o) {
 static void kee_import_apply_viewfinder(KeeImport *o) { 
 	GtkWidget *p;
 
-	p = gtk_widget_get_first_child(GTK_WIDGET(o));
+	p = gtk_widget_get_first_child(GTK_WIDGET(o->viewbox));
 	if (p) {
-		gtk_box_remove(GTK_BOX(o), p);
+		gtk_box_remove(GTK_BOX(o->viewbox), p);
 	}
 
 	p = GTK_WIDGET(o->scan.video_view);
-	gtk_box_append(GTK_BOX(o), p);
+	gtk_box_append(GTK_BOX(o->viewbox), p);
 	gtk_widget_set_visible(GTK_WIDGET(o), true);
 }
 
@@ -359,10 +365,6 @@ int kee_import_scanchange(KeeImport *o, const char *device) {
 	gst_bus_add_watch(o->scan.bus, kee_import_scan_code_handler, o);
 	return ERR_OK;
 }
-
-//GListModel* kee_import_get_camera_list(KeeImport *o) {
-//	return o->camera_list;	
-//}
 
 void kee_import_free(KeeImport *o) {
 	kee_camera_free(&o->camera_device);

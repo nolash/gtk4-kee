@@ -8,12 +8,12 @@
 
 G_BEGIN_DECLS
 
-
-enum KEE_SIGS {
-	KEE_S_STATE_CHANGE,
-	KEE_S_KEY_UNLOCKED,
-	KEE_N_SIGS,
-};
+//
+//enum KEE_SIGS {
+//	KEE_S_STATE_CHANGE,
+//	KEE_S_KEY_UNLOCKED,
+//	KEE_N_SIGS,
+//};
 
 #define KEE_TYPE_UICONTEXT kee_uicontext_get_type()
 G_DECLARE_FINAL_TYPE(KeeUicontext, kee_uicontext, KEE, UICONTEXT, GObject)

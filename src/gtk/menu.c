@@ -1,9 +1,7 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
-#include "kee-uicontext.h"
 #include "kee-menu.h"
-//#include "ui.h"
 #include "scan.h"
 #include "context.h"
 #include "state.h"

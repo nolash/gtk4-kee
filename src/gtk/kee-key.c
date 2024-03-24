@@ -17,9 +17,21 @@ struct _KeeKey {
 G_DEFINE_TYPE(KeeKey, kee_key, GTK_TYPE_BOX);
 
 //static GParamSpec *kee_props[KEE_N_IMPORT_PROPS] = {NULL,};
-//static guint kee_sigs[KEE_N_KEY_SIGS] = {0,};
+static guint kee_sigs[KEE_N_KEY_SIGS] = {0,};
 
 static void kee_key_class_init(KeeKeyClass *kls) {
+	GObjectClass *o = G_OBJECT_CLASS(kls);
+
+	kee_sigs[KEE_S_KEY_UNLOCKED] = g_signal_new("unlock", 
+			G_TYPE_FROM_CLASS(o),
+			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+			0,
+			NULL,
+			NULL,
+			NULL,
+			G_TYPE_NONE,
+			0,
+			NULL);
 }
 
 static void kee_key_init(KeeKey *o) {
@@ -34,6 +46,7 @@ static void kee_key_handle_unlock_click(GtkWidget *button, GObject *o) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "click");
 
 	//kee_uicontext_unlock(uctx);
+	g_signal_emit(o, kee_sigs[KEE_S_KEY_UNLOCKED], 0);
 
 	gtk_entry_buffer_delete_text(buf, 0, gtk_entry_buffer_get_length(buf));
 }

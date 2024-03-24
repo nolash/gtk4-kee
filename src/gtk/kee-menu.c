@@ -78,6 +78,20 @@ KeeMenu* kee_menu_new(GtkApplication *gapp) {
 }
 
 
+/// \todo less strcmp
+static void kee_menu_header_update(KeeMenu *o, const char *label) {
+	GAction *act;
+
+	if (!(strcmp(label, "unlock"))) {
+	} else if (!(strcmp(label, "view"))) {
+		act = g_action_map_lookup_action(G_ACTION_MAP(o), "import");
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+	} else if (!(strcmp(label, "import"))) {
+	} else {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "unknown nav label: %s", label);
+	}
+}
+
 int kee_menu_add(KeeMenu *o, const char *label, GtkWidget *widget) {
 	gtk_stack_add_named(o->stack, widget, label);
 	return ERR_OK;
@@ -93,11 +107,13 @@ int kee_menu_next(KeeMenu *o, const char *label) {
 }
 
 int kee_menu_prev(KeeMenu *o) {
+	const char *label;
+
 	kee_nav_pop(&o->nav);
 	gtk_stack_set_visible_child(o->stack, o->nav.now);
+	label = gtk_stack_get_visible_child_name(o->stack);
+	
+	kee_menu_header_update(o, label);
+
 	return ERR_OK;
 }
-
-//GtkWidget* kee_menu_get_stack(KeeMenu *o) {
-//	return GTK_WIDGET(o->stack);
-//}

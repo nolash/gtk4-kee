@@ -5,7 +5,6 @@
 
 #include "scan.h"
 #include "err.h"
-#include "kee-uicontext.h"
 
 
 void scan_init(struct kee_scanner *scan, const char *device) {
