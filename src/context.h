@@ -13,7 +13,7 @@ struct kee_context {
 	int state;
 };
 
-int kee_context_new(struct kee_context *ctx, void *front, struct kee_settings *settings);
+int kee_context_new(struct kee_context *ctx, struct kee_settings *settings);
 int kee_context_state(struct kee_context *ctx);
 void kee_context_free(struct kee_context *ctx);
 

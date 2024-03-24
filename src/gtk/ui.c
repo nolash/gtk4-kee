@@ -12,12 +12,11 @@
 #include "view.h"
 #include "menu.h"
 #include "kee-import.h"
+#include "kee-entry-list.h"
+#include "kee-entry-store.h"
 #include "kee-menu.h"
 #include "kee-key.h"
 
-
-static void new_item(GtkListItemFactory *factory, GtkListItem *item, gpointer user_data) {
-}
 
 static void ui_handle_unlock(GtkWidget *widget, KeeMenu *menu) {
 	kee_state_t state_delta;
@@ -28,29 +27,30 @@ static void ui_handle_unlock(GtkWidget *widget, KeeMenu *menu) {
 	kee_menu_prev(menu);
 }
 
+//
+//static GtkWidget* ui_build_view(KeeMenu *menu) {
+//	GtkListItemFactory *factory;
+//	GtkSelectionModel *sel;
+//	GListModel *front_list;
+//	GtkListView *front_view;
+//
+//	factory = gtk_signal_list_item_factory_new();
+//	g_signal_connect(factory, "setup", G_CALLBACK(new_item), NULL);
+//	
+//	front_list = G_LIST_MODEL(gtk_string_list_new(NULL));
+//
+//	sel = GTK_SELECTION_MODEL(gtk_single_selection_new(front_list));
+//	front_view = GTK_LIST_VIEW(gtk_list_view_new(GTK_SELECTION_MODEL(sel), factory));
+//
+//	return GTK_WIDGET(front_view);
+//}
 
-static GtkWidget* ui_build_view(KeeMenu *menu) {
-	GtkListItemFactory *factory;
-	GtkSelectionModel *sel;
-	GListModel *front_list;
-	GtkListView *front_view;
 
-	factory = gtk_signal_list_item_factory_new();
-	g_signal_connect(factory, "setup", G_CALLBACK(new_item), NULL);
-	
-	front_list = G_LIST_MODEL(gtk_string_list_new(NULL));
-
-	sel = GTK_SELECTION_MODEL(gtk_single_selection_new(front_list));
-	front_view = GTK_LIST_VIEW(gtk_list_view_new(GTK_SELECTION_MODEL(sel), factory));
-
-	return GTK_WIDGET(front_view);
-}
-
-
-void ui_build(GtkApplication *app) {
+void ui_build(GtkApplication *app, struct kee_context *ctx) {
 	GtkWidget *widget;
 	KeeMenu *win;
 	KeeImport *import;
+	KeeEntryStore *store;
 
 	win = kee_menu_new(app);
 
@@ -58,7 +58,9 @@ void ui_build(GtkApplication *app) {
 	kee_menu_add(win, "unlock", widget);
 	g_signal_connect (widget, "unlock", G_CALLBACK(ui_handle_unlock), win);
 
-	widget = ui_build_view(NULL);
+//	widget = ui_build_view(NULL);
+	store = kee_entry_store_new(&ctx->db);
+	widget = kee_entry_list_new(G_LIST_MODEL(store));
 	kee_menu_add(win, "view", widget);
 	
 	kee_menu_next(win, "view");

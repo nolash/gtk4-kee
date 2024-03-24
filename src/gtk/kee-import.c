@@ -4,6 +4,7 @@
 
 #include "kee-import.h"
 #include "kee-menu.h"
+#include "kee-entry-list.h"
 #include "camera.h"
 #include "scan.h"
 #include "err.h"
@@ -81,6 +82,7 @@ static void kee_import_class_init(KeeImportClass *kls) {
 			KEE_TYPE_MENU,
 			G_PARAM_WRITABLE);
 
+	
 	g_object_class_install_properties(o, KEE_N_IMPORT_PROPS, kee_props);
 }
 
