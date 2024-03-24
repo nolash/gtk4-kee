@@ -46,11 +46,11 @@ static void ui_handle_unlock(GtkWidget *widget, KeeMenu *menu) {
 //}
 
 
-void ui_build(GtkApplication *app, struct kee_context *ctx) {
+//void ui_build(GtkApplication *app, struct kee_context *ctx) {
+void ui_build(GtkApplication *app, KeeEntryStore *store) {
 	GtkWidget *widget;
 	KeeMenu *win;
 	KeeImport *import;
-	KeeEntryStore *store;
 
 	win = kee_menu_new(app);
 
@@ -58,8 +58,6 @@ void ui_build(GtkApplication *app, struct kee_context *ctx) {
 	kee_menu_add(win, "unlock", widget);
 	g_signal_connect (widget, "unlock", G_CALLBACK(ui_handle_unlock), win);
 
-//	widget = ui_build_view(NULL);
-	store = kee_entry_store_new(&ctx->db);
 	widget = kee_entry_list_new(G_LIST_MODEL(store));
 	kee_menu_add(win, "view", widget);
 	

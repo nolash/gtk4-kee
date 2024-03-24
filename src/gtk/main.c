@@ -7,6 +7,7 @@
 //#include "menu.h"
 #include "settings.h"
 #include "context.h"
+#include "kee-entry-store.h"
 
 
 //static void state_log(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state) {
@@ -17,8 +18,9 @@ static void startup(GtkApplication *app, struct kee_context *ctx) {
 //	kee_uicontext_scaninit(uctx);
 }
 
-static void activate(GtkApplication *app, struct kee_context *ctx) {
-	ui_build(app, ctx);
+static void activate(GtkApplication *app, KeeEntryStore *store) { //struct kee_context *ctx) {
+	//ui_build(app, ctx);
+	ui_build(app, store);
 }
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
@@ -30,6 +32,7 @@ int main(int argc, char **argv) {
 	struct kee_settings settings;
 	GtkApplication *gapp;
 	struct kee_context ctx;
+	KeeEntryStore *store;
 
 	gtk_init();
 	gst_init(0, NULL);
@@ -44,9 +47,10 @@ int main(int argc, char **argv) {
 		return r;
 	}
 	db_connect(&ctx.db, "./testdata_mdb");
+	store = kee_entry_store_new(&ctx.db);
 
 	g_signal_connect (gapp, "startup", G_CALLBACK (startup), &ctx);
-	g_signal_connect (gapp, "activate", G_CALLBACK (activate), &ctx);
+	g_signal_connect (gapp, "activate", G_CALLBACK (activate), store);
 	g_signal_connect (gapp, "shutdown", G_CALLBACK (deactivate), NULL);
 	//g_signal_connect (uctx, "state", G_CALLBACK(state_log), NULL);
 

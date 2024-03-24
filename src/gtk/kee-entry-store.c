@@ -13,6 +13,7 @@ struct _KeeEntryStore {
 	struct db_ctx *db;
 };
 
+
 static void kee_entry_store_iface_init(GListModelInterface *ifc);
 G_DEFINE_TYPE_WITH_CODE(KeeEntryStore, kee_entry_store, G_TYPE_OBJECT, G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL, kee_entry_store_iface_init));
 
@@ -26,7 +27,7 @@ static void kee_entry_store_init(KeeEntryStore *o) {
 
 
 static GType kee_entry_store_get_item_type(GListModel *list) {
-	return GTK_TYPE_WIDGET;
+	return G_TYPE_OBJECT;
 }
 
 
@@ -36,7 +37,12 @@ static guint kee_entry_store_get_n_items(GListModel *list) {
 
 
 static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
-	return gtk_label_new("foo");
+	GObject *o;
+
+	o = g_object_new(G_TYPE_OBJECT, NULL);
+
+	g_object_set_data(o, "foo", "bar");
+	return o;
 }
 
 
@@ -51,6 +57,5 @@ KeeEntryStore* kee_entry_store_new(struct db_ctx *db) {
 
 	o = g_object_new(KEE_TYPE_ENTRY_STORE, NULL);
 	o->db = db;
-
 	return o;
 }
