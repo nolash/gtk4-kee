@@ -1,6 +1,8 @@
+#include <glib-object.h>
 #include <gtk/gtk.h>
 
 #include "kee-uicontext.h"
+#include "kee-menu.h"
 //#include "ui.h"
 #include "scan.h"
 #include "context.h"
@@ -17,14 +19,14 @@ static void menu_handle_state(KeeUicontext *uctx, char state_hint, kee_state_t *
 }
 
 
-static GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp, KeeUicontext *uctx) {
+GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp) {
 	GMenu *menu;
 	GMenuItem *menu_item;
 	GtkWidget *butt;
 	GSimpleAction *act;
 
 	menu = g_menu_new();
-	menu_item = g_menu_item_new("Import", "win.import");
+	menu_item = g_menu_item_new("Import", "app.import");
 	g_menu_append_item(menu, menu_item);
 	g_object_unref(menu_item);
 
@@ -43,34 +45,4 @@ static GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp, KeeUico
 	
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "set up menus");
 	return butt;
-}
-
-
-GtkWidget* header_setup(GtkApplication *gapp, KeeUicontext *uctx) {
-	GtkWidget *head;
-	GtkWidget *butt;
-	head = gtk_header_bar_new();
-
-	butt = menu_button_setup(G_OBJECT(head), gapp, uctx);
-	gtk_header_bar_pack_end(GTK_HEADER_BAR(head), butt);
-
-	butt = gtk_button_new_from_icon_name("go-previous");
-	gtk_header_bar_pack_start(GTK_HEADER_BAR(head), butt);
-	gtk_widget_set_visible(butt, false);
-
-	butt = gtk_button_new_from_icon_name("insert-object");
-	gtk_header_bar_pack_start(GTK_HEADER_BAR(head), butt);
-	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "win.import");
-	g_object_set_data(G_OBJECT(head), KEE_W_UI_MENU_QUICK_ADD, butt);
-
-	g_object_set_data(G_OBJECT(uctx), KEE_W_HEADER, GTK_HEADER_BAR(head));
-
-
-	g_signal_connect (uctx, "state", G_CALLBACK(menu_handle_state), head);
-	return head;
-}
-
-
-void menu_setup(GtkApplication *gapp, KeeUicontext *uctx) {
-	header_setup(gapp, uctx);
 }

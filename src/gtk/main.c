@@ -4,7 +4,6 @@
 #include <gst/gst.h>
 
 #include "kee-uicontext.h"
-#include "kee-import.h"
 #include "ui.h"
 //#include "context.h"
 #include "menu.h"
@@ -20,11 +19,8 @@ static void startup(GtkApplication *app, KeeUicontext *uctx) {
 //	kee_uicontext_scaninit(uctx);
 }
 
-static void activate(GtkApplication *app, KeeUicontext *uctx) {
-	ui_build(app, uctx);
-}
-static void activate_scan(GtkApplication *app, KeeImport *import) {
-	ui_build_scan(app, import);
+static void activate(GtkApplication *app) {
+	ui_build(app);
 }
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
@@ -47,16 +43,16 @@ int main(int argc, char **argv) {
 	settings_new_from_xdg(&settings);
 	settings_init(&settings);
 
-	uctx = g_object_new(KEE_TYPE_UICONTEXT, NULL);
-	import = g_object_new(KEE_TYPE_IMPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
+	//uctx = g_object_new(KEE_TYPE_UICONTEXT, NULL);
+	uctx = NULL;
 	//db_connect(&ctx.db, "./testdata_mdb");
 
 	g_signal_connect (gapp, "startup", G_CALLBACK (startup), uctx);
-	g_signal_connect (gapp, "activate", G_CALLBACK (activate), uctx);
-	g_signal_connect (gapp, "activate", G_CALLBACK (activate_scan), import);
+	//g_signal_connect (gapp, "activate", G_CALLBACK (activate), uctx);
+	g_signal_connect (gapp, "activate", G_CALLBACK (activate), NULL);
 	g_signal_connect (gapp, "shutdown", G_CALLBACK (deactivate), uctx);
-	g_signal_connect (uctx, "unlock", G_CALLBACK(ui_handle_unlock), uctx);
-	g_signal_connect (uctx, "state", G_CALLBACK(state_log), NULL);
+	//g_signal_connect (uctx, "unlock", G_CALLBACK(ui_handle_unlock), uctx);
+	//g_signal_connect (uctx, "state", G_CALLBACK(state_log), NULL);
 
 	r = g_application_run (G_APPLICATION (gapp), argc, argv);
 

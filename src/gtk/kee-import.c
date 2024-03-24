@@ -3,6 +3,7 @@
 #include <gst/gst.h>
 
 #include "kee-import.h"
+#include "kee-menu.h"
 #include "camera.h"
 #include "scan.h"
 #include "err.h"
@@ -16,6 +17,7 @@ struct _KeeImportClass {
 
 struct _KeeImport {
 	GtkWidget parent;
+	KeeMenu *win;
 	GListModel *camera_list;
 	struct kee_camera_devices camera_device;
 	struct kee_scanner scan;
@@ -24,7 +26,22 @@ struct _KeeImport {
 
 G_DEFINE_TYPE(KeeImport, kee_import, GTK_TYPE_BOX);
 
+
+static GParamSpec *kee_props[KEE_N_IMPORT_PROPS] = {NULL,};
 static guint kee_sigs[KEE_N_IMPORT_SIGS] = {0,};
+
+static void kee_import_set_property(GObject *oo, guint property_id, const GValue *value, GParamSpec *pspec) {
+	KeeImport *o = KEE_IMPORT(oo);
+
+	switch((enum KEE_IMPORT_PROPS)property_id) {
+		case KEE_P_IMPORT_WIN:
+			o->win = g_value_get_object(value);
+			break;
+		default:
+			G_OBJECT_WARN_INVALID_PROPERTY_ID(oo, property_id, pspec);
+	}
+
+}
 
 static void kee_import_class_init(KeeImportClass *kls) {
 	GObjectClass *o = G_OBJECT_CLASS(kls);
@@ -52,6 +69,17 @@ static void kee_import_class_init(KeeImportClass *kls) {
 			1,
 			G_TYPE_STRING
 	);
+
+	o->set_property = kee_import_set_property;
+
+	kee_props[KEE_P_IMPORT_WIN] = g_param_spec_object(
+			"window",
+			"Window",
+			"Application window",
+			KEE_TYPE_MENU,
+			G_PARAM_WRITABLE);
+
+	g_object_class_install_properties(o, KEE_N_IMPORT_PROPS, kee_props);
 }
 
 static void kee_import_init(KeeImport *o) {
@@ -59,6 +87,176 @@ static void kee_import_init(KeeImport *o) {
 	kee_import_refresh(o);
 	memset(&o->scan, 0, sizeof(struct kee_scanner));
 	o->stack = GTK_STACK(gtk_stack_new());
+}
+
+static void kee_import_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, KeeImport *import) {
+	GtkLabel *label;
+	char *s;
+	
+	label = gtk_drop_down_get_selected_item(chooser);
+	s = g_object_get_data(G_OBJECT(label), "devpath");
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "dropdown changed: %s -> %s", spec->name, s);
+
+	kee_import_scanchange(import, s);
+}
+
+static void kee_import_handle_import_data_focus(KeeImport *o, const char *data, GtkStack *stack) {
+	gtk_stack_set_visible_child_name(stack, KEE_ACT_SCAN_TEXT);
+}
+
+static void kee_import_handle_import_data_text(KeeImport *o, const char *data, GtkTextBuffer *buf) {
+	gtk_text_buffer_set_text(buf, data, strlen(data));
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import data %s", data);
+}
+
+static void kee_import_handle_import_data_accept(KeeImport *o, const char *data, GActionMap *am) {
+	GAction *act;
+
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import accept %s", data);
+
+	act = g_action_map_lookup_action(am, "import_data_accept");
+	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+}
+
+static void kee_import_handle_import_data_check(KeeImport *o, const char *data, GtkActionable *act) {
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "accept click");
+}
+static void kee_import_handle_scan_select(GActionGroup *act, char *action_name, gpointer user_data, GtkStack *stack) {
+	GVariant *v;
+	const char *s;
+
+	v = g_action_group_get_action_state(act, action_name);
+	s = g_variant_get_string(v, NULL);
+	gtk_stack_set_visible_child_name(stack, s);
+}
+
+static GtkWidget* kee_import_build_scan_footer(KeeImport *import, GtkStack *stack) {
+	GtkWidget *foot;
+	GtkWidget *butt;
+	GtkToggleButton *butt_prev;
+	GActionGroup *ag;
+	GAction *act;
+	GVariant *v;
+
+	foot = gtk_action_bar_new();
+
+	v = g_variant_new_string("");
+	ag = G_ACTION_GROUP(g_simple_action_group_new());
+	act = G_ACTION(g_simple_action_new_stateful("src", G_VARIANT_TYPE_STRING, v));
+	g_action_map_add_action(G_ACTION_MAP(ag), act);
+
+	v = g_variant_new_string(KEE_ACT_SCAN_QR);
+	butt = gtk_toggle_button_new();
+	gtk_button_set_icon_name(GTK_BUTTON(butt), "insert-image");
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
+	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(butt), true);
+
+	butt_prev = GTK_TOGGLE_BUTTON(butt);
+	v = g_variant_new_string(KEE_ACT_SCAN_TEXT);
+	butt = gtk_toggle_button_new();
+	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
+	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-new");
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
+	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
+
+	butt_prev = GTK_TOGGLE_BUTTON(butt);
+	v = g_variant_new_string(KEE_ACT_SCAN_FILE);
+	butt = gtk_toggle_button_new();
+	gtk_toggle_button_set_group(GTK_TOGGLE_BUTTON(butt), butt_prev);
+	gtk_button_set_icon_name(GTK_BUTTON(butt), "document-save");
+	gtk_action_bar_pack_start(GTK_ACTION_BAR(foot), butt);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "import.src");
+	gtk_actionable_set_action_target_value(GTK_ACTIONABLE(butt), v);
+
+	g_signal_connect(ag, "action-state-changed", G_CALLBACK(kee_import_handle_scan_select), stack);
+
+	gtk_widget_insert_action_group(foot, "import", ag);
+
+	return foot;
+}
+static GtkWidget* kee_import_build_scan_videochooser(KeeImport *o) {
+	GtkWidget *chooser;
+	GtkExpression *exp_label;
+
+	exp_label = gtk_property_expression_new(GTK_TYPE_LABEL, NULL, "label");
+
+	//camera_list = kee_import_get_camera_list(import);
+	chooser = gtk_drop_down_new(o->camera_list, exp_label);
+
+	g_signal_connect(chooser, "notify::selected-item", G_CALLBACK (kee_import_handle_camera_change), o);
+	return chooser;
+}
+
+static GtkWidget* kee_import_build_import_text(KeeImport *o, GtkStack *stack) {
+	GtkWidget *box;
+	GtkTextView *txt;
+	GtkWidget *butt;
+	GAction *act;
+	GtkApplication *gapp;
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+	gapp = gtk_window_get_application(GTK_WINDOW(o->win));
+
+	txt = GTK_TEXT_VIEW(gtk_text_view_new());
+	gtk_widget_set_vexpand(GTK_WIDGET(txt), true);
+	gtk_box_append(GTK_BOX(box), GTK_WIDGET(txt));
+
+	act = G_ACTION(g_simple_action_new("import_data_accept", NULL));
+	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
+	g_action_map_add_action(G_ACTION_MAP(gapp), act);
+
+	butt = gtk_button_new_with_label("import");
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "app.import_data_accept");
+	gtk_box_append(GTK_BOX(box), butt);
+
+	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_text), gtk_text_view_get_buffer(txt));
+	//g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import_data_accept), app); // replace with import
+	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_focus), stack);
+	//g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import_data_check), butt);
+
+	return box;
+}
+
+KeeImport* kee_import_new(KeeMenu *win) {
+	KeeImport *o;
+	GtkWidget *box_outer;
+	GtkWidget *box;
+	GtkWidget *widget;
+	GtkWidget *chooser;
+	GValue v; // = G_VALUE_INIT;
+
+	o = g_object_new(KEE_TYPE_IMPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
+
+	g_value_init(&v, G_TYPE_OBJECT);
+	g_value_set_object(&v, win);
+	g_object_set_property(G_OBJECT(o), "window", &v);
+
+	box_outer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+	chooser = kee_import_build_scan_videochooser(o);
+	gtk_box_append(GTK_BOX(box), chooser);
+
+	gtk_box_append(GTK_BOX(box), GTK_WIDGET(o));
+
+	gtk_stack_add_named(o->stack, box, KEE_ACT_SCAN_QR);
+
+	widget = kee_import_build_import_text(o, o->stack);
+	gtk_stack_add_named(o->stack, widget, KEE_ACT_SCAN_TEXT);
+
+	gtk_stack_set_visible_child_name(o->stack, KEE_ACT_SCAN_QR);
+
+	widget = kee_import_build_scan_footer(o, o->stack);
+
+	gtk_box_append(GTK_BOX(box_outer), GTK_WIDGET(o->stack));
+	gtk_box_append(GTK_BOX(box_outer), widget);
+
+	return box_outer;
 }
 
 static void kee_import_scanadd(KeeImport *o, GtkLabel *label) {
@@ -168,9 +366,9 @@ int kee_import_scanchange(KeeImport *o, const char *device) {
 	return ERR_OK;
 }
 
-GListModel* kee_import_get_camera_list(KeeImport *o) {
-	return o->camera_list;	
-}
+//GListModel* kee_import_get_camera_list(KeeImport *o) {
+//	return o->camera_list;	
+//}
 
 void kee_import_free(KeeImport *o) {
 	kee_camera_free(&o->camera_device);

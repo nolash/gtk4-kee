@@ -10,5 +10,6 @@
 #define KEE_W_UI_MENU_ACT_IMPORT "act_import"
 
 GtkWidget* header_setup(GtkApplication *gapp, KeeUicontext *uctx);
+GtkWidget* menu_button_setup(GObject *head, GtkApplication *gapp);
 
 #endif // _KEE_GTK_MENU_H
