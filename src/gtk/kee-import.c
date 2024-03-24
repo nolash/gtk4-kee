@@ -104,7 +104,6 @@ static void kee_import_handle_camera_change(GtkDropDown *chooser, GParamSpec *sp
 }
 
 static void kee_import_handle_import_data_focus(KeeImport *o, const char *data, GtkStack *stack) {
-	//gtk_stack_set_visible_child_name(stack, KEE_ACT_SCAN_TEXT);
 	gtk_widget_activate(o->toggler_text);
 }
 
@@ -126,8 +125,9 @@ static void kee_import_handle_import_data_accept(KeeImport *o, const char *data)
 }
 
 static void kee_import_handle_import_data_check(KeeImport *o, const char *data, GtkActionable *act) {
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "accept click");
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "checking import data");
 }
+
 static void kee_import_handle_scan_select(GActionGroup *act, char *action_name, gpointer user_data, GtkStack *stack) {
 	GVariant *v;
 	const char *s;
@@ -224,6 +224,7 @@ static GtkWidget* kee_import_build_import_text(KeeImport *o, GtkStack *stack) {
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_accept), NULL);
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_focus), stack);
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_check), butt);
+	g_signal_connect(butt, "clicked", G_CALLBACK(kee_import_handle_import_data_check), butt);
 
 	return box;
 }
