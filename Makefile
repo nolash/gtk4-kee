@@ -22,3 +22,7 @@ debug: gtk all
 
 test: gtk all
 	make -C src/gtk/tests
+
+testdata:
+	rm -vrf testdata_mdb
+	python testdata.py
