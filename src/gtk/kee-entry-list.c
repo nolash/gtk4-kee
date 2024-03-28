@@ -21,8 +21,6 @@ static void kee_entry_handle_setup(KeeEntryList* o, GtkListItem *item) {
 }
 
 static void kee_entry_handle_bind(KeeEntryList *o,  GtkListItem *item) {
-	GtkWidget *widget;
-	char *s;
 	KeeEntry *go;
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "entry list bind");

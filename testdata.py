@@ -11,12 +11,13 @@ import time
 import lmdb
 import varint
 
-FLAGS_RESULT = 1 << 0
-FLAGS_FIRST = 1 << 1
-FLAGS_CREDIT_DELTA_NEGATIVE = 1 << 2
-FLAGS_COLLATERAL_DELTA_NEGATIVE = 1 << 2
-FLAGS_SIGNER_IS_GIVER = 1 << 6
-FLAGS_BODY_STRING = 1 << 7
+SIGNS_ALICE_CREDIT_DELTA_NEGATIVE = 1 << 0
+SIGNS_BOB_CREDIT_DELTA_NEGATIVE = 1 << 1
+SIGNS_ALICE_COLLATERAL_DELTA_NEGATIVE = 1 << 2
+SIGNS_BOB_COLLATERAL_DELTA_NEGATIVE = 1 << 3
+
+FLAGS_SIGNER_IS_BOB = 1 << 0
+
 NOBODY = b'\x00' * 64
 NOSIG = b'\x00' * 65
 PFX_LEDGER_HEAD = b'\x01'
@@ -47,11 +48,15 @@ def to_absflag(v):
 
 class LedgerHead:
 
-    def __init__(self, body=NOBODY):
+    def __init__(self, alice_key=None, bob_key=None, body=NOBODY):
         self.uoa = "USD"
         self.uoa_decimals = 2
-        self.taker_pubkey_ref = b'\x00' * 64
-        self.giver_pubkey_ref = b'\x00' * 64
+        if alice_key == None:
+            alice_key = os.urandom(65)
+        self.alice_pubkey_ref = alice_key
+        if bob_key == None:
+            bob_key = os.urandom(65)
+        self.bob_pubkey_ref = bob_key
         self.body = body
 
 
@@ -68,10 +73,10 @@ class LedgerHead:
         b = varint.encode(self.uoa_decimals)
         self.__serialize_add(b, w)
 
-        b = self.taker_pubkey_ref
+        b = self.alice_pubkey_ref
         self.__serialize_add(b, w)
 
-        b = self.giver_pubkey_ref
+        b = self.bob_pubkey_ref
         self.__serialize_add(b, w)
 
         b = self.body
@@ -99,28 +104,38 @@ class LedgerEntry:
     def __init__(self, head, parent=None, body=NOBODY, signer=None):
         self.head = head
         self.flags = 0
+        self.signs = 0
         self.parent = parent
-        if self.parent != None:
-            self.flags |= FLAGS_FIRST
-        else:
-            self.parent = head
+        if self.parent == None:
+            self.parent = b'\x00' * 64
         self.timestamp = time.time_ns()
 
         self.body = body
 
         v = random.randint(self.credit_delta_min, self.credit_delta_max)
+        self.flags = v % 2
         (v, neg) = to_absflag(v)
         self.credit_delta = v
         if neg:
-            self.flags |= FLAGS_CREDIT_DELTA_NEGATIVE
+            if self.flags:
+                self.signs |= SIGNS_BOB_CREDIT_DELTA_NEGATIVE
+            else:
+                self.signs |= SIGNS_ALICE_CREDIT_DELTA_NEGATIVE
 
         v = random.randint(self.collateral_delta_min, self.collateral_delta_max)
+        self.response_value = v % 2
         (v, neg) = to_absflag(v)
         self.collateral_delta = v
         if neg:
-            self.flags |= FLAGS_COLLATERAL_DELTA_NEGATIVE
+            if self.flags:
+                self.signs |= SIGNS_BOB_COLLATERAL_DELTA_NEGATIVE
+            else:
+                self.signs |= SIGNS_ALICE_COLLATERAL_DELTA_NEGATIVE
 
-        self.signature = NOSIG
+        #self.request_signature = NOSIG
+        #self.response_signature = NOSIG
+        self.request_signature = os.urandom(65)
+        self.response_signature = os.urandom(65)
         self.signer = signer
 
 
@@ -140,21 +155,44 @@ class LedgerEntry:
         b = self.timestamp.to_bytes(8, byteorder='big')
         self.__serialize_add(b, w)
 
+        b = self.signs.to_bytes(1)
+        self.__serialize_add(b, w)
+
         realvalue = self.credit_delta
-        if (self.flags & FLAGS_CREDIT_DELTA_NEGATIVE):
-            realvalue *= -1
+        if self.flags & FLAGS_SIGNER_IS_BOB:
+            if (self.signs & SIGNS_BOB_CREDIT_DELTA_NEGATIVE):
+                realvalue *= -1
+        else:
+            if (self.signs & SIGNS_ALICE_CREDIT_DELTA_NEGATIVE):
+                realvalue *= -1
+
         logg.debug('encoding credit delta {}'.format(realvalue))
         b = varint.encode(self.credit_delta)
+        if self.flags:
+            self.__serialize_add(b'\x00', w)
         self.__serialize_add(b, w)
+        if not self.flags:
+            self.__serialize_add(b'\x00', w)
 
         logg.debug('encoding collateral delta {}'.format(self.collateral_delta))
         b = varint.encode(self.collateral_delta)
         self.__serialize_add(b, w)
 
+        if self.flags:
+            self.__serialize_add(b'\x00', w)
         self.__serialize_add(self.body, w)
+        if not self.flags:
+            self.__serialize_add(b'\x00', w)
 
-        if self.signer != None:
-            self.signature = self.signer(b)
+        #if self.signer != None:
+        #    self.signature = self.signer(b)
+
+        self.__serialize_add(self.request_signature, w)
+
+        b = self.response_value.to_bytes(1)
+        self.__serialize_add(b, w)
+        
+        self.__serialize_add(self.response_signature, w)
 
         return b
 
@@ -165,7 +203,7 @@ class LedgerEntry:
         r += PFX_LEDGER_ENTRY
         r += k
         ts = v[65:65+8]
-        logg.debug('ts {}: of {}'.format(ts.hex(), v.hex()))
+        #logg.debug('ts {}: of {}'.format(ts.hex(), v.hex()))
         r += ts
         return r
   

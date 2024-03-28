@@ -52,7 +52,6 @@ static guint kee_entry_store_get_n_items(GListModel *list) {
 static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 	KeeEntry *o;
 	KeeEntryStore *store;
-	char s;
 
 	o = g_object_new(KEE_TYPE_ENTRY, NULL);
 
@@ -76,7 +75,6 @@ static void kee_entry_store_iface_init(GListModelInterface *ifc) {
 /// \todo always scans from 0, inefficient
 /// \todo enum lookup states
 static int kee_entry_store_seek(KeeEntryStore *o, int idx) {
-	int c;
 	int r;
 	int i;
 	size_t key_len;

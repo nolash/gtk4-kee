@@ -178,10 +178,10 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 		return ERR_DB_NOMATCH;
 	}
 
-	*key = (char*)ctx->k.mv_data;
 	*key_len = ctx->k.mv_size;
-	*value = (char*)ctx->v.mv_data;
+	memcpy(*key, (char*)ctx->k.mv_data, *key_len);
 	*value_len = ctx->v.mv_size;
+	memcpy(*value, (char*)ctx->v.mv_data, *value_len);
 
 	return ERR_OK;
 
