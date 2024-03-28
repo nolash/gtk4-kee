@@ -210,19 +210,22 @@ if __name__ == '__main__':
     env = lmdb.open(d)
     dbi = env.open_db()
 
+    count_ledgers = os.environ.get('COUNT', '1')
+
     with env.begin(write=True) as tx:
-        c = random.randint(1, 20)
-        r = generate_ledger(entry_count=c)
+        for i in range(int(count_ledgers)):
+            c = random.randint(1, 20)
+            r = generate_ledger(entry_count=c)
 
-        v = r.pop(0)
+            v = r.pop(0)
 
-        z = v[0]
-        k = LedgerHead.to_key(v[0])
-        tx.put(k, v[1])
-
-        for v in r:
-            k = LedgerEntry.to_key(v[1], z)
+            z = v[0]
+            k = LedgerHead.to_key(v[0])
             tx.put(k, v[1])
+
+            for v in r:
+                k = LedgerEntry.to_key(v[1], z)
+                tx.put(k, v[1])
 
 
 #pfx = b'\x00\x00\x00'

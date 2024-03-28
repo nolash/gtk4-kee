@@ -3,10 +3,12 @@
 #include <lmdb.h>
 #include <gcrypt.h>
 #include <time.h>
+
 #include "db.h"
 #include "digest.h"
 #include "err.h"
 #include "endian.h"
+#include "debug.h"
 
 int db_connect(struct db_ctx *ctx, char *conn) {
 	int r;
@@ -21,6 +23,8 @@ int db_connect(struct db_ctx *ctx, char *conn) {
 	if (r) {
 		return ERR_FAIL;
 	}
+
+	debug_log(DEBUG_INFO, "db connected");
 
 	return ERR_OK;
 }
@@ -122,12 +126,13 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 		return ERR_DB_INVALID;
 	}
 
-	if (ctx->current_key == DbNoKey) {
-		if (ctx->started) {
-			mdb_cursor_close(ctx->crsr);
-			mdb_dbi_close(ctx->env, ctx->dbi);
-			mdb_txn_abort(ctx->tx);
-		}
+	//if (ctx->current_key == DbNoKey) {
+	if (!ctx->browsing) {
+//		if (ctx->started) {
+//			mdb_cursor_close(ctx->crsr);
+//			mdb_dbi_close(ctx->env, ctx->dbi);
+//			mdb_txn_abort(ctx->tx);
+//		}
 
 		r = mdb_txn_begin(ctx->env, NULL, MDB_RDONLY, &ctx->tx);
 		if (r) {
@@ -146,18 +151,20 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 
 		start[0] = (char)pfx;
 		ctx->k.mv_size = 1;
-		if (!ctx->browsing) {
-			if (*key != 0) {
-				memcpy(start+1, *key, *key_len);
-				ctx->k.mv_size += *key_len;
-			}
-		}
+//		if (!ctx->browsing) {
+//			if (*key != 0) {
+//				memcpy(start+1, *key, *key_len);
+//				ctx->k.mv_size += *key_len;
+//			}
+//		}
 		ctx->k.mv_data = start;
-	}
 
-	if (!ctx->browsing) {
-		r = mdb_cursor_get(ctx->crsr, &ctx->k, &ctx->v, MDB_SET_RANGE);
 		ctx->browsing = 1;
+		if (*key != 0) {
+			memcpy(ctx->k.mv_data, *key, *key_len);
+			ctx->k.mv_size += *key_len;
+		}
+		r = mdb_cursor_get(ctx->crsr, &ctx->k, &ctx->v, MDB_SET_RANGE);
 	} else {
 		r = mdb_cursor_get(ctx->crsr, &ctx->k, &ctx->v, MDB_NEXT_NODUP);
 	}
@@ -166,7 +173,8 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 	}
 	start[0] = (char)*((char*)ctx->k.mv_data);
 	if (start[0] != ctx->current_key) {
-		db_reset(ctx);
+		//db_reset(ctx);
+		ctx->browsing = 0;
 		return ERR_DB_NOMATCH;
 	}
 
@@ -181,5 +189,8 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 
 
 void db_reset(struct db_ctx *ctx) {
+	mdb_cursor_close(ctx->crsr);
+	mdb_dbi_close(ctx->env, ctx->dbi);
+	mdb_txn_abort(ctx->tx);
 	memset(ctx, 0, sizeof(struct db_ctx));
 }

@@ -25,7 +25,9 @@ enum DbKey {
 	/// Noop value, used for default value of a DbKey variable
 	DbNoKey = 0x00,
 	/// A credit item record
-	DbKeyCreditItem = 0x01,
+	DbKeyLedgerHead = 0x01,
+	/// A credit item record
+	DbKeyLedgerEntry = 0x02,
 	/// A reverse lookup record; resolves the content hash to the content entry in the database.
 	DbKeyReverse = 0xff,
 };
