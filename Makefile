@@ -20,8 +20,14 @@ run: gtk all
 debug: gtk all
 	G_DEBUG=3 G_MESSAGES_DEBUG=all ./src/gtk/a.out
 
-test: gtk all
-	make -C src/gtk/tests
+#test: gtk all test_src test_gtk
+test: test_src
+
+test_src: all
+	make -C src/tests test
+
+test_gtk: gtk all test_src 
+	make -C src/gtk/tests test
 
 testdata:
 	rm -vrf testdata_mdb

@@ -19,6 +19,7 @@ extern "C" {
 	 *
 	 */
 	int calculate_digest(const char *in, size_t in_len, char *out);
+	int calculate_digest_algo(const char *in, size_t in_len, char *out, enum gcry_md_algos algo);
 
 #ifdef __cplusplus
 }
