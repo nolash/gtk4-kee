@@ -51,6 +51,7 @@ int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len) {
 
 	r = clock_gettime(CLOCK_REALTIME, &ts);
 	if (r) {
+		free(buf);
 		return ERR_FAIL;
 	}
 	memcpy(rts, &ts.tv_sec, sizeof(ts.tv_sec));
@@ -60,6 +61,7 @@ int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len) {
 
 	e = gcry_md_open(&h, GCRY_MD_SHA256, 0);
 	if (e) {
+		free(buf);
 		return ERR_DIGESTFAIL;
 	}
 	gcry_md_write(h, data, data_len);
@@ -71,11 +73,13 @@ int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len) {
 
 	r = mdb_txn_begin(ctx->env, NULL, 0, &tx);
 	if (r) {
+		free(buf);
 		return ERR_FAIL;
 	}
 
 	r = mdb_dbi_open(tx, NULL, MDB_CREATE, &dbi);
 	if (r) {
+		free(buf);
 		return ERR_FAIL;
 	}
 
@@ -86,6 +90,7 @@ int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len) {
 
 	r = mdb_put(tx, dbi, &k, &v, 0);
 	if (r) {
+		free(buf);
 		return ERR_FAIL;
 	}
 
@@ -100,13 +105,16 @@ int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len) {
 
 	r = mdb_put(tx, dbi, &k, &v, 0);
 	if (r) {
+		free(buf);
 		return ERR_FAIL;
 	}
 
 	r = mdb_txn_commit(tx);
 	if (r) {
+		free(buf);
 		return ERR_FAIL;
 	}
+	free(buf);
 
 	return ERR_OK;
 
@@ -185,6 +193,11 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 
 	return ERR_OK;
 
+}
+
+
+void db_rewind(struct db_ctx *ctx) {
+	ctx->browsing = 0;
 }
 
 

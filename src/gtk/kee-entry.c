@@ -5,6 +5,7 @@
 #include "db.h"
 #include "err.h"
 #include "export.h"
+#include "hex.h"
 
 typedef struct {
 } KeeEntryPrivate;
@@ -19,7 +20,10 @@ struct _KeeEntry {
 	int state;
 	long long timestamp;
 	char mem[4096];
+	char header[1024];
 	char *unit_of_account;
+	char *alice;
+	char *bob;
 	char decimals;
 };
 
@@ -57,24 +61,45 @@ int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const ch
 	int r;
 	struct kee_import im;
 	size_t out_len;
+	size_t remaining;
+	char *p;
 
 	o->state = 1;
 	import_init(&im, data, data_len);
 
 	out_len = 4096;
+	remaining = out_len;
 	r = import_read(&im, o->unit_of_account, out_len);
-	*(o->unit_of_account + r) = 0;
+	p = o->unit_of_account + r;
+	*p = 0;
+	remaining -= (r + 1);
+	p += 1;
 
 	out_len = 1;
 	r = import_read(&im, &o->decimals, out_len);
 
+	out_len = remaining;
+	o->alice = p;
+	r = import_read(&im, o->alice, out_len);
+	remaining -= r;
+	p += r;
+
+	out_len = remaining;
+	o->bob = p;
+	r = import_read(&im, o->bob, out_len);
+
 	o->state = 0;
+
+	import_free(&im);
 
 	return ERR_OK;
 }
 
 void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	GtkWidget *widget;
+	size_t l;
+	char alice_hex[129];
+	char bob_hex[129];
 
 	if (o->state)  {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "entry must be loaded first");
@@ -82,7 +107,12 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	}
 
 	//widget = gtk_label_new(o->unit_of_account);
-	widget = gtk_label_new(o->unit_of_account);
+	l = 129;
+	bin_to_hex(o->alice, 64, alice_hex, &l);
+	l = 129;
+	bin_to_hex(o->bob, 64, bob_hex, &l);
+	sprintf(o->header, "[%s] %s -> %s", o->unit_of_account, alice_hex, bob_hex);
+	widget = gtk_label_new(o->header);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }

@@ -88,8 +88,10 @@ static int kee_entry_store_seek(KeeEntryStore *o, int idx) {
 	//direction = 0;
 	key_len = 9;
 	o->last_key = o->last;
+	memset(o->last_key, 0, key_len);
 	o->last_value = o->last_digest + 64;
 	*o->last_key = DbKeyLedgerHead;
+	o->last_value_length = 1024;
 	i = 0;
 	o->last_state = 2;
 	while (i <= idx) {
@@ -103,6 +105,7 @@ static int kee_entry_store_seek(KeeEntryStore *o, int idx) {
 		o->last_state = 1;
 		i++;
 	}
+	db_rewind(o->db);
 	return i;
 }
 
@@ -111,9 +114,9 @@ KeeEntryStore* kee_entry_store_new(struct db_ctx *db) {
 
 	o = g_object_new(KEE_TYPE_ENTRY_STORE, NULL);
 	o->db = db;
-	o->last_value_length = 1024;
 	o->last = calloc(2048, 1);
 	o->last_digest = o->last + DB_KEY_SIZE_LIMIT;
+	o->last_value_length = 1024;
 	
 	o->last_count = kee_entry_store_seek(o, INT_MAX);
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "max key index is: %d", o->last_idx - 1);
@@ -122,5 +125,6 @@ KeeEntryStore* kee_entry_store_new(struct db_ctx *db) {
 
 void kee_entry_store_finalize(KeeEntryStore *o) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "freeing entry store");
+	free(o->last);
 	free(o->last);
 }
