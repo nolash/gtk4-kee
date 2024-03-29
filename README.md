@@ -7,10 +7,11 @@ It will maintain bi-lateral mutual channels of credit and collateral. Each chang
 
 ## Dependencies
 
-Below are the library versions of the [archlinux](https://archlinux.org/) component packages I am using for dependencies while working on my own system.
+Below are the library versions of the [archlinux](https://archlinux.org/) component packages I am using for dependencies and tooling while working on my own system.
 
 | package | version |
 |---|---|
+| gcc | 13.2.1 |
 | gst-plugins-bad  | 1.24.0 |
 | gstreamer | 1.24.0 |
 | gtk4 | 4.12.5 |
@@ -18,10 +19,11 @@ Below are the library versions of the [archlinux](https://archlinux.org/) compon
 | libgcrypt | 1.10.3 |
 | libxdg-basedir | 1.2.3 |
 | lmdb | 0.9.32 |
+| rustup | 1.26.0 |
 | zbar | 0.23.90 |
 | zlib | 1.3.1 |
 
-The `gst-plugins-bad` provides [libgstzbar](https://gstreamer.freedesktop.org/documentation/zbar/index.html?gi-language=c#zbar-page), used as part of QR scanning.
+The `gst-plugins-bad` provides [libgstzbar.so](https://gstreamer.freedesktop.org/documentation/zbar/index.html?gi-language=c#zbar-page), used as part of QR scanning.
 
 
 ### Other sources
@@ -71,13 +73,13 @@ make install DESTDIR=.
 Your include path, relative to the repository root directory, will be `<repo_root>/build/usr/include/lib64` and your ld path will be `build/usr/include/lib64`.
 
 
-### gstgtk4 (gst-plugin-rs)
+### libgstgtk4 (gst-plugin-rs)
 
 The `gtk4` part of the code uses the `gtk4paintablesink` gstreamer plugin (for QR scanning). It is part of the `gst-plugins-rs` source above, built as the `libgstgtk4.so` shared library file.
 
 The specific package to build is `gst-plugin-gtk4`, which builds the plugin at version `0.9.13`.
 
-Note that building requires unstable permissions. I was able to build with toolchain `1.75-x86_64-unknown-linux-gnu`.
+I was able to build with toolchain `1.75-x86_64-unknown-linux-gnu`.
 
 ```
 rustup default 1.75.0
@@ -113,3 +115,4 @@ Here is some background if you need:
 * [Difference between LD_LIBRARY_PATH and LIBRARY_PATH](https://www.baeldung.com/linux/library_path-vs-ld_library_path)
 * [PKG_CONFIG_PATH](https://man.archlinux.org/man/pkgconf.1.en#ENVIRONMENT)
 * [GST_PLUGIN_PATH](https://gstreamer.freedesktop.org/documentation/gstreamer/running.html?gi-language=c)
+* [cargo-c](https://github.com/lu-zero/cargo-c)
