@@ -1,6 +1,6 @@
 src/gtk/*.ui
 **/*.o
-testdata_mdb
+testdata_*
 *\~
 **/test_*
 **/*.out

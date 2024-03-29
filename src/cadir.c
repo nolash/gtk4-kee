@@ -2,21 +2,24 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "cadir.h"
+#include "cadiz.h"
 #include "hex.h"
 
 
-/// \todo check hex leftover space
-int cadir_get(const char *dirpath, enum CadirKeyType key_type, const char *key, char *out, size_t *out_len) {
+/// \todo replace with fadfada
+//int cadiz_resolve(const char *locator, enum CadizKeyType key_type, const char *key, char *out, size_t *out_len) {
+int cadiz_resolve(Cadiz *cadiz, const char *key, char *out, size_t *out_len) {
 	int r;
 	int c;
 	int fd;
 	char *p;
 	char path[1024];
 	size_t l;
+	const char *locator = cadiz->locator;
+	enum CadizKeyType key_type = cadiz->key_type;
 
-	strcpy(path, dirpath);
-	c = strlen(dirpath) - 1;
+	strcpy(path, locator);
+	c = strlen(locator) - 1;
 	p = path + c;
 	if (*p != '/') {
 		*(p+1) = '/';

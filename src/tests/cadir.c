@@ -1,7 +1,7 @@
 #include <gcrypt.h>
 
 #include "digest.h"
-#include "cadir.h"
+#include "cadiz.h"
 
 int main(int argc, char **argv) {
 	int r;
@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
 	calculate_digest_algo(data, 3, digest, GCRY_MD_SHA512);
 
 	l = 256;
-	r = cadir_get("./testdata_resource", CADIR_KEYTYPE_ANY, digest, result, &l);
+	r = cadiz_resolve("./testdata_resource", CADIZ_KEY_TYPE_ANY, digest, result, &l);
 	if (r) {
 		return 1;
 	}

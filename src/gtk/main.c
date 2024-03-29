@@ -8,6 +8,7 @@
 #include "settings.h"
 #include "context.h"
 #include "kee-entry-store.h"
+#include "cadir.h"
 
 
 //static void state_log(KeeUicontext *uctx, char state_hint, kee_state_t *new_state, kee_state_t *old_state) {
@@ -46,8 +47,10 @@ int main(int argc, char **argv) {
 	if (r) {
 		return r;
 	}
+
 	db_connect(&ctx.db, "./testdata_mdb");
 	store = kee_entry_store_new(&ctx.db);
+	kee_entry_store_set_resolve(store, "./testdata_resource");
 
 	g_signal_connect (gapp, "startup", G_CALLBACK (startup), &ctx);
 	g_signal_connect (gapp, "activate", G_CALLBACK (activate), store);

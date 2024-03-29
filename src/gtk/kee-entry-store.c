@@ -6,6 +6,7 @@
 #include "kee-entry-store.h"
 #include "kee-entry.h"
 #include "err.h"
+#include "cadiz.h"
 
 
 typedef struct {
@@ -22,20 +23,30 @@ struct _KeeEntryStore {
 	char *last_digest;
 	char *last_value;
 	size_t last_value_length;
+	struct Cadiz resolver;
 };
 
 
 static void kee_entry_store_iface_init(GListModelInterface *ifc);
 G_DEFINE_TYPE_WITH_CODE(KeeEntryStore, kee_entry_store, G_TYPE_OBJECT, G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL, kee_entry_store_iface_init));
 
-// \todo add construct pointer for db
-static void kee_entry_store_class_init(KeeEntryStoreClass *kls) {
-}
-
-
+static void kee_entry_store_finalize(GObject *o);
 static int kee_entry_store_seek(KeeEntryStore *o, int idx);
 
+// \todo add construct pointer for db
+static void kee_entry_store_class_init(KeeEntryStoreClass *kls) {
+	GObjectClass *oc = G_OBJECT_CLASS(kls);
+
+	oc->finalize = kee_entry_store_finalize;
+}
+
 static void kee_entry_store_init(KeeEntryStore *o) {
+	o->resolver.key_type = CADIZ_KEY_TYPE_ANY;
+	o->resolver.locator = malloc(1024);
+}
+
+void kee_entry_store_set_resolve(KeeEntryStore *o, const char *locator) {
+	strcpy(o->resolver.locator, locator);
 }
 
 
@@ -53,10 +64,9 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 	KeeEntry *o;
 	KeeEntryStore *store;
 
-	o = g_object_new(KEE_TYPE_ENTRY, NULL);
-
 	//kee_entry_load(o, list->db);
 	store = KEE_ENTRY_STORE(list);
+	o = g_object_new(KEE_TYPE_ENTRY, NULL);
 	kee_entry_store_seek(store, index);
 	kee_entry_deserialize(o, store->last_key, 9, store->last_value, store->last_value_length);
 
@@ -65,6 +75,7 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 
 	return o;
 }
+
 
 static void kee_entry_store_iface_init(GListModelInterface *ifc) {
 	ifc->get_item_type = kee_entry_store_get_item_type;
@@ -123,8 +134,9 @@ KeeEntryStore* kee_entry_store_new(struct db_ctx *db) {
 	return o;
 }
 
-void kee_entry_store_finalize(KeeEntryStore *o) {
+void kee_entry_store_finalize(GObject *go) {
+	KeeEntryStore *o = KEE_ENTRY_STORE(go);
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "freeing entry store");
-	free(o->last);
+	free(o->resolver.locator);
 	free(o->last);
 }

@@ -5,6 +5,7 @@
 #include <gtk/gtk.h>
 
 #include "db.h"
+#include "cadiz.h"
 
 G_BEGIN_DECLS
 
@@ -19,6 +20,7 @@ G_DECLARE_FINAL_TYPE(KeeEntry, kee_entry, KEE, ENTRY, GtkBox);
 int kee_entry_load(KeeEntry *o, struct db_ctx *db, const char *id);
 int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const char *data, size_t data_len);
 void kee_entry_apply_list_item_widget(KeeEntry *o);
+KeeEntry* kee_entry_new(struct Cadiz *resolver);
 
 G_END_DECLS
 

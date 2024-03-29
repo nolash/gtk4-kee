@@ -1,10 +1,9 @@
 #ifndef _CADIR_H
 #define _CADIR_H
 
-enum CadirKeyType {
-	CADIR_KEYTYPE_ANY,
-};
+#include "cadiz.h"
 
-int cadir_get(const char *dirpath, enum CadirKeyType key_type, const char *key, char *out, size_t *out_len);
+typedef struct Cadiz Cadir;
+
 
 #endif // _CADIR_H

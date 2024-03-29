@@ -6,6 +6,8 @@
 #include "err.h"
 #include "export.h"
 #include "hex.h"
+#include "cadiz.h"
+
 
 typedef struct {
 } KeeEntryPrivate;
@@ -24,7 +26,9 @@ struct _KeeEntry {
 	char *unit_of_account;
 	char *alice;
 	char *bob;
+	char *body;
 	char decimals;
+	struct Cadiz *resolver;
 };
 
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
@@ -49,8 +53,15 @@ static void kee_entry_init(KeeEntry *o) {
 	o->current_id = (char*)o->mem;
 	o->unit_of_account = (char*)((o->mem)+64);
 	o->state = 2;
+	o->resolver = NULL;
 }
 
+KeeEntry* kee_entry_new(struct Cadiz *resolver) {
+	KeeEntry *o;
+	o = KEE_ENTRY(g_object_new(KEE_TYPE_ENTRY, NULL));
+	o->resolver = resolver;	
+	return o;
+}
 
 int kee_entry_load(KeeEntry *o, struct db_ctx *db, const char *id) {
 	return ERR_OK;
@@ -88,6 +99,10 @@ int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const ch
 	o->bob = p;
 	r = import_read(&im, o->bob, out_len);
 
+	out_len = remaining;
+	o->body = p;
+	r = import_read(&im, o->body, out_len);
+
 	o->state = 0;
 
 	import_free(&im);
@@ -98,8 +113,8 @@ int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const ch
 void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	GtkWidget *widget;
 	size_t l;
-	char alice_hex[129];
-	char bob_hex[129];
+	unsigned char alice_hex[129];
+	unsigned char bob_hex[129];
 
 	if (o->state)  {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "entry must be loaded first");
@@ -108,9 +123,9 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 
 	//widget = gtk_label_new(o->unit_of_account);
 	l = 129;
-	bin_to_hex(o->alice, 64, alice_hex, &l);
+	bin_to_hex((unsigned char*)o->alice, 64, alice_hex, &l);
 	l = 129;
-	bin_to_hex(o->bob, 64, bob_hex, &l);
+	bin_to_hex((unsigned char*)o->bob, 64, bob_hex, &l);
 	sprintf(o->header, "[%s] %s -> %s", o->unit_of_account, alice_hex, bob_hex);
 	widget = gtk_label_new(o->header);
 	gtk_box_append(GTK_BOX(o), widget);

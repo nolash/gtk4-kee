@@ -7,6 +7,9 @@ import sys
 import io
 import random
 import time
+import email.message
+from faker import Faker
+from faker.providers import lorem
 
 import lmdb
 import varint
@@ -25,6 +28,9 @@ PFX_LEDGER_ENTRY = b'\x02'
 
 logging.basicConfig(level=logging.DEBUG)
 logg = logging.getLogger()
+
+fake = Faker()
+fake.add_provider(lorem)
 
 
 def db_init(d):
@@ -46,6 +52,31 @@ def to_absflag(v):
     return (abs(v), flag,)
 
 
+class LedgerContent(email.message.EmailMessage):
+
+    def __init__(self):
+        super(LedgerContent, self).__init__()
+        self.set_default_type("text/plain")
+        self.add_header("Subject", fake.sentence())
+        self.set_content(fake.paragraph())
+
+
+    def kv(self):
+        b = self.as_bytes()
+        h = hashlib.new("sha512")
+        h.update(b)
+        z = h.digest()
+        return (z, b,)
+
+
+class LedgerHeadContent(LedgerContent):
+    pass
+
+
+class LedgerEntryContent(LedgerContent):
+    pass
+
+
 class LedgerHead:
 
     def __init__(self, alice_key=None, bob_key=None, body=NOBODY):
@@ -57,7 +88,7 @@ class LedgerHead:
         if bob_key == None:
             bob_key = os.urandom(65)
         self.bob_pubkey_ref = bob_key
-        self.body = body
+        self.body = LedgerHeadContent()
 
 
     def __serialize_add(self, b, w):
@@ -66,7 +97,15 @@ class LedgerHead:
         w.write(b)
 
 
-    def serialize(self, w=sys.stdout.buffer):
+    def __data_add(self, data_dir, k, v):
+        fp = os.path.join(data_dir, k.hex())
+        f = open(fp, 'wb')
+        logg.info("fp {}".format(fp))
+        f.write(v)
+        f.close()
+
+
+    def serialize(self, data_dir, w=sys.stdout.buffer):
         b = self.uoa.encode('utf-8')
         self.__serialize_add(b, w)
 
@@ -79,8 +118,9 @@ class LedgerHead:
         b = self.bob_pubkey_ref
         self.__serialize_add(b, w)
 
-        b = self.body
-        self.__serialize_add(b, w)
+        (k, b) = self.body.kv()
+        self.__data_add(data_dir, k, b)
+        self.__serialize_add(k, w)
 
 
     @staticmethod
@@ -110,7 +150,7 @@ class LedgerEntry:
             self.parent = b'\x00' * 64
         self.timestamp = time.time_ns()
 
-        self.body = body
+        self.body = LedgerEntryContent()
 
         v = random.randint(self.credit_delta_min, self.credit_delta_max)
         self.flags = v % 2
@@ -145,7 +185,15 @@ class LedgerEntry:
         w.write(b)
 
 
-    def serialize(self, w=sys.stdout.buffer):
+    def __data_add(self, data_dir, k, v):
+        fp = os.path.join(data_dir, k.hex())
+        f = open(fp, 'wb')
+        logg.info("fp {}".format(fp))
+        f.write(v)
+        f.close()
+
+
+    def serialize(self, data_dir, w=sys.stdout.buffer):
         b = self.flags.to_bytes(1)
         self.__serialize_add(b, w)
         
@@ -174,18 +222,22 @@ class LedgerEntry:
         if not self.flags:
             self.__serialize_add(b'\x00', w)
 
-        logg.debug('encoding collateral delta {}'.format(self.collateral_delta))
-        b = varint.encode(self.collateral_delta)
-        self.__serialize_add(b, w)
+        
 
         if self.flags:
             self.__serialize_add(b'\x00', w)
-        self.__serialize_add(self.body, w)
+        logg.debug('encoding collateral delta {}'.format(self.collateral_delta))
+        b = varint.encode(self.collateral_delta)
+        self.__serialize_add(b, w)
         if not self.flags:
             self.__serialize_add(b'\x00', w)
 
         #if self.signer != None:
         #    self.signature = self.signer(b)
+
+        (k, b) = self.body.kv()
+        self.__data_add(data_dir, k, b)
+        self.__serialize_add(k, w)
 
         self.__serialize_add(self.request_signature, w)
 
@@ -208,10 +260,10 @@ class LedgerEntry:
         return r
   
 
-def generate_entry(head, parent):
+def generate_entry(data_dir, head, parent):
     o = LedgerEntry(head, parent=parent)
     w = io.BytesIO()
-    r = o.serialize(w=w)
+    r = o.serialize(data_dir, w=w)
     h = hashlib.new('sha512')
     b = w.getvalue()
     h.update(b)
@@ -219,11 +271,11 @@ def generate_entry(head, parent):
     return (z, b,)
 
 
-def generate_ledger(entry_count=3):
+def generate_ledger(data_dir, entry_count=3):
     r = []
     o = LedgerHead()
     w = io.BytesIO()
-    o.serialize(w=w)
+    o.serialize(data_dir, w=w)
     h = hashlib.new('sha512')
     b = w.getvalue()
     h.update(b)
@@ -233,7 +285,7 @@ def generate_ledger(entry_count=3):
     k = z
     parent = None
     for i in range(entry_count):
-        v = generate_entry(k, parent=parent)
+        v = generate_entry(data_dir, k, parent=parent)
         # \todo generate  key value already here
         parent = v[0]
         r.append(v)
@@ -243,17 +295,25 @@ def generate_ledger(entry_count=3):
 
 if __name__ == '__main__':
     d = os.path.dirname(__file__)
+    data_dir = os.path.join(d, 'testdata_resource')
+    try:
+        shutil.rmtree(data_dir)
+    except FileNotFoundError:
+        pass
+    os.makedirs(data_dir)
+
     d = db_init(d)
 
     env = lmdb.open(d)
     dbi = env.open_db()
+
 
     count_ledgers = os.environ.get('COUNT', '1')
 
     with env.begin(write=True) as tx:
         for i in range(int(count_ledgers)):
             c = random.randint(1, 20)
-            r = generate_ledger(entry_count=c)
+            r = generate_ledger(data_dir, entry_count=c)
 
             v = r.pop(0)
 
