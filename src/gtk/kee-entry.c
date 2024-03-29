@@ -103,6 +103,10 @@ int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const ch
 	o->body = p;
 	r = import_read(&im, o->body, out_len);
 
+	if (o->resolver) {
+		r = cadiz_resolve(o->resolver, o->body, o->body, &out_len);
+	}
+
 	o->state = 0;
 
 	import_free(&im);

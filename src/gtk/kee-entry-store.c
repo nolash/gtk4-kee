@@ -66,7 +66,7 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 
 	//kee_entry_load(o, list->db);
 	store = KEE_ENTRY_STORE(list);
-	o = g_object_new(KEE_TYPE_ENTRY, NULL);
+	o = kee_entry_new(&store->resolver);
 	kee_entry_store_seek(store, index);
 	kee_entry_deserialize(o, store->last_key, 9, store->last_value, store->last_value_length);
 
