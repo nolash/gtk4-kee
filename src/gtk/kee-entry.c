@@ -1,6 +1,8 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
+#include "cmime.h"
+
 #include "kee-entry.h"
 #include "db.h"
 #include "err.h"
@@ -27,6 +29,7 @@ struct _KeeEntry {
 	char *alice;
 	char *bob;
 	char *body;
+	char *subject;
 	char decimals;
 	struct Cadiz *resolver;
 };
@@ -54,6 +57,7 @@ static void kee_entry_init(KeeEntry *o) {
 	o->unit_of_account = (char*)((o->mem)+64);
 	o->state = 2;
 	o->resolver = NULL;
+	o->subject = NULL;
 }
 
 KeeEntry* kee_entry_new(struct Cadiz *resolver) {
@@ -68,12 +72,15 @@ int kee_entry_load(KeeEntry *o, struct db_ctx *db, const char *id) {
 }
 
 /// \todo enum state
+/// \todo separate message rsolve and parse in separate function
 int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const char *data, size_t data_len) {
 	int r;
 	struct kee_import im;
 	size_t out_len;
+	size_t t;
 	size_t remaining;
 	char *p;
+	CMimeMessage_T *msg;
 
 	o->state = 1;
 	import_init(&im, data, data_len);
@@ -104,7 +111,21 @@ int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const ch
 	r = import_read(&im, o->body, out_len);
 
 	if (o->resolver) {
+		t = out_len;
 		r = cadiz_resolve(o->resolver, o->body, o->body, &out_len);
+		if (!r) {
+			msg = cmime_message_new();
+			o->subject = o->body + out_len;
+			r = cmime_message_from_string(&msg, o->body, 0);
+			if (!r) {
+				o->subject = cmime_message_get_subject(msg);
+				o->subject = cmime_string_strip(o->subject);
+				out_len += strlen(o->subject) + 1;
+			}
+			remaining -= out_len;
+		} else {
+			remaining -= t;
+		}
 	}
 
 	o->state = 0;
@@ -131,7 +152,9 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	l = 129;
 	bin_to_hex((unsigned char*)o->bob, 64, bob_hex, &l);
 	sprintf(o->header, "[%s] %s -> %s", o->unit_of_account, alice_hex, bob_hex);
-	widget = gtk_label_new(o->header);
+	//widget = gtk_label_new(o->header);
+	//gtk_box_append(GTK_BOX(o), widget);
+	widget = gtk_label_new(o->subject);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }

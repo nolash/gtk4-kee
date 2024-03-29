@@ -1,8 +1,10 @@
 OBJS := $(patsubst %.c,%.o,$(filter-out main.c,$(wildcard *.c)))
-LINKOBJS := $(wildcard ../*.o) $(OBJS) ../aux/varint/varint.o
-INCLUDES :=  -I..
-CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0` $(INCLUDES) -g3 -Wall
-LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 
+LINKOBJS := $(wildcard ../*.o) $(OBJS)
+INCLUDES :=  -I.. -I../aux/include
+#CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0 libcmime` $(INCLUDES) -g3 -Wall
+CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0 ` $(INCLUDES) -g3 -Wall
+#LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0 libcmime` -lb64
+LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -lcmime -lvarint
 LDFLAGS += $(LIBS) 
 
 all: resource $(OBJS)

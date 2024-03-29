@@ -4,3 +4,4 @@ testdata_*
 *\~
 **/test_*
 **/*.out
+src/aux/include
