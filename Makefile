@@ -32,3 +32,6 @@ test_gtk: gtk all test_src
 testdata:
 	rm -vrf testdata_mdb
 	python testdata.py
+
+doc:
+	pandoc -fgfm -tplain README.md > README
