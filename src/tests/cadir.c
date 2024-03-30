@@ -9,10 +9,12 @@ int main(int argc, char **argv) {
 	char digest[64];
 	char result[256];
 	size_t l;
+	Cadiz cadiz;
 	calculate_digest_algo(data, 3, digest, GCRY_MD_SHA512);
 
 	l = 256;
-	r = cadiz_resolve("./testdata_resource", CADIZ_KEY_TYPE_ANY, digest, result, &l);
+	cadiz.locator = "./testdata_resource";
+	r = cadiz_resolve(&cadiz, digest, result, &l);
 	if (r) {
 		return 1;
 	}

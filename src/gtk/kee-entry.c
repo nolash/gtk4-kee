@@ -158,3 +158,20 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }
+
+void kee_entry_apply_display_widget(KeeEntry *o) {
+	GtkWidget *widget;
+
+	widget = gtk_label_new(o->subject);
+	gtk_box_append(GTK_BOX(o), widget);
+	return;
+}
+
+
+void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
+	KeeEntry *o;
+
+	target->resolver = orig->resolver;
+	target->subject = orig->subject;
+	return target;
+}

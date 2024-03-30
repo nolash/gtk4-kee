@@ -58,7 +58,7 @@ void ui_build(GtkApplication *app, KeeEntryStore *store) {
 	kee_menu_add(win, "unlock", widget);
 	g_signal_connect (widget, "unlock", G_CALLBACK(ui_handle_unlock), win);
 
-	widget = kee_entry_list_new(G_LIST_MODEL(store));
+	widget = kee_entry_list_new(G_LIST_MODEL(store), win);
 	kee_menu_add(win, "view", widget);
 	
 	kee_menu_next(win, "view");
@@ -66,6 +66,9 @@ void ui_build(GtkApplication *app, KeeEntryStore *store) {
 
 	import = kee_import_new(win);
 	kee_menu_add(win, "import", GTK_WIDGET(import));
+
+	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	kee_menu_add(win, "entry", widget);
 
 	gtk_window_present(GTK_WINDOW (win));
 }

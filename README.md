@@ -102,7 +102,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lash/src/build/varint.c/0.1.0:/hom
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64/pkgconfig
 export C_INCLUDE_PATH=$C_INCLUDE_PATH:/home/lash/src/build/varint.c/0.1.0:/home/lash/src/build/libcmime/0.2.2/build/usr/local/include
 
-make debug
+make run
 
 set +x
 ```

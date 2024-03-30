@@ -20,7 +20,7 @@ G_DECLARE_FINAL_TYPE(KeeMenu, kee_menu, KEE, MENU, GtkApplicationWindow);
 
 KeeMenu* kee_menu_new(GtkApplication *app);
 int kee_menu_add(KeeMenu *o, const char *k, GtkWidget *v);
-int kee_menu_next(KeeMenu *o, const char *k);
+GtkWidget* kee_menu_next(KeeMenu *o, const char *k);
 int kee_menu_prev(KeeMenu *o);
 
 G_END_DECLS

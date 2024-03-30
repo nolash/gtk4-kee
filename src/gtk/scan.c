@@ -13,6 +13,7 @@ void scan_init(struct kee_scanner *scan, const char *device) {
 	strcpy(scan->device, device);
 }
 
+/// \todo determine caps from environment
 int scan_begin(struct kee_scanner *scan) {
 	GstElement *tee;
 	GstElement *zbar;

@@ -23,6 +23,10 @@ struct _KeeMenuClass {
 
 G_DEFINE_TYPE(KeeMenu, kee_menu, GTK_TYPE_APPLICATION_WINDOW);
 
+static void kee_menu_act_back(GAction *act, GVariant *param, KeeMenu *menu) {
+	kee_menu_prev(menu);
+}
+
 static void kee_menu_act_import(GAction *act, GVariant *param, GtkStack *stack) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "act impot");
 	gtk_stack_set_visible_child_name(stack, "import");
@@ -36,7 +40,10 @@ static void kee_menu_class_init(KeeMenuClass *kls) {
 }
 
 static void kee_menu_init(KeeMenu *o) {
-	memset(&o->nav, 0, sizeof(struct KeeNav));
+	//memset(&o->nav, 0, sizeof(struct KeeNav));
+	o->nav.c = 0;
+	o->nav.widgets[0] = 0;
+	o->nav.now = 0;
 	o->head = GTK_HEADER_BAR(gtk_header_bar_new());
 	o->stack = GTK_STACK(gtk_stack_new());
 }
@@ -54,9 +61,14 @@ KeeMenu* kee_menu_new(GtkApplication *gapp) {
 	butt = menu_button_setup(G_OBJECT(o->head), gapp);
 	gtk_header_bar_pack_end(GTK_HEADER_BAR(o->head), butt);
 
+	act = g_simple_action_new("back", NULL);
+	g_action_map_add_action(G_ACTION_MAP(o), G_ACTION(act));
+	g_simple_action_set_enabled(act, false);
 	butt = gtk_button_new_from_icon_name("go-previous");
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(o->head), butt);
-	gtk_widget_set_visible(butt, false);
+	//gtk_widget_set_visible(butt, false);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "win.back");
+	g_signal_connect(act, "activate", G_CALLBACK(kee_menu_act_back), o);
 
 	act = g_simple_action_new("import", NULL);
 	g_action_map_add_action(G_ACTION_MAP(o), G_ACTION(act));
@@ -86,6 +98,9 @@ static void kee_menu_header_update(KeeMenu *o, const char *label) {
 	} else if (!(strcmp(label, "view"))) {
 		act = g_action_map_lookup_action(G_ACTION_MAP(o), "import");
 		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+	} else if (!(strcmp(label, "entry"))) {
+		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 	} else if (!(strcmp(label, "import"))) {
 	} else {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "unknown nav label: %s", label);
@@ -97,13 +112,14 @@ int kee_menu_add(KeeMenu *o, const char *label, GtkWidget *widget) {
 	return ERR_OK;
 }
 
-int kee_menu_next(KeeMenu *o, const char *label) {
+GtkWidget* kee_menu_next(KeeMenu *o, const char *label) {
 	GtkWidget *widget;
 
 	widget = gtk_stack_get_child_by_name(o->stack, label);
 	kee_nav_push(&o->nav, widget);
 	gtk_stack_set_visible_child(o->stack, widget);
-	return ERR_OK;
+	kee_menu_header_update(o, label);
+	return widget;
 }
 
 int kee_menu_prev(KeeMenu *o) {
@@ -112,7 +128,6 @@ int kee_menu_prev(KeeMenu *o) {
 	kee_nav_pop(&o->nav);
 	gtk_stack_set_visible_child(o->stack, o->nav.now);
 	label = gtk_stack_get_visible_child_name(o->stack);
-	
 	kee_menu_header_update(o, label);
 
 	return ERR_OK;
