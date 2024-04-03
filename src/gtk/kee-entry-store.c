@@ -66,7 +66,8 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 
 	//kee_entry_load(o, list->db);
 	store = KEE_ENTRY_STORE(list);
-	o = kee_entry_new(&store->resolver);
+	o = kee_entry_new(store->db);
+	kee_entry_set_resolver(o, &store->resolver);
 	kee_entry_store_seek(store, index);
 	kee_entry_deserialize(o, store->last_key, 9, store->last_value, store->last_value_length);
 
@@ -110,6 +111,7 @@ static int kee_entry_store_seek(KeeEntryStore *o, int idx) {
 		o->last_value_length = 1024;
 		r = db_next(o->db, DbKeyLedgerHead, &o->last_key, &key_len, &o->last_value, &o->last_value_length);
 		if (r) {
+			db_rewind(o->db);
 			o->last_state = 0;
 			return i;
 		}
@@ -139,4 +141,9 @@ void kee_entry_store_finalize(GObject *go) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "freeing entry store");
 	free(o->resolver.locator);
 	free(o->last);
+}
+
+
+void kee_entry_store_foo(KeeEntryStore* o) {
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "foo db = %p", o->db);
 }

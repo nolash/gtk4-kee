@@ -142,6 +142,7 @@ class LedgerEntry:
     collateral_delta_max = 0
 
     def __init__(self, head, parent=None, body=NOBODY, signer=None):
+        random.seed(int(time.time_ns()))
         self.head = head
         self.flags = 0
         self.signs = 0
@@ -206,31 +207,32 @@ class LedgerEntry:
         b = self.signs.to_bytes(1)
         self.__serialize_add(b, w)
 
-        realvalue = self.credit_delta
-        if self.flags & FLAGS_SIGNER_IS_BOB:
-            if (self.signs & SIGNS_BOB_CREDIT_DELTA_NEGATIVE):
-                realvalue *= -1
-        else:
-            if (self.signs & SIGNS_ALICE_CREDIT_DELTA_NEGATIVE):
-                realvalue *= -1
+#        realvalue = self.credit_delta
+#        if self.flags & FLAGS_SIGNER_IS_BOB:
+#            if (self.signs & SIGNS_BOB_CREDIT_DELTA_NEGATIVE):
+#                realvalue *= -1
+#        else:
+#            if (self.signs & SIGNS_ALICE_CREDIT_DELTA_NEGATIVE):
+#                realvalue *= -1
 
-        logg.debug('encoding credit delta {}'.format(realvalue))
+    
         b = varint.encode(self.credit_delta)
         if self.flags:
-            self.__serialize_add(b'\x00', w)
+            self.__serialize_add(varint.encode(0), w)
         self.__serialize_add(b, w)
         if not self.flags:
-            self.__serialize_add(b'\x00', w)
-
+            self.__serialize_add(varint.encode(0), w)
         
 
-        if self.flags:
-            self.__serialize_add(b'\x00', w)
-        logg.debug('encoding collateral delta {}'.format(self.collateral_delta))
+        #if self.flags:
+        #    self.__serialize_add(b'\x00', w)
+        #logg.debug('encode flags {} credit {} collateral {}'.format(self.flags, self.credit_delta, self.collateral_delta))
         b = varint.encode(self.collateral_delta)
+        if not self.flags:
+            self.__serialize_add(varint.encode(0), w)
         self.__serialize_add(b, w)
         if not self.flags:
-            self.__serialize_add(b'\x00', w)
+            self.__serialize_add(varint.encode(0), w)
 
         #if self.signer != None:
         #    self.signature = self.signer(b)
@@ -254,8 +256,8 @@ class LedgerEntry:
         r = b''
         r += PFX_LEDGER_ENTRY
         r += k
-        ts = v[65:65+8]
-        #logg.debug('ts {}: of {}'.format(ts.hex(), v.hex()))
+        ts = v[68:68+8]
+        logg.debug('ts {}: of {}'.format(ts.hex(), v.hex()))
         r += ts
         return r
   

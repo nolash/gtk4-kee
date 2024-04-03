@@ -4,11 +4,12 @@
 #include <lmdb.h>
 
 #ifndef DB_KEY_SIZE_LIMIT
-#define DB_KEY_SIZE_LIMIT 64
+#define DB_KEY_SIZE_LIMIT 128
 #endif
 
 #ifndef DB_VALUE_SIZE_LIMIT 
-#define DB_VALUE_SIZE_LIMIT 1048576
+//#define DB_VALUE_SIZE_LIMIT 1048576
+#define DB_VALUE_SIZE_LIMIT 1024
 #endif
 
 enum DbErr {

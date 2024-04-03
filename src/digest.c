@@ -32,5 +32,3 @@ int calculate_digest_algo(const char *in, size_t in_len, char *out, enum gcry_md
 int calculate_digest(const char *in, size_t in_len, char *out) {
 	return calculate_digest_algo(in, in_len, out, GCRY_MD_NONE);
 }
-
-

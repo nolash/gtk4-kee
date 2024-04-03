@@ -136,11 +136,11 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 
 	//if (ctx->current_key == DbNoKey) {
 	if (!ctx->browsing) {
-//		if (ctx->started) {
-//			mdb_cursor_close(ctx->crsr);
-//			mdb_dbi_close(ctx->env, ctx->dbi);
-//			mdb_txn_abort(ctx->tx);
-//		}
+		if (ctx->started) {
+			mdb_cursor_close(ctx->crsr);
+			mdb_dbi_close(ctx->env, ctx->dbi);
+			mdb_txn_abort(ctx->tx);
+		}
 
 		r = mdb_txn_begin(ctx->env, NULL, MDB_RDONLY, &ctx->tx);
 		if (r) {
@@ -157,6 +157,7 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 		}
 		ctx->current_key = pfx;
 
+		/// \todo add to else case below
 		start[0] = (char)pfx;
 		ctx->k.mv_size = 1;
 //		if (!ctx->browsing) {
@@ -179,6 +180,7 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 	if (r) {
 		return ERR_DB_FAIL;
 	}
+	ctx->started = 1;
 	start[0] = (char)*((char*)ctx->k.mv_data);
 	if (start[0] != ctx->current_key) {
 		//db_reset(ctx);
