@@ -42,11 +42,12 @@ static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *me
 }
 
 
-static void kee_entry_list_handle_setup(KeeEntryList* o, GtkListItem *item) {
+/// \todo first member is probably not entry list
+static void kee_entry_list_handle_setup(GtkListItemFactory* o, GtkListItem *item) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "entry list setup");
 }
 
-static void kee_entry_list_handle_bind(KeeEntryList *o,  GtkListItem *item) {
+static void kee_entry_list_handle_bind(GtkListItemFactory *o,  GtkListItem *item) {
 	KeeEntry *go;
 	GtkGesture *ctrl;
 
@@ -58,7 +59,7 @@ static void kee_entry_list_handle_bind(KeeEntryList *o,  GtkListItem *item) {
 	//gtk_widget_add_controller(item, GtkEventController(ctrl));
 }
 
-static void kee_entry_list_handle_unbind(KeeEntryList* o,  GtkListItem *item) {
+static void kee_entry_list_handle_unbind(GtkListItemFactory* o,  GtkListItem *item) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "entry list unbind");
 	//GObject *go;
 	//go = gtk_list_item_get_child(item);
@@ -66,7 +67,7 @@ static void kee_entry_list_handle_unbind(KeeEntryList* o,  GtkListItem *item) {
 	//g_object_unref(go);
 }
 
-static void kee_entry_list_handle_teardown(KeeEntryList* o,  GtkListItem *item) {
+static void kee_entry_list_handle_teardown(GtkListItemFactory* o,  GtkListItem *item) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "entry list teardown");
 }
 

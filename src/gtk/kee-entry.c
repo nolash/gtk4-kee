@@ -23,6 +23,7 @@ struct _KeeEntryClass {
 	GtkWidget parent_class;
 };
 
+/// \todo factor out separate struct for listitem
 struct _KeeEntry {
 	GtkWidget parent;
 	int state;
@@ -41,6 +42,22 @@ struct _KeeEntry {
 };
 
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
+
+static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
+	GtkWidget *label;
+
+	label = gtk_label_new(NULL);
+	gtk_list_item_set_child(item, label);
+}
+
+static void kee_entry_handle_item_bind(GtkListItemFactory *o,  GtkListItem *item) {
+	GtkWidget *label;
+	GtkStringObject *s;
+
+	label = gtk_list_item_get_child(item);
+	s = gtk_list_item_get_item(item);
+	gtk_label_set_label(label, gtk_string_object_get_string(s));
+}
 
 /// \todo free reference to self from parent box necessary..?
 static void kee_entry_dispose(GObject *o) {
@@ -68,7 +85,7 @@ static void kee_entry_init(KeeEntry *o) {
 
 KeeEntry* kee_entry_new(struct db_ctx *db) {
 	KeeEntry *o;
-	o = KEE_ENTRY(g_object_new(KEE_TYPE_ENTRY, NULL));
+	o = KEE_ENTRY(g_object_new(KEE_TYPE_ENTRY, "orientation", GTK_ORIENTATION_VERTICAL, NULL));
 	o->db = db;
 	return o;
 }
@@ -83,7 +100,7 @@ void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 
 
 /// \todo replace with struct
-static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data_len) {
+static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data_len, char *out, size_t *out_len) {
 	GtkWidget *item;
 	int remaining;
 	int r;
@@ -92,7 +109,7 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	long long alice;
 	long long bob;
 	char mem[1024];
-	size_t out_len;
+	size_t in_len;
 	char *s = (char*)mem;
 	char *flags = s + 512;
 	char *parent = flags + 1;
@@ -108,36 +125,36 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	import_init(&im, data, data_len);
 
 	remaining = 1024;
-	out_len = remaining;
-	r = import_read(&im, flags, out_len);
+	in_len = remaining;
+	r = import_read(&im, flags, in_len);
 	if (!r) {
 		return ERR_FAIL;
 	}
 
 	remaining -= r;
-	out_len = remaining;
-	r = import_read(&im, parent, out_len);
+	in_len = remaining;
+	r = import_read(&im, parent, in_len);
 	if (!r) {
 		return ERR_FAIL;
 	}
 
 	remaining -= r;
-	out_len = remaining;
-	r = import_read(&im, ts, out_len);
+	in_len = remaining;
+	r = import_read(&im, ts, in_len);
 	if (!r) {
 		return ERR_FAIL;
 	}
 
 	remaining -= r;
-	out_len = remaining;
-	r = import_read(&im, signs, out_len);
+	in_len = remaining;
+	r = import_read(&im, signs, in_len);
 	if (!r) {
 		return ERR_FAIL;
 	}
 
 	remaining -= r;
-	out_len = remaining;
-	r = import_read(&im, alice_delta, out_len);
+	in_len = remaining;
+	r = import_read(&im, alice_delta, in_len);
 	if (!r) {
 		return ERR_FAIL;
 	}
@@ -146,7 +163,7 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	}
 
 	remaining -= r;
-	out_len = remaining;
+	in_len = remaining;
 	r = varint_read_u(alice_delta, r, &alice_u);
 	if (!r) {
 		return ERR_FAIL;
@@ -157,8 +174,8 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	}
 
 	remaining -= r;
-	out_len = remaining;
-	r = import_read(&im, bob_delta, out_len);
+	in_len = remaining;
+	r = import_read(&im, bob_delta, in_len);
 	if (!r) {
 		return ERR_FAIL;
 	}
@@ -167,7 +184,7 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	}
 
 	remaining -= r;
-	out_len = remaining;
+	in_len = remaining;
 	r = varint_read_u(bob_delta, r, &bob_u);
 	if (!r) {
 		return ERR_FAIL;
@@ -178,17 +195,18 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	}
 
 //	remaining -= r;
-//	out_len = remaining;
+//	in_len = remaining;
 //	r = varint_read_u(alice_delta, r, &alice);
 //	if (!r) {
 //		return ERR_FAIL;
 //	}
 
-	sprintf(s, "alice %i bob %i", alice, bob);
+	sprintf(out, "alice %i bob %i", alice, bob);
+	*out_len = strlen(out);
 
-	item = gtk_label_new(s);
-	gtk_widget_set_hexpand(item, true);
-	gtk_box_append(GTK_BOX(o), item);
+	//item = gtk_label_new(s);
+	//gtk_widget_set_hexpand(item, true);
+	//gtk_box_append(GTK_BOX(o), item);
 
 	return ERR_OK;
 }
@@ -287,7 +305,7 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	return;
 }
 
-static int kee_entry_load_items(KeeEntry *o) {
+static int kee_entry_load_items(KeeEntry *o, GtkStringList *list) {
 	GtkWidget *widget;
 	int r;
 	size_t key_len;
@@ -295,6 +313,8 @@ static int kee_entry_load_items(KeeEntry *o) {
 	char *last_key;
 	char *last_value;
 	size_t last_value_length;
+	char out[1024];
+	size_t out_len;
 
 	key_len = 73;
 	last_key = (char*)mem;
@@ -307,9 +327,13 @@ static int kee_entry_load_items(KeeEntry *o) {
 		if (r) {
 			break;
 		}
-		r = kee_entry_deserialize_item(o, last_value, last_value_length);
+		out_len = 1024;
+		r = kee_entry_deserialize_item(o, last_value, last_value_length, out, &out_len);
 		if (r) {
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "corrupt entry!");
+		} else {
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding entry: %s", out);
+			gtk_string_list_append(list, out);
 		}
 	}
 	free(mem);
@@ -317,9 +341,23 @@ static int kee_entry_load_items(KeeEntry *o) {
 
 void kee_entry_apply_display_widget(KeeEntry *o) {
 	GtkWidget *widget;
+	GtkNoSelection *sel;
+	GtkSignalListItemFactory *factory;
+	GtkStringList *list;
 
-	kee_entry_load_items(o);
+	list = gtk_string_list_new(NULL);
+	kee_entry_load_items(o, list);
+
 	widget = gtk_label_new(o->subject);
+	gtk_box_append(GTK_BOX(o), widget);
+
+	factory = gtk_signal_list_item_factory_new();
+	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_handle_item_setup), NULL);
+	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_handle_item_bind), NULL);
+
+	sel = gtk_no_selection_new(list);
+
+	widget = gtk_list_view_new(sel, factory);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }
@@ -337,3 +375,4 @@ void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
 	target->bob = orig->bob;
 	return target;
 }
+
