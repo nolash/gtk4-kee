@@ -16,7 +16,6 @@ int cadiz_resolve(Cadiz *cadiz, const char *key, char *out, size_t *out_len) {
 	char path[1024];
 	size_t l;
 	const char *locator = cadiz->locator;
-	enum CadizKeyType key_type = cadiz->key_type;
 
 	strcpy(path, locator);
 	c = strlen(locator) - 1;

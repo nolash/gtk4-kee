@@ -22,17 +22,17 @@ int kee_nav_push(struct KeeNav *nav, GtkWidget *page) {
 	nav->widgets[nav->c] = page;
 	nav->now = nav->widgets[nav->c];
 //	kee_nav_log(nav);
+	return 0;
 }
 
 GtkWidget* kee_nav_pop(struct KeeNav *nav) {
-	GtkWidget *r;
-
 	if (nav->c == 0) {
 		return NULL;
 	}
-	r = nav->widgets[nav->c];
+	//r = nav->widgets[nav->c];
 	nav->c--;
 	nav->now = nav->widgets[nav->c];
+	return nav->now;
 //	kee_nav_log(nav);
 }
 

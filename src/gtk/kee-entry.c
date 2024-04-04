@@ -5,6 +5,7 @@
 #include <gtk/gtk.h>
 
 #include "cmime.h"
+#include "varint.h"
 
 #include "kee-entry.h"
 #include "db.h"
@@ -56,7 +57,7 @@ static void kee_entry_handle_item_bind(GtkListItemFactory *o,  GtkListItem *item
 
 	label = gtk_list_item_get_child(item);
 	s = gtk_list_item_get_item(item);
-	gtk_label_set_label(label, gtk_string_object_get_string(s));
+	gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
 }
 
 /// \todo free reference to self from parent box necessary..?
@@ -101,7 +102,6 @@ void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 
 /// \todo replace with struct
 static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data_len, char *out, size_t *out_len) {
-	GtkWidget *item;
 	int remaining;
 	int r;
 	uint64_t alice_u;
@@ -201,7 +201,7 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 //		return ERR_FAIL;
 //	}
 
-	sprintf(out, "alice %i bob %i", alice, bob);
+	sprintf(out, "alice %lli bob %lli", alice, bob);
 	*out_len = strlen(out);
 
 	//item = gtk_label_new(s);
@@ -306,7 +306,6 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 }
 
 static int kee_entry_load_items(KeeEntry *o, GtkStringList *list) {
-	GtkWidget *widget;
 	int r;
 	size_t key_len;
 	char *mem = malloc(4096);
@@ -336,13 +335,15 @@ static int kee_entry_load_items(KeeEntry *o, GtkStringList *list) {
 			gtk_string_list_append(list, out);
 		}
 	}
+	db_rewind(o->db);
 	free(mem);
+	return ERR_OK;
 }
 
 void kee_entry_apply_display_widget(KeeEntry *o) {
 	GtkWidget *widget;
 	GtkNoSelection *sel;
-	GtkSignalListItemFactory *factory;
+	GtkListItemFactory *factory;
 	GtkStringList *list;
 
 	list = gtk_string_list_new(NULL);
@@ -355,17 +356,15 @@ void kee_entry_apply_display_widget(KeeEntry *o) {
 	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_handle_item_setup), NULL);
 	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_handle_item_bind), NULL);
 
-	sel = gtk_no_selection_new(list);
+	sel = gtk_no_selection_new(G_LIST_MODEL(list));
 
-	widget = gtk_list_view_new(sel, factory);
+	widget = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }
 
 
 void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
-	KeeEntry *o;
-
 	target->db = orig->db;
 	target->current_id = orig->current_id;
 	target->resolver = orig->resolver;
@@ -373,6 +372,6 @@ void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
 	target->unit_of_account = orig->unit_of_account;
 	target->alice = orig->alice;
 	target->bob = orig->bob;
-	return target;
+	return;
 }
 

@@ -36,7 +36,7 @@ static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *me
 		gtk_box_remove(GTK_BOX(container), widget);
 	}
 	kee_entry_apply_display_widget(showentry);
-	gtk_box_append(GTK_BOX(container), showentry);
+	gtk_box_append(GTK_BOX(container), GTK_WIDGET(showentry));
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "list item selected %d", i);
 }
@@ -49,7 +49,7 @@ static void kee_entry_list_handle_setup(GtkListItemFactory* o, GtkListItem *item
 
 static void kee_entry_list_handle_bind(GtkListItemFactory *o,  GtkListItem *item) {
 	KeeEntry *go;
-	GtkGesture *ctrl;
+	//GtkGesture *ctrl;
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "entry list bind");
 	go = gtk_list_item_get_item(item);

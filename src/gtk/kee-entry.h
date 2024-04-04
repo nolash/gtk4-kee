@@ -30,6 +30,7 @@ void kee_entry_apply_list_item_widget(KeeEntry *o);
 void kee_entry_apply_display_widget(KeeEntry *o);
 KeeEntry* kee_entry_new(struct db_ctx *db);
 void kee_entry_set_resolver(KeeEntry *o, struct Cadiz *resolver);
+void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig);
 
 G_END_DECLS
 

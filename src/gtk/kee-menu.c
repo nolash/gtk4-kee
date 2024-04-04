@@ -98,6 +98,8 @@ static void kee_menu_header_update(KeeMenu *o, const char *label) {
 	} else if (!(strcmp(label, "view"))) {
 		act = g_action_map_lookup_action(G_ACTION_MAP(o), "import");
 		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
 	} else if (!(strcmp(label, "entry"))) {
 		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
 		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);

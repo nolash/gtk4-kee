@@ -198,6 +198,7 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 }
 
 
+/// \todo find better name
 void db_rewind(struct db_ctx *ctx) {
 	ctx->browsing = 0;
 }
