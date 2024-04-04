@@ -308,22 +308,30 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 static int kee_entry_load_items(KeeEntry *o, GtkStringList *list) {
 	int r;
 	size_t key_len;
+	size_t entry_key_len;
 	char *mem = malloc(4096);
 	char *last_key;
+	char *entry_key;
 	char *last_value;
 	size_t last_value_length;
 	char out[1024];
 	size_t out_len;
 
-	key_len = 73;
+	entry_key_len = 65;
+	key_len = entry_key_len + 8;
 	last_key = (char*)mem;
-	last_value = last_key + 128;
+	entry_key = last_key + 128;
+	last_value = entry_key + 128;
 	*last_key = DbKeyLedgerEntry;
 	memcpy(last_key+1, o->current_id, key_len - 1);
+	memcpy(entry_key, last_key, entry_key_len);
 	while (1) {
 		last_value_length = 2048;
 		r = db_next(o->db, DbKeyLedgerEntry, &last_key, &key_len, &last_value, &last_value_length);
 		if (r) {
+			break;
+		}
+		if (memcmp(last_key, entry_key, entry_key_len)) {
 			break;
 		}
 		out_len = 1024;
