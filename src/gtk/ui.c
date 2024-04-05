@@ -18,11 +18,14 @@
 #include "kee-key.h"
 
 
-static void ui_handle_unlock(GtkWidget *widget, KeeMenu *menu) {
+static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 	kee_state_t state_delta;
+	char fingerprint[41];
 
 	kee_state_zero(&state_delta);
-
+	kee_key_get_fingerprint(o, fingerprint);
+	gtk_window_set_title(GTK_WINDOW(menu), fingerprint);
+	
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "key is unlocked");
 	kee_menu_prev(menu);
 }

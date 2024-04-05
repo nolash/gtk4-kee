@@ -13,7 +13,6 @@
 #define BUFLEN 1024 * 1024
 
 
-//const char *gpgVersion = nullptr;
 const char *gpgVersion = NULL;
 
 
@@ -35,7 +34,6 @@ static void padb(char *data, size_t outsize, size_t insize) {
 	gcry_randomize(data + insize, outsize - insize, GCRY_STRONG_RANDOM);
 }
 
-//void pad(char *indata_raw, size_t outsize, std::string indata) {
 static void pad(char *indata_raw, size_t outsize, const char *indata) { //std::string indata) {
 	int l;
 
@@ -91,7 +89,6 @@ int encryptb (char *ciphertext, size_t ciphertext_len, const char *indata, size_
 	return ERR_OK;
 }
 
-//int encrypt(char *ciphertext, size_t ciphertext_len, std::string indata, const char *key, const char *nonce) {
 int encrypt(char *ciphertext, size_t ciphertext_len, const char *indata, const char *key, const char *nonce) {
 	int r;
 	gcry_cipher_hd_t h;
@@ -135,7 +132,6 @@ int decryptb(char *outdata, const char *ciphertext, size_t ciphertext_len, const
 
 }
 
-//int decrypt(std::string *outdata, const char *ciphertext, size_t ciphertext_len, const char *key, const char *nonce) {
 int decrypt(char *outdata, const char *ciphertext, size_t ciphertext_len, const char *key, const char *nonce) {
 	int r;
 	gcry_cipher_hd_t h;
@@ -298,15 +294,11 @@ static int sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
 	return 0;
 }
 
-//char *GpgStore::get_fingerprint() {
-//	return m_fingerprint;
-//}
 char *gpg_store_get_fingerprint(struct gpg_store *gpg) {
 	return gpg->fingerprint;
 }
 
 
-//int GpgStore::digest(char *out, std::string in) {
 int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in) {
 	const char *s;
 	size_t l;
@@ -317,9 +309,6 @@ int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in) {
 	return calculate_digest(s, l, out); //, m_passphrase_digest_len);
 }
 
-//GpgStore::GpgStore() {
-//	m_passphrase_digest_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
-//}
 /// \todo handle path length limit
 void gpg_store_init(struct gpg_store *gpg, const char *path) {
 	gpg->passphrase_digest_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
@@ -327,8 +316,6 @@ void gpg_store_init(struct gpg_store *gpg, const char *path) {
 
 }
 
-//int GpgStore::check(std::string p, std::string passphrase) {
-//int gpg_store_check(struct gpg_store *gpg, const char *p, const char *passphrase) { 
 int gpg_store_check(struct gpg_store *gpg, const char *passphrase) { 
 	int r;
 	const char *v;
@@ -363,7 +350,7 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		char pp[2048];
 		//sprintf(pp, "could not decrypt key in %s/key.bin", p.c_str());
 		sprintf(pp, "could not decrypt key in %s/key.bin", p);
-		debug_log(DEBUG_CRITICAL, pp);
+		debug_log(DEBUG_INFO, pp);
 		return 1;
 	}
 	if (r != ERR_OK) {

@@ -25,7 +25,6 @@ struct gpg_store {
  * \sa encryptb
  * 
  */
-//int encrypt(char *ciphertext, size_t ciphertext_len, std::string indata, const char *key, const char *nonce);
 int encrypt(char *ciphertext, size_t ciphertext_len, const char *indata, const char *key, const char *nonce);
 
 /**
@@ -52,7 +51,6 @@ int encryptb (char *ciphertext, size_t ciphertext_len, const char *indata, size_
  * \sa decryptb
  *
  */
-//int decrypt(std::string *outdata, const char *ciphertext, size_t ciphertext_len, const char *key, const char *nonce);
 int decrypt(char *outdata, const char *ciphertext, size_t ciphertext_len, const char *key, const char *nonce);
 
 /**
@@ -88,45 +86,5 @@ void gpg_store_init(struct gpg_store *gpg, const char *path);
 int gpg_store_check(struct gpg_store *gpg, const char *passphrase);
 int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in);
 char *gpg_store_get_fingerprint(struct gpg_store *gpg);
-//
-///**
-// *
-// * \brief Interface to the encrypted key storage for both identity public key and the key used for encryption of the identity public key.
-// *
-// */
-//class GpgStore {
-//
-//	public:
-//		/// Sets correct context values for underlying \c gcrypt operations.
-//		GpgStore();
-//		/**
-//		 *
-//		 * Attempts to decrypt the identity public key with the given passphrase.
-//		 *
-//		 * If no public key exists, one will be created and encrypted using the passphrase.
-//		 *
-//		 * \param p path to key store
-//		 * \param passphrase passphrase for public key encryption
-//		 * \return 0 if successful, any other value indicates an error
-//		 *
-//		 */
-//		int check(std::string p, std::string passphrase);
-//		/**
-//		 *
-//		 * Returns the fingerprint of the identity public key.
-//		 *
-//		 * \return 160-bit fingerprint value
-//		 */
-//		char *get_fingerprint();
-//	
-//	private:
-//		/// calculates sha256 digest for the given string value, using secure memory
-//		int digest(char *out, std::string in);
-//		//const char *m_version;
-//		//char *m_seckey;
-//		/// cached fingerprint value, in string format with zero terminator
-//		char m_fingerprint[41];
-//		/// cached digest length of sha256 
-//		unsigned int m_passphrase_digest_len;
-//};
+
 #endif

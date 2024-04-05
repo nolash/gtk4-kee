@@ -23,7 +23,6 @@ enum KEE_KEY_SIGS {
 G_END_DECLS
 
 KeeKey* kee_key_new();
+const char *kee_key_get_fingerprint(KeeKey *o, char *fingerprint);
 
 #endif // _GTK_KEE_KEY_H
-
-

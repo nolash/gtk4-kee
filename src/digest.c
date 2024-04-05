@@ -13,9 +13,7 @@ int calculate_digest_algo(const char *in, size_t in_len, char *out, enum gcry_md
 	if (algo == GCRY_MD_NONE) {
 		algo = GCRY_MD_SHA256;
 	}
-	if (digest_len == 0) {
-		digest_len = gcry_md_get_algo_dlen(algo);
-	}
+	digest_len = gcry_md_get_algo_dlen(algo);
 
 	e = gcry_md_open(&h, algo, GCRY_MD_FLAG_SECURE);
 	if (e) {
