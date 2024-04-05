@@ -187,7 +187,8 @@ static int key_from_path(gcry_sexp_t *key, const char *p, const char *passphrase
 	}
 	free(fullpath);
 
-	c = fread(&l, sizeof(int), 1, f);
+	/// \todo length must be in the ciphertext
+	//c = fread(&l, sizeof(int), 1, f);
 	c = fread(nonce, CHACHA20_NONCE_LENGTH_BYTES, 1, f);
 	i = 0;
 	c = 1;
@@ -206,7 +207,8 @@ static int key_from_path(gcry_sexp_t *key, const char *p, const char *passphrase
 	if (r) {
 		return ERR_NOKEY;
 	}
-	r = key_from_data(key, (char*)outdata, l);
+	//r = key_from_data(key, (char*)outdata, l);
+	r = key_from_data(key, (char*)(outdata+sizeof(int)), (size_t)(*((int*)outdata)));
 	free(outdata);
 	return r;
 }
