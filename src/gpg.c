@@ -215,6 +215,8 @@ static int key_from_path(gcry_sexp_t *key, const char *p, const char *passphrase
 
 /**
  * \todo consistent endianness for key length in persistent storage (fwrite)
+ * \todo implement MAC
+ * \todo test new data length location (part of ciphertext)
  */
 static int key_create(gcry_sexp_t *key, const char *p, const char *passphrase) {
 	int r;
@@ -230,7 +232,6 @@ static int key_create(gcry_sexp_t *key, const char *p, const char *passphrase) {
 	char v[BUFLEN];
 	char nonce[CHACHA20_NONCE_LENGTH_BYTES];
 
-
 	e = gcry_sexp_new(&in, (const void*)sexp_quick, strlen(sexp_quick), 0);
 	if (e) {
 		printf("error sexp: %s\n", gcry_strerror(e));
@@ -241,7 +242,8 @@ static int key_create(gcry_sexp_t *key, const char *p, const char *passphrase) {
 		printf("error gen: %s\n", gcry_strerror(e));
 		return (int)e;
 	}
-	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, v, BUFLEN);
+	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, v+sizeof(int), BUFLEN);
+	memcpy(v, &kl, sizeof(int));
 
 	c = get_padsize(kl, ENCRYPT_BLOCKSIZE);
 	char ciphertext[c];
@@ -257,11 +259,11 @@ static int key_create(gcry_sexp_t *key, const char *p, const char *passphrase) {
 		return ERR_KEYFAIL;
 	}
 	l = c;
-	c = fwrite(&kl, sizeof(int), 1, f);
-	if (c != 1) {
-		fclose(f);
-		return ERR_KEYFAIL;
-	}
+//	c = fwrite(&kl, sizeof(int), 1, f);
+//	if (c != 1) {
+//		fclose(f);
+//		return ERR_KEYFAIL;
+//	}
 	c = fwrite(nonce, CHACHA20_NONCE_LENGTH_BYTES, 1, f);
 	if (c != 1) {
 		fclose(f);
