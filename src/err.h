@@ -21,7 +21,12 @@ enum keeError {
 	ERR_INPUT_DUP,
 	/// Last input changes entry that already exists in storage, but was not allowed
 	ERR_INPUT_PROTECT,
-
+	/// Crypto backend unavailable
+	ERR_NOCRYPTO,
+	/// Crypto resource fail
+	ERR_NOKEY,
+	/// Crypto authentication fail
+	ERR_KEYFAIL,
 };
 
 #endif // _KEE_ERR_H

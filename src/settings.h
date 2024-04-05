@@ -9,6 +9,7 @@
 struct kee_settings {
 	unsigned char *data;
 	unsigned char *run;
+	unsigned char *key;
 	unsigned char *locktime;
 	unsigned char *video_device;
 };
@@ -22,6 +23,8 @@ enum SettingsType {
 	SETTINGS_DATA = 0x01,
 	/// Runtime directory
 	SETTINGS_RUN = 0x02,
+	/// GPG keys directory
+	SETTINGS_KEY = 0x04,
 	/// Milliseconds a key will stay unlocked since last application use.
 	SETTINGS_LOCKTIME = 0x10,
 	/// Default video device to use

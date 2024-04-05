@@ -25,6 +25,8 @@ int settings_new_from_xdg(struct kee_settings *z) {
 
 	memset(z, 0, sizeof(struct kee_settings));
 
+	z->key = (unsigned char*)".";
+
 	z->data = malloc(KEE_SETTINGS_CAP);
 	p = z->data;
 	p += KEE_SETTINGS_ITEM_CAP;
@@ -77,6 +79,9 @@ unsigned char *settings_get(struct kee_settings *z, enum SettingsType typ) {
 			break;
 		case SETTINGS_RUN:
 			return z->run;
+			break;
+		case SETTINGS_KEY:
+			return z->key;
 			break;
 		case SETTINGS_LOCKTIME:
 			return z->locktime;

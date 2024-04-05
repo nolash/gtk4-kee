@@ -19,9 +19,10 @@ static void startup(GtkApplication *app, struct kee_context *ctx) {
 //	kee_uicontext_scaninit(uctx);
 }
 
-static void activate(GtkApplication *app, KeeEntryStore *store) { //struct kee_context *ctx) {
-	//ui_build(app, ctx);
-	ui_build(app, store);
+//static void activate(GtkApplication *app, KeeEntryStore *store) { //struct kee_context *ctx) {
+static void activate(GtkApplication *app, struct kee_context *ctx) {
+	//ui_build(app, store);
+	ui_build(app, ctx);
 }
 
 static void deactivate(GtkApplication *app, gpointer user_data) {
@@ -51,9 +52,10 @@ int main(int argc, char **argv) {
 	db_connect(&ctx.db, "./testdata_mdb");
 	store = kee_entry_store_new(&ctx.db);
 	kee_entry_store_set_resolve(store, "./testdata_resource");
+	ctx.entry_store = store;
 
 	g_signal_connect (gapp, "startup", G_CALLBACK (startup), &ctx);
-	g_signal_connect (gapp, "activate", G_CALLBACK (activate), store);
+	g_signal_connect (gapp, "activate", G_CALLBACK (activate), &ctx);
 	g_signal_connect (gapp, "shutdown", G_CALLBACK (deactivate), NULL);
 	//g_signal_connect (uctx, "state", G_CALLBACK(state_log), NULL);
 

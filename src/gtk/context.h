@@ -4,12 +4,16 @@
 #include "settings.h"
 #include "db.h"
 #include "camera.h"
+#include "gpg.h"
+#include "kee-entry-store.h"
+
 
 struct kee_context {
 	void *front;
 	struct kee_settings *settings;
 	struct kee_camera_devices camera_devices;
 	struct db_ctx db;
+	KeeEntryStore *entry_store;
 	int state;
 };
 

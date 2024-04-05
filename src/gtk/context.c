@@ -4,6 +4,7 @@
 #include "settings.h"
 #include "camera.h"
 #include "err.h"
+#include "gpg.h"
 
 
 int kee_context_new(struct kee_context *ctx, struct kee_settings *settings) {
