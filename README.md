@@ -32,6 +32,7 @@ The code expects objects from these source trees to be available somehow:
 
 |project | upstream source | version | tar.gz sha256 |
 |---|---|---|---|
+| liblash | [https://holbrook.no/src/liblash](https://holbrook.no/src/liblash) `(4e704929297371934cb5ace5fb59433f6c664c34)` | `0.1.0` | `15d90c518626eac4333e3fa8a02e4bcf16cce31e99e6c6668cc2e4ca44691cd3` |
 | varint.c | [https://github.com/tidwall/varint.c](https://github.com/tidwall/varint.c) `(7e1f7067eaf6ee114d865c99a8f5f01c813f3a61)` | `0.1.0` | `e33f83a8cd965827554c134bcb607990c04c0097cd57e49ae8c343c6d311826f` |
 | libcmime | [https://github.com/spmfilter/libcmime.git](https://github.com/spmfilter/libcmime.git) `(dd21eb096d162656e30243f60fc4bc35ad39ae6e)` | `0.2.2` | `18a8d46ebec575a79212acc2dc6af7fd7bdeba3a9b85a70677ed0b7785c5c04e` |
 | gst-plugins-rs | [https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs) `(a84bbc66f30573b62871db163c48afef75adf6ec)` | `1.22.10 (gstreamer)` | `691d5d52f59ec6322a2f6ddc1039ef47c9ac5e6328e2df1ef920629b46c659df` |

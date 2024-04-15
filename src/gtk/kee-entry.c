@@ -4,13 +4,15 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
+#include <tasn1.h>
+
 #include "cmime.h"
 #include "varint.h"
 
 #include "kee-entry.h"
 #include "db.h"
 #include "err.h"
-#include "export.h"
+//#include "export.h"
 #include "hex.h"
 #include "cadiz.h"
 #include "db.h"

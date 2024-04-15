@@ -1,0 +1,25 @@
+Kee DEFINITIONS EXPLICIT TAGS ::= BEGIN
+	KeeEntryHead ::= SEQUENCE {	
+		uoa UTF8String,
+		uoaDecimals INTEGER,
+		alicePubKey OCTET STRING,
+		bobPubKey OCTET STRING,
+		body OCTET STRING
+	}
+
+	KeeEntryFlags ::= BIT STRING {
+		bob-is-signer(0)
+	}
+
+	KeeEntry ::= SEQUENCE {
+		parent OCTET STRING,
+---		timestamp GeneralizedTime,
+		timestamp INTEGER,
+		aliceCreditDelta INTEGER,
+		aliceCollateralDelta INTEGER,
+		bobCreditDelta INTEGER,
+		bobCollateralDelta INTEGER,
+		flags KeeEntryFlags,
+		body OCTET STRING
+	}
+END

@@ -21,7 +21,10 @@ debug: gtk all
 	G_DEBUG=all G_MESSAGES_DEBUG=all gdb ./src/gtk/a.out
 
 #test: gtk all test_src test_gtk
-test: test_src test_gtk
+test: testdata test_src test_gtk
+
+testdata_schema:
+	asn1ate src/schema_entry_head.txt > testdata_asn1schema.py
 
 test_src: all
 	make -C src/tests test
@@ -29,9 +32,10 @@ test_src: all
 test_gtk: gtk all
 	make -C src/gtk/tests test
 
-testdata:
+testdata: testdata_schema
 	rm -vrf testdata_mdb
-	python testdata.py
+	#python testdata.py
+	python testdata_asn1.py
 
 doc:
 	pandoc -fgfm -tplain README.md > README
