@@ -16,8 +16,8 @@ Kee DEFINITIONS EXPLICIT TAGS ::= BEGIN
 ---		timestamp GeneralizedTime,
 		timestamp INTEGER,
 		aliceCreditDelta INTEGER,
-		aliceCollateralDelta INTEGER,
 		bobCreditDelta INTEGER,
+		aliceCollateralDelta INTEGER,
 		bobCollateralDelta INTEGER,
 		flags KeeEntryFlags,
 		body OCTET STRING

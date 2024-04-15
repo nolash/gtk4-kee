@@ -111,6 +111,9 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	int alice;
 	int bob;
 	int c;
+	int v;
+	char *p;
+	int effs = -1;
 
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
@@ -133,28 +136,45 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 		return r;
 	}
 
-	c = sizeof(alice);
+	c = sizeof(v);
+	v = 0;
 	alice = 0;
-	r = asn1_read_value(item, "aliceCreditDelta", &alice, &c);
+	p = (char*)&v;
+	r = asn1_read_value(item, "aliceCreditDelta", p, &c);
 	if (r != ASN1_SUCCESS) {
 		fprintf(stderr, "%s\n", err);
 		return r;
 	}
-	//if (is_le()) {
-	//	flip_endian(sizeof(int), (void*)&alice);
-	//}
+	p = (char*)&alice;
+	if (*((char*)&v)) {
+		memcpy(p, &effs, 4);;
+	}
+	p += sizeof(alice) - c;
+	memcpy(p, &v, c);
+	if (is_le()) {
+		flip_endian(sizeof(int), (void*)&alice);
+	}
 
 	c = sizeof(bob);
+	v = 0;
 	bob = 0;
-	r = asn1_read_value(item, "bobCreditDelta", &bob, &c);
+	p = (char*)&v;
+	r = asn1_read_value(item, "bobCreditDelta", p, &c);
 	if (r != ASN1_SUCCESS) {
 		fprintf(stderr, "%s\n", err);
 		return r;
 	}
-	//if (is_le()) {
-	//	flip_endian(sizeof(int), (void*)&bob);
-	//}
+	p = (char*)&bob;
+	if (*((char*)&v)) {
+		memcpy(p, &effs, 4);;
+	}
+	p += sizeof(bob) - c;
+	memcpy(p, &v, c);
 
+	if (is_le()) {
+		flip_endian(sizeof(int), (void*)&bob);
+	}
+	
 	sprintf(out, "alice: %i, bob %i", alice, bob);
 	*out_len = strlen(out);
 	return ERR_OK;
