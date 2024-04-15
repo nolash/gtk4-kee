@@ -24,7 +24,7 @@ debug: gtk all
 test: testdata test_src test_gtk
 
 testdata_schema:
-	asn1ate src/schema_entry_head.txt > testdata_asn1schema.py
+	asn1ate src/asn1/schema_entry.txt > testdata_asn1schema.py
 
 test_src: all
 	make -C src/tests test

@@ -168,7 +168,6 @@ static int key_from_data(gcry_sexp_t *key, const char *indata, size_t indata_len
 }
 
 static int key_from_path(gcry_sexp_t *key, const char *p, const char *passphrase) {
-	int l;
 	int r;
 	char v[BUFLEN];
 	size_t c;

@@ -8,7 +8,11 @@ LDFLAGS += $(LIBS)
 #all: aux resource $(OBJS)
 #	$(CC) $(CFLAGS) main.c -o a.out $(OBJS) $(LDFLAGS) aux/varint/varint.o
 #all: aux $(OBJS)
-all: $(OBJS)
+all: asn $(OBJS)
+
+asn:
+	make -C asn1 compile
+	cp -v asn1/*.o .
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
@@ -19,6 +23,8 @@ all: $(OBJS)
 clean:
 	rm -vf *.o
 	make -C gtk clean
+	make -C asn1 clean
+	make -C tests clean
 #	make -C aux clean
 
 #.PHONY: clean aux
