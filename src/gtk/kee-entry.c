@@ -12,11 +12,11 @@
 #include "kee-entry.h"
 #include "db.h"
 #include "err.h"
-//#include "export.h"
 #include "hex.h"
 #include "cadiz.h"
 #include "db.h"
 #include "digest.h"
+#include "debug.h"
 
 
 typedef struct {
@@ -25,6 +25,8 @@ typedef struct {
 struct _KeeEntryClass {
 	GtkWidget parent_class;
 };
+
+extern const asn1_static_node schema_entry_asn1_tab[];
 
 /// \todo factor out separate struct for listitem
 struct _KeeEntry {
@@ -39,7 +41,7 @@ struct _KeeEntry {
 	char *bob;
 	char *body;
 	char *subject;
-	char decimals;
+	int decimals;
 	struct Cadiz *resolver;
 	struct db_ctx *db;
 };
@@ -101,165 +103,149 @@ void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 //	return ERR_OK;
 //}
 
-
-/// \todo replace with struct
 static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data_len, char *out, size_t *out_len) {
-	int remaining;
 	int r;
-	uint64_t alice_u;
-	uint64_t bob_u;
-	long long alice;
-	long long bob;
-	char mem[1024];
-	size_t in_len;
-	char *s = (char*)mem;
-	char *flags = s + 512;
-	char *parent = flags + 1;
-	char *ts = parent + 64;
-	char *signs = ts + 8;
-	char *alice_delta = signs + 1;
-	char *bob_delta = alice_delta + 10;
-	struct kee_import im;
+	char err[1024];
+	asn1_node root;
+	asn1_node item;
+	int alice;
+	int bob;
+	int c;
 
+	memset(&root, 0, sizeof(root));
+	memset(&item, 0, sizeof(item));
+	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;
+	}
+
+	r = asn1_create_element(root, "Kee.KeeEntry", &item);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+	
+	c = (int)data_len;
+	r = asn1_der_decoding(&item, data, c, err);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+
+	c = sizeof(alice);
 	alice = 0;
+	r = asn1_read_value(item, "aliceCreditDelta", &alice, &c);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+	//if (is_le()) {
+	//	flip_endian(sizeof(int), (void*)&alice);
+	//}
+
+	c = sizeof(bob);
 	bob = 0;
+	r = asn1_read_value(item, "bobCreditDelta", &bob, &c);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+	//if (is_le()) {
+	//	flip_endian(sizeof(int), (void*)&bob);
+	//}
 
-	import_init(&im, data, data_len);
-
-	remaining = 1024;
-	in_len = remaining;
-	r = import_read(&im, flags, in_len);
-	if (!r) {
-		return ERR_FAIL;
-	}
-
-	remaining -= r;
-	in_len = remaining;
-	r = import_read(&im, parent, in_len);
-	if (!r) {
-		return ERR_FAIL;
-	}
-
-	remaining -= r;
-	in_len = remaining;
-	r = import_read(&im, ts, in_len);
-	if (!r) {
-		return ERR_FAIL;
-	}
-
-	remaining -= r;
-	in_len = remaining;
-	r = import_read(&im, signs, in_len);
-	if (!r) {
-		return ERR_FAIL;
-	}
-
-	remaining -= r;
-	in_len = remaining;
-	r = import_read(&im, alice_delta, in_len);
-	if (!r) {
-		return ERR_FAIL;
-	}
-	if (r > 7) {
-		return ERR_FAIL;
-	}
-
-	remaining -= r;
-	in_len = remaining;
-	r = varint_read_u(alice_delta, r, &alice_u);
-	if (!r) {
-		return ERR_FAIL;
-	}
-	alice = (long long)alice_u;
-	if (alice > 0 && *signs & ALICE_CREDIT_NEGATIVE) {
-		alice *= -1;
-	}
-
-	remaining -= r;
-	in_len = remaining;
-	r = import_read(&im, bob_delta, in_len);
-	if (!r) {
-		return ERR_FAIL;
-	}
-	if (r > 7) {
-		return ERR_FAIL;
-	}
-
-	remaining -= r;
-	in_len = remaining;
-	r = varint_read_u(bob_delta, r, &bob_u);
-	if (!r) {
-		return ERR_FAIL;
-	}
-	bob = (long long)bob_u;
-	if (bob > 0 && *signs & BOB_CREDIT_NEGATIVE) {
-		bob *= -1;
-	}
-
-//	remaining -= r;
-//	in_len = remaining;
-//	r = varint_read_u(alice_delta, r, &alice);
-//	if (!r) {
-//		return ERR_FAIL;
-//	}
-
-	sprintf(out, "alice %lli bob %lli", alice, bob);
+	sprintf(out, "alice: %i, bob %i", alice, bob);
 	*out_len = strlen(out);
-
-	//item = gtk_label_new(s);
-	//gtk_widget_set_hexpand(item, true);
-	//gtk_box_append(GTK_BOX(o), item);
-
 	return ERR_OK;
 }
 
-/// \todo enum state
-/// \todo separate message rsolve and parse in separate function
 int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const char *data, size_t data_len) {
 	int r;
-	struct kee_import im;
+	char err[1024];
 	size_t out_len;
-	size_t t;
 	size_t remaining;
+	asn1_node root;
+	asn1_node item;
+	int c;
 	char *p;
 	CMimeMessage_T *msg;
 
-	// copy entry hash
+	memset(&root, 0, sizeof(root));
+	memset(&item, 0, sizeof(item));
+	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;
+	}
+
+	r = asn1_create_element(root, "Kee.KeeEntryHead", &item);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+	
+	c = (int)data_len;
+	r = asn1_der_decoding(&item, data, c, err);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+
 	r = calculate_digest_algo(data, data_len, o->current_id, GCRY_MD_SHA512);	
 	if (r) {
 		return ERR_DIGESTFAIL;
 	}
 
 	o->state = 1;
-	import_init(&im, data, data_len);
 
 	out_len = 4096;
 	remaining = out_len;
-	r = import_read(&im, o->unit_of_account, out_len);
-	p = o->unit_of_account + r;
+	c = remaining;
+	p = o->unit_of_account;
+	r = asn1_read_value(item, "uoa", p, &c);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+	p = o->unit_of_account + c;
 	*p = 0;
-	remaining -= (r + 1);
+	remaining -= (c + 1);
 	p += 1;
 
-	out_len = 1;
-	r = import_read(&im, &o->decimals, out_len);
-
-	out_len = remaining;
+	c = remaining;
 	o->alice = p;
-	r = import_read(&im, o->alice, out_len);
-	remaining -= r;
-	p += r;
+	r = asn1_read_value(item, "alicePubKey", o->alice, &c);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
 
-	out_len = remaining;
+	remaining -= c;
+	p += c;
+
+	c = remaining;
 	o->bob = p;
-	r = import_read(&im, o->bob, out_len);
+	r = asn1_read_value(item, "bobPubKey", o->bob, &c);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+	if (is_le()) {
+		flip_endian(c, (void*)o->bob);
+	}
+	p += c;
 
-	out_len = remaining;
+	c = remaining;
 	o->body = p;
-	r = import_read(&im, o->body, out_len);
+	r = asn1_read_value(item, "body", p, &c);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+	p += c;
 
 	if (o->resolver) {
-		t = out_len;
 		r = cadiz_resolve(o->resolver, o->body, o->body, &out_len);
 		if (!r) {
 			msg = cmime_message_new();
@@ -272,13 +258,11 @@ int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const ch
 			}
 			remaining -= out_len;
 		} else {
-			remaining -= t;
+			remaining -= c;
 		}
 	}
 
 	o->state = 0;
-
-	import_free(&im);
 
 	return ERR_OK;
 }

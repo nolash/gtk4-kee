@@ -18,5 +18,6 @@ generate: src
 clean:
 	rm -vf *.o
 	rm -vf *_asn1_tab.c
+	rm -vf generate
 
 .PHONY: clean
