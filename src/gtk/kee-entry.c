@@ -4,7 +4,7 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
-#include <tasn1.h>
+#include <libtasn1.h>
 
 #include "cmime.h"
 #include "varint.h"
