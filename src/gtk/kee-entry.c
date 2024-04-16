@@ -17,6 +17,8 @@
 #include "db.h"
 #include "digest.h"
 #include "debug.h"
+#include "endian.h"
+#include "strip.h"
 
 
 typedef struct {
@@ -113,7 +115,6 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	int c;
 	int v;
 	char *p;
-	int effs = -1;
 
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
@@ -145,12 +146,8 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 		fprintf(stderr, "%s\n", err);
 		return r;
 	}
-	p = (char*)&alice;
-	if (*((char*)&v)) {
-		memcpy(p, &effs, 4);;
-	}
-	p += sizeof(alice) - c;
-	memcpy(p, &v, c);
+
+	strap_be(p, c, (char*)&alice, sizeof(alice));
 	if (is_le()) {
 		flip_endian(sizeof(int), (void*)&alice);
 	}
@@ -164,13 +161,8 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 		fprintf(stderr, "%s\n", err);
 		return r;
 	}
-	p = (char*)&bob;
-	if (*((char*)&v)) {
-		memcpy(p, &effs, 4);;
-	}
-	p += sizeof(bob) - c;
-	memcpy(p, &v, c);
 
+	strap_be(p, c, (char*)&bob, sizeof(bob));
 	if (is_le()) {
 		flip_endian(sizeof(int), (void*)&bob);
 	}
