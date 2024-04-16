@@ -112,6 +112,8 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	asn1_node item;
 	int alice;
 	int bob;
+	int credit;
+	int collateral;
 	int c;
 	int v;
 	char *p;
@@ -137,36 +139,48 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 		return r;
 	}
 
+	p = (char*)&v;
 	c = sizeof(v);
 	v = 0;
-	alice = 0;
-	p = (char*)&v;
-	r = asn1_read_value(item, "aliceCreditDelta", p, &c);
+	r = asn1_read_value(item, "creditDelta", p, &c);
 	if (r != ASN1_SUCCESS) {
 		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 
-	strap_be(p, c, (char*)&alice, sizeof(alice));
+	strap_be(p, c, (char*)&credit, sizeof(credit));
 	if (is_le()) {
-		flip_endian(sizeof(int), (void*)&alice);
+		flip_endian(sizeof(credit), (void*)&credit);
 	}
 
-	c = sizeof(bob);
+	c = sizeof(v);
 	v = 0;
-	bob = 0;
-	p = (char*)&v;
-	r = asn1_read_value(item, "bobCreditDelta", p, &c);
+	r = asn1_read_value(item, "collateralDelta", p, &c);
 	if (r != ASN1_SUCCESS) {
 		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 
-	strap_be(p, c, (char*)&bob, sizeof(bob));
+	strap_be(p, c, (char*)&collateral, sizeof(collateral));
 	if (is_le()) {
-		flip_endian(sizeof(int), (void*)&bob);
+		flip_endian(sizeof(collateral), (void*)&collateral);
 	}
-	
+
+	c = 1;
+	r = asn1_read_value(item, "flags", &c, err);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
+
+	alice = 0;
+	bob = 0;
+	if (c & 0x01) {
+		bob = credit;	
+	} else {
+		alice = credit;	
+	}
+
 	sprintf(out, "alice: %i, bob %i", alice, bob);
 	*out_len = strlen(out);
 	return ERR_OK;
