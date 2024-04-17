@@ -7,18 +7,21 @@ Kee DEFINITIONS EXPLICIT TAGS ::= BEGIN
 		body OCTET STRING
 	}
 
-	KeeEntryFlags ::= BIT STRING {
-		byteorder(0),
-		bob-is-signer(1)
-	}
+---	KeeEntryFlags ::= BIT STRING {
+---		byteorder(0),
+---		bob-is-signer(1)
+---	}
 
 	KeeEntry ::= SEQUENCE {
-		flags KeeEntryFlags,
+---		flags KeeEntryFlags,
 		parent OCTET STRING,
 ---		timestamp GeneralizedTime,
 		timestamp INTEGER,
 		creditDelta INTEGER,
 		collateralDelta INTEGER,
-		body OCTET STRING
+		body OCTET STRING,
+		signatureRequest OCTET STRING,
+		response BOOLEAN,
+		signatureResponse OCTET STRING
 	}
 END
