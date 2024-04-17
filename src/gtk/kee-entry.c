@@ -7,7 +7,6 @@
 #include <libtasn1.h>
 
 #include "cmime.h"
-#include "varint.h"
 
 #include "kee-entry.h"
 #include "db.h"

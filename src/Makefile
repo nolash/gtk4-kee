@@ -2,7 +2,8 @@ OBJS := $(patsubst %.c,%.o,$(filter-out main.c,$(wildcard *.c)))
 INCLUDES := `pkg-config --cflags libgcrypt lmdb libxdg-basedir`
 #CFLAGS +=  $(INCLUDES) -g3 -Wall -Iaux/varint
 CFLAGS +=  $(INCLUDES) -Wall
-LIBS := `pkg-config --libs libgcrypt zlib lmdb libxdg-basedir` -lb64 -lvarint -llash
+#LIBS := `pkg-config --libs libgcrypt zlib lmdb libxdg-basedir` -lb64 -lvarint -llash
+LIBS := `pkg-config --libs libgcrypt zlib lmdb libxdg-basedir` -lb64 -llash
 LDFLAGS += $(LIBS)
 
 #all: aux resource $(OBJS)

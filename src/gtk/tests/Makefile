@@ -4,7 +4,8 @@ OBJS := $(patsubst %.c,%.o,$(wildcard *.c))
 LINKOBJS := $(wildcard ../../*.o) $(wildcard ../*.o)
 INCLUDES :=  -I../.. -I..
 CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0` $(INCLUDES) -Wall
-LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -lvarint -lcmime -llash
+#LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -lvarint -lcmime -llash
+LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -lcmime -llash
 LDFLAGS += $(LIBS) 
 
 all: $(OBJS)
