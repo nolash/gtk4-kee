@@ -13,6 +13,8 @@ glade:
 
 clean:
 	make -C src clean
+	rm -vf testdata_asn1schema.py
+
 
 run: gtk all
 	G_DEBUG=3 G_MESSAGES_DEBUG=all ./src/gtk/a.out

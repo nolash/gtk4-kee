@@ -8,16 +8,17 @@ Kee DEFINITIONS EXPLICIT TAGS ::= BEGIN
 	}
 
 	KeeEntryFlags ::= BIT STRING {
-		bob-is-signer(0)
+		byteorder(0),
+		bob-is-signer(1)
 	}
 
 	KeeEntry ::= SEQUENCE {
+		flags KeeEntryFlags,
 		parent OCTET STRING,
 ---		timestamp GeneralizedTime,
 		timestamp INTEGER,
 		creditDelta INTEGER,
 		collateralDelta INTEGER,
-		flags KeeEntryFlags,
 		body OCTET STRING
 	}
 END

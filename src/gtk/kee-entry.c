@@ -115,6 +115,7 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 	int credit;
 	int collateral;
 	int c;
+	char flags;
 	int v;
 	char *p;
 
@@ -138,7 +139,16 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 		fprintf(stderr, "%s\n", err);
 		return r;
 	}
+	
+	c = 1;
+	flags = 0;
+	r = asn1_read_value(item, "flags", &flags, &c);
+	if (r != ASN1_SUCCESS) {
+		fprintf(stderr, "%s\n", err);
+		return r;
+	}
 
+	credit = 0;
 	p = (char*)&v;
 	c = sizeof(v);
 	v = 0;
@@ -153,6 +163,7 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 		flip_endian(sizeof(credit), (void*)&credit);
 	}
 
+	collateral = 0;
 	c = sizeof(v);
 	v = 0;
 	r = asn1_read_value(item, "collateralDelta", p, &c);
@@ -166,16 +177,10 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 		flip_endian(sizeof(collateral), (void*)&collateral);
 	}
 
-	c = 1;
-	r = asn1_read_value(item, "flags", &c, err);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
 
 	alice = 0;
 	bob = 0;
-	if (c & 0x01) {
+	if (flags & 0x40) { // bit string is left to right
 		bob = credit;	
 	} else {
 		alice = credit;	
