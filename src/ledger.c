@@ -107,7 +107,7 @@ static char *get_message(asn1_node item, char *out_digest, char *out_data, size_
 	}
 
 	buf[0] = 0;
-	c = 1;
+	c = 0;
 	r = asn1_write_value(root, "Kee.KeeEntry.signatureResponse", buf, c);
 	if (r != ASN1_SUCCESS) {
 		return NULL;
@@ -204,6 +204,12 @@ static int verify_item(asn1_node item, const char *pubkey_first_data, const char
 		return 1;
 	}
 
+	err = gcry_pk_verify(sig, msg, pubkey);
+	if (err != GPG_ERR_NO_ERROR) {
+		fprintf(stderr, "verify fail: %s\n", gcry_strerror(err));
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -246,13 +252,13 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		cur->initiator = BOB;
 		credit_delta = &cur->bob_credit_delta;
 		collateral_delta = &cur->bob_collateral_delta;
-		pubkey_first = (const char*)ledger->pubkey_alice; // alice countersigns bobs
-		pubkey_last = (const char*)ledger->pubkey_bob; // alice countersigns bobs
+		pubkey_first = (const char*)ledger->pubkey_bob; // alice countersigns bobs
+		pubkey_last = (const char*)ledger->pubkey_alice; // alice countersigns bobs
 	} else {
 		credit_delta = &cur->alice_credit_delta;
 		collateral_delta = &cur->alice_collateral_delta;
-		pubkey_first = (const char*)ledger->pubkey_bob;
-		pubkey_last = (const char*)ledger->pubkey_alice;
+		pubkey_first = (const char*)ledger->pubkey_alice;
+		pubkey_last = (const char*)ledger->pubkey_bob;
 	}
 
 	r = asn1_der_decoding(&item, data, c, err);
