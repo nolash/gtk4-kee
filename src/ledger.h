@@ -16,8 +16,8 @@ struct kee_ledger_item_t {
 	int bob_collateral_delta;
 	time_t time;
 	enum kee_initiator initiator;
-	int response;
-	const char *body;
+	char response;
+	char body[4096];
 };
 
 struct kee_ledger_t {

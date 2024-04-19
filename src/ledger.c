@@ -206,7 +206,6 @@ static int verify_item(asn1_node item, const char *pubkey_first_data, const char
 
 	err = gcry_pk_verify(sig, msg, pubkey);
 	if (err != GPG_ERR_NO_ERROR) {
-		fprintf(stderr, "verify fail: %s\n", gcry_strerror(err));
 		return 1;
 	}
 
@@ -225,6 +224,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	int *collateral_delta;
 	const char *pubkey_first;
 	const char *pubkey_last;
+	char tmp[8];
 	int v;
 
 
@@ -237,13 +237,11 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	memset(&item, 0, sizeof(item));
 	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
 	if (r != ASN1_SUCCESS) {
-		debug_log(DEBUG_ERROR, err);
 		return NULL;
 	}
 
 	r = asn1_create_element(root, "Kee.KeeEntry", &item);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return NULL;
 	}
 
@@ -252,7 +250,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		cur->initiator = BOB;
 		credit_delta = &cur->bob_credit_delta;
 		collateral_delta = &cur->bob_collateral_delta;
-		pubkey_first = (const char*)ledger->pubkey_bob; // alice countersigns bobs
+		pubkey_first = (const char*)ledger->pubkey_bob;
 		pubkey_last = (const char*)ledger->pubkey_alice; // alice countersigns bobs
 	} else {
 		credit_delta = &cur->alice_credit_delta;
@@ -263,7 +261,6 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 
 	r = asn1_der_decoding(&item, data, c, err);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return NULL;
 	}
 
@@ -275,7 +272,6 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	c = sizeof(v);
 	r = asn1_read_value(item, "creditDelta", &v, &c);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return NULL;
 	}
 
@@ -287,13 +283,33 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	c = sizeof(v);
 	r = asn1_read_value(item, "collateralDelta", &v, &c);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return NULL;
 	}
 
 	strap_be((char*)&v, c, (char*)collateral_delta, sizeof(v));
 	if (is_le()) {
 		flip_endian(sizeof(v), (void*)collateral_delta);
+	}
+
+	c = 8;
+	r = asn1_read_value(item, "response", tmp, &c);
+	if (r != ASN1_SUCCESS) {
+		return NULL;
+	}
+	if (tmp[0] == "T") { // "TRUE"
+		cur->response = 1;	
+	}
+
+	c = 8;
+	r = asn1_read_value(item, "timestamp", tmp, &c);
+	if (r != ASN1_SUCCESS) {
+		return NULL;
+	}
+
+	c = 4096;
+	r = asn1_read_value(item, "body", cur->body, &c);
+	if (r != ASN1_SUCCESS) {
+		return NULL;
 	}
 
 	return cur;
@@ -323,20 +339,17 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	memset(&item, 0, sizeof(item));
 	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
 	if (r != ASN1_SUCCESS) {
-		debug_log(DEBUG_ERROR, err);
 		return ERR_FAIL;
 	}
 
 	r = asn1_create_element(root, "Kee.KeeEntryHead", &item);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 	
 	c = (int)data_len;
 	r = asn1_der_decoding(&item, data, c, err);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 
@@ -348,35 +361,30 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	c = 64;
 	r = asn1_read_value(item, "uoa", ledger->uoa, &c);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 	
 	c = 1;
 	r = asn1_read_value(item, "uoaDecimals", &ledger->uoa_decimals, &c);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 
 	c = 32;
 	r = asn1_read_value(item, "alicePubKey", ledger->pubkey_alice, &c);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 
 	c = 32;
 	r = asn1_read_value(item, "bobPubKey", ledger->pubkey_bob, &c);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 	
 	c = 4096 - 64;
 	r = asn1_read_value(item, "body", ledger->body, &c);
 	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
 		return r;
 	}
 
