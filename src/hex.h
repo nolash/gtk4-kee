@@ -16,6 +16,7 @@ extern "C" {
  * \return 1 if Output buffer is insufficient to write the result string, otherwise 0 (success).
  */
 int bin_to_hex(const unsigned char *data, size_t l, unsigned char *zHex, size_t *z);
+size_t hex2bin(const char *hex, unsigned char *out);
 
 #ifdef __cplusplus
 }
