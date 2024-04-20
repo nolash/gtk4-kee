@@ -7,6 +7,7 @@
 #include "kee-entry.h"
 #include "err.h"
 #include "cadiz.h"
+#include "ledger.h"
 
 
 typedef struct {
@@ -69,7 +70,8 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 	o = kee_entry_new(store->db);
 	kee_entry_set_resolver(o, &store->resolver);
 	kee_entry_store_seek(store, index);
-	kee_entry_deserialize(o, store->last_key, 9, store->last_value, store->last_value_length);
+	//kee_entry_deserialize(o, store->last_key, 9, store->last_value, store->last_value_length);
+	kee_entry_deserialize(o, store->last_value, store->last_value_length);
 
 	//return o;
 	kee_entry_apply_list_item_widget(o);

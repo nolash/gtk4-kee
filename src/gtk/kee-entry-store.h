@@ -4,7 +4,6 @@
 #include <glib-object.h>
 #include "db.h"
 
-
 G_BEGIN_DECLS
 
 #define KEE_TYPE_ENTRY_STORE kee_entry_store_get_type()

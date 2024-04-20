@@ -134,7 +134,7 @@ class LedgerSigner:
         w.close()
         
 
-    def create_key(self, keyname, outdir=None, pin=1234):
+    def create_key(self, keyname, outdir=None, pin='1234'):
         k = ECC.generate(curve='Ed25519')
         pk_pkcs8 = k.export_key(format='DER')
         pk_der = Crypto.IO.PKCS8.unwrap(pk_pkcs8)

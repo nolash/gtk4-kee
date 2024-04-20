@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "endian.h"
 #include "strip.h"
+#include "ledger.h"
 
 
 typedef struct {
@@ -33,16 +34,9 @@ extern const asn1_static_node schema_entry_asn1_tab[];
 struct _KeeEntry {
 	GtkWidget parent;
 	int state;
-	long long timestamp;
-	char mem[4096];
 	char header[1024];
-	char *current_id;
-	char *unit_of_account;
-	char *alice;
-	char *bob;
-	char *body;
-	char *subject;
-	int decimals;
+	char *current_id[128];
+	struct kee_ledger_t ledger;
 	struct Cadiz *resolver;
 	struct db_ctx *db;
 };
@@ -71,6 +65,9 @@ static void kee_entry_dispose(GObject *o) {
 }
 
 static void kee_entry_finalize(GObject *o) {
+	KeeEntry *entry = KEE_ENTRY(o);
+
+	kee_ledger_free(&entry->ledger);
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "tearing down entry");
 	//G_OBJECT_CLASS(kee_entry_parent_class)->finalize(o);
 }
@@ -82,11 +79,8 @@ static void kee_entry_class_init(KeeEntryClass *kls) {
 }
 
 static void kee_entry_init(KeeEntry *o) {
-	o->current_id = (char*)o->mem;
-	o->unit_of_account = (char*)((o->mem)+128);
 	o->state = 2;
 	o->resolver = NULL;
-	o->subject = NULL;
 }
 
 KeeEntry* kee_entry_new(struct db_ctx *db) {
@@ -100,200 +94,39 @@ void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 	o->resolver = resolver;	
 }
 
-//int kee_entry_load(KeeEntry *o, struct db_ctx *db, const char *id) {
-//	return ERR_OK;
-//}
-
-static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data_len, char *out, size_t *out_len) {
+int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	int r;
-	char err[1024];
-	asn1_node root;
-	asn1_node item;
-	int alice;
-	int bob;
-	int credit;
-	int collateral;
-	int c;
-	char flag;
-	int v;
-	char *p;
 
-	memset(&root, 0, sizeof(root));
-	memset(&item, 0, sizeof(item));
-	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
-	if (r != ASN1_SUCCESS) {
-		debug_log(DEBUG_ERROR, err);
+	r = kee_ledger_parse(&o->ledger, data, data_len);
+	if (r) {
 		return ERR_FAIL;
 	}
-
-	r = asn1_create_element(root, "Kee.KeeEntry", &item);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-	
-	c = (int)data_len - 1;
-	r = asn1_der_decoding(&item, data, c, err);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-	flag = *(data+data_len-1);
-	
-//	c = 1;
-//	flags = 0;
-//	r = asn1_read_value(item, "flags", &flags, &c);
-//	if (r != ASN1_SUCCESS) {
-//		fprintf(stderr, "%s\n", err);
-//		return r;
-//	}
-
-	credit = 0;
-	p = (char*)&v;
-	c = sizeof(v);
-	v = 0;
-	r = asn1_read_value(item, "creditDelta", p, &c);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-
-	strap_be(p, c, (char*)&credit, sizeof(credit));
-	if (is_le()) {
-		flip_endian(sizeof(credit), (void*)&credit);
-	}
-
-	collateral = 0;
-	c = sizeof(v);
-	v = 0;
-	r = asn1_read_value(item, "collateralDelta", p, &c);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-
-	strap_be(p, c, (char*)&collateral, sizeof(collateral));
-	if (is_le()) {
-		flip_endian(sizeof(collateral), (void*)&collateral);
-	}
-
-
-	alice = 0;
-	bob = 0;
-	if (flag) { // bit string is left to right
-		bob = credit;	
-	} else {
-		alice = credit;	
-	}
-
-	sprintf(out, "alice: %i, bob %i", alice, bob);
-	*out_len = strlen(out);
-	return ERR_OK;
-}
-
-int kee_entry_deserialize(KeeEntry *o, const char *key, size_t key_len, const char *data, size_t data_len) {
-	int r;
-	char err[1024];
-	size_t out_len;
-	size_t remaining;
-	asn1_node root;
-	asn1_node item;
-	int c;
-	char *p;
-	CMimeMessage_T *msg;
-
-	memset(&root, 0, sizeof(root));
-	memset(&item, 0, sizeof(item));
-	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
-	if (r != ASN1_SUCCESS) {
-		debug_log(DEBUG_ERROR, err);
-		return ERR_FAIL;
-	}
-
-	r = asn1_create_element(root, "Kee.KeeEntryHead", &item);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-	
-	c = (int)data_len;
-	r = asn1_der_decoding(&item, data, c, err);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
+	kee_content_resolve(&o->ledger.content, o->resolver);
 
 	r = calculate_digest_algo(data, data_len, o->current_id, GCRY_MD_SHA512);	
 	if (r) {
 		return ERR_DIGESTFAIL;
 	}
 
-	o->state = 1;
-
-	out_len = 4096;
-	remaining = out_len;
-	c = remaining;
-	p = o->unit_of_account;
-	r = asn1_read_value(item, "uoa", p, &c);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-	p = o->unit_of_account + c;
-	*p = 0;
-	remaining -= (c + 1);
-	p += 1;
-
-	c = remaining;
-	o->alice = p;
-	r = asn1_read_value(item, "alicePubKey", o->alice, &c);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-
-	remaining -= c;
-	p += c;
-
-	c = remaining;
-	o->bob = p;
-	r = asn1_read_value(item, "bobPubKey", o->bob, &c);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-	if (is_le()) {
-		flip_endian(c, (void*)o->bob);
-	}
-	p += c;
-
-	c = remaining;
-	o->body = p;
-	r = asn1_read_value(item, "body", p, &c);
-	if (r != ASN1_SUCCESS) {
-		fprintf(stderr, "%s\n", err);
-		return r;
-	}
-	p += c;
-
-	if (o->resolver) {
-		r = cadiz_resolve(o->resolver, o->body, o->body, &out_len);
-		if (!r) {
-			msg = cmime_message_new();
-			o->subject = o->body + out_len;
-			r = cmime_message_from_string(&msg, o->body, 0);
-			if (!r) {
-				o->subject = cmime_message_get_subject(msg);
-				o->subject = cmime_string_strip(o->subject);
-				out_len += strlen(o->subject) + 1;
-			}
-			remaining -= out_len;
-		} else {
-			remaining -= c;
-		}
-	}
-
 	o->state = 0;
+
+	return ERR_OK;
+}
+
+static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data_len, char *out, size_t *out_len) {
+	struct kee_ledger_item_t *item;
+
+	item = kee_ledger_parse_item(&o->ledger, data, data_len);
+	if (item == NULL) {
+		return ERR_FAIL;
+	}
+	kee_content_resolve(&item->content, o->resolver);
+	
+	if (item->content.flags & KEE_CONTENT_RESOLVED_SUBJECT) {
+		strcpy(out, item->content.subject);
+	} else {
+		strcpy(out, "(no subject)");
+	}
 
 	return ERR_OK;
 }
@@ -309,15 +142,14 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 		return;
 	}
 
-	//widget = gtk_label_new(o->unit_of_account);
 	l = 129;
-	bin_to_hex((unsigned char*)o->alice, 64, alice_hex, &l);
+	bin_to_hex((unsigned char*)o->ledger.pubkey_alice, 64, alice_hex, &l);
 	l = 129;
-	bin_to_hex((unsigned char*)o->bob, 64, bob_hex, &l);
-	sprintf(o->header, "[%s] %s -> %s", o->unit_of_account, alice_hex, bob_hex);
-	//widget = gtk_label_new(o->header);
-	//gtk_box_append(GTK_BOX(o), widget);
-	widget = gtk_label_new(o->subject);
+	bin_to_hex((unsigned char*)o->ledger.pubkey_bob, 64, bob_hex, &l);
+	sprintf(o->header, "[%s] %s -> %s", o->ledger.uoa, alice_hex, bob_hex);
+	widget = gtk_label_new(o->header);
+	gtk_box_append(GTK_BOX(o), widget);
+	widget = gtk_label_new(o->ledger.content.subject);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }
@@ -374,7 +206,7 @@ void kee_entry_apply_display_widget(KeeEntry *o) {
 	list = gtk_string_list_new(NULL);
 	kee_entry_load_items(o, list);
 
-	widget = gtk_label_new(o->subject);
+	widget = gtk_label_new(o->ledger.content.subject);
 	gtk_box_append(GTK_BOX(o), widget);
 
 	factory = gtk_signal_list_item_factory_new();
@@ -391,12 +223,9 @@ void kee_entry_apply_display_widget(KeeEntry *o) {
 
 void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
 	target->db = orig->db;
-	target->current_id = orig->current_id;
+	memcpy(target->current_id, orig->current_id, 128);
 	target->resolver = orig->resolver;
-	target->subject = orig->subject;
-	target->unit_of_account = orig->unit_of_account;
-	target->alice = orig->alice;
-	target->bob = orig->bob;
+	target->ledger = orig->ledger;
 	return;
 }
 
