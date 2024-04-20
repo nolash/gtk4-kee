@@ -15,11 +15,6 @@
 
 extern const asn1_static_node schema_entry_asn1_tab[];
 
-int kee_ledger_resolve(struct kee_ledger_t *ledger, struct Cadiz *resolver) {
-		return ERR_OK;
-}	
-
-
 static char *get_message(asn1_node item, char *out_digest, char *out_data, size_t *out_len) {
 	int r;
 	size_t c;
@@ -295,7 +290,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
-	r = kee_content_init(&(ledger->content), tmp, 0);
+	r = kee_content_init(&(cur->content), tmp, 0);
 	if (r) {
 		return NULL;
 	}
@@ -342,11 +337,6 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 		return r;
 	}
 
-//	r = calculate_digest_algo(data, data_len, o->current_id, GCRY_MD_SHA512);	
-//	if (r) {
-//		return ERR_DIGESTFAIL;
-//	}
-
 	c = 64;
 	r = asn1_read_value(item, "uoa", ledger->uoa, &c);
 	if (r != ASN1_SUCCESS) {
@@ -385,88 +375,13 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	return ERR_OK;
 }
 
-//
-//int kee_ledger_parse_item(kee_ledger_item_t *item, const char *data, size_t data_len) {
-//	int r;
-//	char err[1024];
-//	asn1_node root;
-//	asn1_node item;
-//	int alice;
-//	int bob;
-//	int credit;
-//	int collateral;
-//	int c;
-//	char flag;
-//	int v;
-//	char *p;
-//
-//	memset(&root, 0, sizeof(root));
-//	memset(&item, 0, sizeof(item));
-//	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
-//	if (r != ASN1_SUCCESS) {
-//		debug_log(DEBUG_ERROR, err);
-//		return ERR_FAIL;
-//	}
-//
-//	r = asn1_create_element(root, "Kee.KeeEntry", &item);
-//	if (r != ASN1_SUCCESS) {
-//		fprintf(stderr, "%s\n", err);
-//		return r;
-//	}
-//	
-//	c = (int)data_len - 1;
-//	r = asn1_der_decoding(&item, data, c, err);
-//	if (r != ASN1_SUCCESS) {
-//		fprintf(stderr, "%s\n", err);
-//		return r;
-//	}
-//	flag = *(data+data_len-1);
-//	
-////	c = 1;
-////	flags = 0;
-////	r = asn1_read_value(item, "flags", &flags, &c);
-////	if (r != ASN1_SUCCESS) {
-////		fprintf(stderr, "%s\n", err);
-////		return r;
-////	}
-//
-//	credit = 0;
-//	p = (char*)&v;
-//	c = sizeof(v);
-//	v = 0;
-//	r = asn1_read_value(item, "creditDelta", p, &c);
-//	if (r != ASN1_SUCCESS) {
-//		fprintf(stderr, "%s\n", err);
-//		return r;
-//	}
-//
-//	strap_be(p, c, (char*)&credit, sizeof(credit));
-//	if (is_le()) {
-//		flip_endian(sizeof(credit), (void*)&credit);
-//	}
-//
-//	collateral = 0;
-//	c = sizeof(v);
-//	v = 0;
-//	r = asn1_read_value(item, "collateralDelta", p, &c);
-//	if (r != ASN1_SUCCESS) {
-//		fprintf(stderr, "%s\n", err);
-//		return r;
-//	}
-//
-//	strap_be(p, c, (char*)&collateral, sizeof(collateral));
-//	if (is_le()) {
-//		flip_endian(sizeof(collateral), (void*)&collateral);
-//	}
-//
-//
-//	alice = 0;
-//	bob = 0;
-//	if (flag) { // bit string is left to right
-//		bob = credit;	
-//	} else {
-//		alice = credit;	
-//	}
-//
-//	return ERR_OK;	
-//}
+void kee_ledger_resolve(struct kee_ledger_t *ledger, Cadiz *cadiz) {
+	struct kee_ledger_item_t *item;
+
+	kee_content_resolve(&ledger->content, cadiz);
+	item = ledger->last_item;
+	while (item != NULL) {
+		kee_content_resolve(&item->content, cadiz);
+		item = item->prev_item;
+	}
+}

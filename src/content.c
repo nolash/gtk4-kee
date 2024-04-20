@@ -37,7 +37,7 @@ int kee_content_resolve(struct kee_content_t *content, Cadiz *cadiz) {
 	r = cadiz_resolve(cadiz, content->key, content->body, &c);
 	if (!r) {
 		content->mem_size -= c;
-		content->flags |= KEE_CONTENT_RESOLVED_BODY;
+		content->flags |= KEE_CONTENT_RESOLVED_DATA;
 		msg = cmime_message_new();
 		r = cmime_message_from_string(&msg, content->body, 0);
 		if (!r) {
@@ -50,6 +50,7 @@ int kee_content_resolve(struct kee_content_t *content, Cadiz *cadiz) {
 				content->flags |= KEE_CONTENT_RESOLVED_SUBJECT;
 				content->mem_size -= subject_len;
 			}
+			content->flags |= KEE_CONTENT_RESOLVED_BODY;
 		}
 		cmime_message_free(msg);
 	}

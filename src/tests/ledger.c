@@ -16,8 +16,11 @@ int main() {
 	struct kee_ledger_t ledger;
 	struct kee_ledger_item_t *ledger_item_a;
 	struct kee_ledger_item_t *ledger_item_b;
+	Cadiz cadiz;
 	char data[1024];
 	
+	cadiz.locator = "./testdata_resource";
+
 	c = hex2bin(test_ledger_data, (unsigned char*)data);
 	r = kee_ledger_parse(&ledger, data, c);
 	if (r) {
@@ -35,6 +38,8 @@ int main() {
 	if (ledger_item_b == NULL) {
 		return 1;
 	}
+
+	kee_ledger_resolve(&ledger, &cadiz);
 
 	kee_ledger_free(&ledger);
 

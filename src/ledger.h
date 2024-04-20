@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "content.h"
+#include "cadiz.h"
 
 enum kee_initiator {
 	ALICE,
@@ -35,5 +36,6 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len);
 void kee_ledger_free(struct kee_ledger_t *ledger);
 void kee_ledger_item_free(struct kee_ledger_item_t *item);
+void kee_ledger_resolve(struct kee_ledger_t *ledger, Cadiz *cadiz);
 
 #endif
