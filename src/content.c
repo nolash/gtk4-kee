@@ -7,12 +7,7 @@
 #include "err.h"
 
 
-struct kee_content_t* kee_content_new(const char *key, size_t size_hint) {
-	struct kee_content_t *content = malloc(sizeof(struct kee_content_t));
-	if (content == NULL) {
-		return NULL;
-	}
-
+int kee_content_init(struct kee_content_t *content, const char *key, size_t size_hint) {
 	if (size_hint) {
 		content->mem_size = size_hint;
 	} else {
@@ -21,14 +16,13 @@ struct kee_content_t* kee_content_new(const char *key, size_t size_hint) {
 
 	content->mem = malloc(content->mem_size);
 	if (content->mem == NULL) {
-		free(content);
-		return NULL;
+		return 1;
 	}
 	content->body = content->mem;
 	content->flags = 0;
 
 	memcpy(content->key, key, KEE_CONTENT_KEY_SIZE);
-	return content;
+	return ERR_OK;
 }
 
 int kee_content_resolve(struct kee_content_t *content, Cadiz *cadiz) {
@@ -65,5 +59,4 @@ int kee_content_resolve(struct kee_content_t *content, Cadiz *cadiz) {
 
 void kee_content_free(struct kee_content_t *content) {
 	free(content->mem);
-	free(content);
 }

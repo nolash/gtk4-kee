@@ -21,7 +21,7 @@ struct kee_content_t {
 	char flags;
 };
 
-struct kee_content_t* kee_content_new(const char *key, size_t size_hint);
+int kee_content_init(struct kee_content_t *content, const char *key, size_t size_hint);
 int kee_content_resolve(struct kee_content_t *content, Cadiz *cadiz);
 void kee_content_free(struct kee_content_t *content);
 

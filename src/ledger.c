@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "digest.h"
 #include "strip.h"
+#include "content.h"
 
 
 extern const asn1_static_node schema_entry_asn1_tab[];
@@ -17,23 +18,6 @@ extern const asn1_static_node schema_entry_asn1_tab[];
 int kee_ledger_resolve(struct kee_ledger_t *ledger, struct Cadiz *resolver) {
 		return ERR_OK;
 }	
-//
-//	if (o->resolver) {
-//		r = cadiz_resolve(o->resolver, o->body, o->body, &out_len);
-//		if (!r) {
-//			msg = cmime_message_new();
-//			o->subject = o->body + out_len;
-//			r = cmime_message_from_string(&msg, o->body, 0);
-//			if (!r) {
-//				o->subject = cmime_message_get_subject(msg);
-//				o->subject = cmime_string_strip(o->subject);
-//				out_len += strlen(o->subject) + 1;
-//			}
-//			remaining -= out_len;
-//		} else {
-//			remaining -= c;
-//		}
-//	}
 
 
 static char *get_message(asn1_node item, char *out_digest, char *out_data, size_t *out_len) {
@@ -224,7 +208,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	int *collateral_delta;
 	const char *pubkey_first;
 	const char *pubkey_last;
-	char tmp[8];
+	char tmp[64];
 	int v;
 
 
@@ -305,12 +289,16 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
-//
-//	c = 4096;
-//	r = asn1_read_value(item, "body", cur->body, &c);
-//	if (r != ASN1_SUCCESS) {
-//		return NULL;
-//	}
+
+	c = 64;
+	r = asn1_read_value(item, "body", tmp, &c);
+	if (r != ASN1_SUCCESS) {
+		return NULL;
+	}
+	r = kee_content_init(&(ledger->content), tmp, 0);
+	if (r) {
+		return NULL;
+	}
 
 	return cur;
 }
@@ -332,9 +320,10 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	asn1_node root;
 	asn1_node item;
 	int c;
-	//CMimeMessage_T *msg;
+	char content_key[64];
 
 	memset(ledger, 0, sizeof(struct kee_ledger_t));
+
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
 	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
@@ -381,12 +370,17 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
-//	
-//	c = 4096 - 64;
-//	r = asn1_read_value(item, "body", ledger->body, &c);
-//	if (r != ASN1_SUCCESS) {
-//		return r;
-//	}
+
+	
+	c = 64;
+	r = asn1_read_value(item, "body", content_key, &c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+	r = kee_content_init(&(ledger->content), content_key, 0);
+	if (r) {
+		return 1;
+	}
 
 	return ERR_OK;
 }
