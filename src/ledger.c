@@ -296,7 +296,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
-	if (tmp[0] == "T") { // "TRUE"
+	if (tmp[0] == 'T') { // "TRUE"
 		cur->response = 1;	
 	}
 
@@ -305,12 +305,12 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
-
-	c = 4096;
-	r = asn1_read_value(item, "body", cur->body, &c);
-	if (r != ASN1_SUCCESS) {
-		return NULL;
-	}
+//
+//	c = 4096;
+//	r = asn1_read_value(item, "body", cur->body, &c);
+//	if (r != ASN1_SUCCESS) {
+//		return NULL;
+//	}
 
 	return cur;
 }
@@ -381,12 +381,12 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
-	
-	c = 4096 - 64;
-	r = asn1_read_value(item, "body", ledger->body, &c);
-	if (r != ASN1_SUCCESS) {
-		return r;
-	}
+//	
+//	c = 4096 - 64;
+//	r = asn1_read_value(item, "body", ledger->body, &c);
+//	if (r != ASN1_SUCCESS) {
+//		return r;
+//	}
 
 	return ERR_OK;
 }

@@ -5,7 +5,7 @@ LINKOBJS := $(wildcard ../*.o)
 INCLUDES :=  -I..
 CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0` $(INCLUDES) -Wall
 #LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -lvarint -llash
-LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -llash -ltasn1
+LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -llash -ltasn1 -lcmime 
 LDFLAGS += $(LIBS) 
 
 all: obj_debug $(OBJS)
@@ -20,6 +20,7 @@ obj_debug:
 #	./$<
 test_run:
 	./test_cadir
+	./test_content
 	./test_ledger
 
 test: all test_run

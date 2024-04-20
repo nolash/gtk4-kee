@@ -3,6 +3,8 @@
 
 #include <time.h>
 
+#include "content.h"
+
 enum kee_initiator {
 	ALICE,
 	BOB,
@@ -17,7 +19,7 @@ struct kee_ledger_item_t {
 	time_t time;
 	enum kee_initiator initiator;
 	char response;
-	char body[4096];
+	struct kee_content_t *content;
 };
 
 struct kee_ledger_t {
@@ -26,7 +28,7 @@ struct kee_ledger_t {
 	char pubkey_bob[32];
 	char uoa_decimals;
 	char uoa[64];
-	char body[4032];
+	struct kee_content_t *content;
 };
 
 struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len);
