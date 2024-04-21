@@ -367,7 +367,7 @@ class LedgerEntry(Ledger):
 
         b = der_encode(o)
         flag = b'\x00'
-        if self.signer_sequence[0] == 'bob':
+        if self.signer_sequence[0] != 'alice':
             flag = b'\x01'
         w.write(b + flag)
 
