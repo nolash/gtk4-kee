@@ -299,6 +299,9 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 }
 
 void kee_ledger_item_free(struct kee_ledger_item_t *item) {
+	if (item == NULL) {
+		return;
+	}
 	if (item->prev_item != NULL) {
 		kee_ledger_item_free(item->prev_item);
 	}

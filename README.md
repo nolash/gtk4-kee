@@ -19,6 +19,7 @@ Below are the library versions of the [archlinux](https://archlinux.org/) compon
 | libgcrypt | 1.10.3 |
 | libxdg-basedir | 1.2.3 |
 | lmdb | 0.9.32 |
+| openldap | 2.6.7 |
 | rustup | 1.26.0 |
 | zbar | 0.23.90 |
 | zlib | 1.3.1 |

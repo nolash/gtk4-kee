@@ -29,6 +29,8 @@ enum DbKey {
 	DbKeyLedgerHead = 0x01,
 	/// A credit item record
 	DbKeyLedgerEntry = 0x02,
+	/// A DN record
+	DbKeyDN = 0x03,
 	/// A reverse lookup record; resolves the content hash to the content entry in the database.
 	DbKeyReverse = 0xff,
 };

@@ -19,6 +19,7 @@
 #include "endian.h"
 #include "strip.h"
 #include "ledger.h"
+#include "dn.h"
 
 
 typedef struct {
@@ -35,7 +36,8 @@ struct _KeeEntry {
 	GtkWidget parent;
 	int state;
 	char header[1024];
-	char *current_id[128];
+	struct kee_dn_t bob_dn;
+	char current_id[128];
 	struct kee_ledger_t ledger;
 	struct Cadiz *resolver;
 	struct db_ctx *db;
@@ -68,6 +70,9 @@ static void kee_entry_finalize(GObject *o) {
 	KeeEntry *entry = KEE_ENTRY(o);
 
 	kee_ledger_free(&entry->ledger);
+
+	kee_dn_free(&entry->bob_dn);
+
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "tearing down entry");
 	//G_OBJECT_CLASS(kee_entry_parent_class)->finalize(o);
 }
@@ -87,6 +92,7 @@ KeeEntry* kee_entry_new(struct db_ctx *db) {
 	KeeEntry *o;
 	o = KEE_ENTRY(g_object_new(KEE_TYPE_ENTRY, "orientation", GTK_ORIENTATION_VERTICAL, NULL));
 	o->db = db;
+	kee_dn_init(&o->bob_dn, 0);
 	return o;
 }
 
@@ -96,6 +102,15 @@ void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 
 int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	int r;
+	size_t key_len;
+	size_t last_value_length;
+	char mem[33 + 1024];
+	char *last_key;
+	char *last_value = mem + 33;
+    
+       	last_key = mem;	
+	key_len = 33;
+	last_value_length = 1024;
 
 	r = kee_ledger_parse(&o->ledger, data, data_len);
 	if (r) {
@@ -103,6 +118,20 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	}
 	kee_content_resolve(&o->ledger.content, o->resolver);
 
+	last_value_length = 2048;
+	*last_key = DbKeyDN;
+	memcpy(last_key+1, o->ledger.pubkey_bob, 32);
+	key_len = 33;
+	r = db_next(o->db, DbKeyDN, &last_key, &key_len, &last_value, &last_value_length);
+	if (r) {
+		return ERR_FAIL;
+	}
+	db_rewind(o->db);
+	r = kee_dn_from_str(&o->bob_dn, last_value, last_value_length);
+	if (r) {
+		return ERR_FAIL;
+	}
+	
 	r = calculate_digest_algo(data, data_len, o->current_id, GCRY_MD_SHA512);	
 	if (r) {
 		return ERR_DIGESTFAIL;
@@ -132,15 +161,23 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 }
 
 void kee_entry_apply_list_item_widget(KeeEntry *o) {
+	int r;
 	GtkWidget *widget;
 	size_t l;
 	unsigned char alice_hex[129];
 	unsigned char bob_hex[129];
+	char *bob;
 
 	if (o->state)  {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "entry must be loaded first");
 		return;
 	}
+
+//	bob = NULL;
+//	r = ldap_rdn2str(*o->bob_dn, &bob, LDAP_DN_FORMAT_LDAPV3);
+//	if (r) {
+//		return;
+//	}
 
 	l = 129;
 	bin_to_hex((unsigned char*)o->ledger.pubkey_alice, 64, alice_hex, &l);
@@ -149,7 +186,7 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	sprintf(o->header, "[%s] %s -> %s", o->ledger.uoa, alice_hex, bob_hex);
 	widget = gtk_label_new(o->header);
 	gtk_box_append(GTK_BOX(o), widget);
-	widget = gtk_label_new(o->ledger.content.subject);
+	widget = gtk_label_new(o->bob_dn.cn);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }
@@ -226,6 +263,8 @@ void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
 	memcpy(target->current_id, orig->current_id, 128);
 	target->resolver = orig->resolver;
 	target->ledger = orig->ledger;
+	target->state = orig->state;
+	target->bob_dn = orig->bob_dn;
 	return;
 }
 

@@ -62,6 +62,7 @@ static guint kee_entry_store_get_n_items(GListModel *list) {
 
 
 static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
+	int r;
 	KeeEntry *o;
 	KeeEntryStore *store;
 
@@ -71,7 +72,10 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 	kee_entry_set_resolver(o, &store->resolver);
 	kee_entry_store_seek(store, index);
 	//kee_entry_deserialize(o, store->last_key, 9, store->last_value, store->last_value_length);
-	kee_entry_deserialize(o, store->last_value, store->last_value_length);
+	r = kee_entry_deserialize(o, store->last_value, store->last_value_length);
+	if (r) {
+		return NULL;
+	}
 
 	//return o;
 	kee_entry_apply_list_item_widget(o);

@@ -35,7 +35,7 @@ NOBODY = b'\x00' * 64
 NOSIG = b''
 PFX_LEDGER_HEAD = b'\x01'
 PFX_LEDGER_ENTRY = b'\x02'
-PFX_LEDGER_COUNTERKEY = b'\x03'
+PFX_LEDGER_PUBKEY = b'\x03'
 
 random.seed(int(time.time_ns()))
 
@@ -89,7 +89,16 @@ class LedgerSigner:
         self.signer = {}
         self.keypair = {}
         self.pubkey_rindex = {}
+        self.names = {}
         self.crypto_dir = crypto_dir
+
+
+    def get_pubkey(self, k):
+        return self.keypair[k][1]
+
+
+    def get_name(self, k):
+        return self.names[k]
 
 
     def __write_key(self, keyname, outdir, pin):
@@ -132,7 +141,7 @@ class LedgerSigner:
         w = open(fp, "wb")
         w.write(b)
         w.close()
-        
+
 
     def create_key(self, keyname, outdir=None, pin='1234'):
         k = ECC.generate(curve='Ed25519')
@@ -140,6 +149,7 @@ class LedgerSigner:
         pk_der = Crypto.IO.PKCS8.unwrap(pk_pkcs8)
         pk = Crypto.Util.asn1.DerOctetString().decode(pk_der[1], strict=True).payload
         pubk = k.public_key().export_key(format='raw')
+
 
         self.signer[keyname] = eddsa.new(k, 'rfc8032')
         self.keypair[keyname] = (pk, pubk)
@@ -150,6 +160,8 @@ class LedgerSigner:
 
         self.__write_key(keyname, outdir, pin)
         
+        self.names[keyname] = fake.name()
+
         return pubk
 
 
@@ -303,7 +315,7 @@ class LedgerEntry(Ledger):
     collateral_bob = 0
     ms = 0
 
-    def __init__(self, head, signer, generator, parent=None, body=NOBODY):
+    def __init__(self, head, signer, generator, parent=None, body=NOBODY, bob_name='bob'):
         self.head = head
         self.parent = parent
         if self.parent == None:
@@ -315,9 +327,9 @@ class LedgerEntry(Ledger):
         delta = generator.delta()
         self.signer_sequence = []
         if delta[2]:
-            self.signer_sequence = ['bob', 'alice']
+            self.signer_sequence = [bob_name, 'alice']
         else:
-            self.signer_sequence = ['alice', 'bob']
+            self.signer_sequence = ['alice', bob_name]
         self.credit_delta = delta[0]
         self.collateral_delta = delta[1]
 
@@ -378,8 +390,8 @@ class LedgerEntry(Ledger):
         return r
   
 
-def generate_entry(data_dir, signer, generator, head, parent):
-    o = LedgerEntry(head, signer, generator, parent=parent)
+def generate_entry(data_dir, signer, generator, head, bob_name, parent):
+    o = LedgerEntry(head, signer, generator, parent=parent, bob_name=bob_name)
     w = io.BytesIO()
     r = o.serialize(data_dir, w=w)
     h = hashlib.new('sha512')
@@ -389,7 +401,7 @@ def generate_entry(data_dir, signer, generator, head, parent):
     return (z, b,)
 
 
-def generate_ledger(data_dir, signer, entry_count=3, alice=None, bob=None):
+def generate_ledger(dbi, data_dir, signer, bob_name, entry_count=3, alice=None, bob=None):
     r = []
     o = LedgerHead(alice_key=alice, bob_key=bob)
     w = io.BytesIO()
@@ -408,7 +420,7 @@ def generate_ledger(data_dir, signer, entry_count=3, alice=None, bob=None):
     generator = LedgerGenerator()
     for i in range(entry_count):
         try:
-            v = generate_entry(data_dir, signer, generator, k, parent=parent)
+            v = generate_entry(data_dir, signer, generator, k, bob_name, parent)
         except OverflowError:
             break
         # \todo generate  key value already here
@@ -437,22 +449,29 @@ if __name__ == '__main__':
 
     d = db_init(d)
 
-    f = open('key.bin', 'wb')
-    signer = LedgerSigner(crypto_dir)
-    alice = signer.create_key('alice', data_dir)
-    f.close()
-    #bob = bob(d)
-    bob = signer.create_key('bob', data_dir)
-
     env = lmdb.open(d)
     dbi = env.open_db()
+
+    signer = LedgerSigner(crypto_dir)
+    alice = signer.create_key('alice', outdir=data_dir)
+    #bob = bob(d)
+
+    keys = ['alice']
+
+    alice_key = os.path.join(crypto_dir, 'alice.key.bin')
+    os.unlink('key.bin')
+    os.symlink(alice_key, 'key.bin')
 
     count_ledgers = os.environ.get('COUNT', '1')
 
     with env.begin(write=True) as tx:
         for i in range(int(count_ledgers)):
+            bob_name = 'Bob ' + fake.last_name()
+            keys.append(bob_name)
+            bob = signer.create_key(bob_name, outdir=data_dir)
+            
             c = random.randint(2, 20)
-            r = generate_ledger(data_dir, signer, entry_count=c, alice=alice, bob=bob)
+            r = generate_ledger(dbi, data_dir, signer, bob_name, entry_count=c, alice=alice, bob=bob)
 
             v = r.pop(0)
 
@@ -463,3 +482,9 @@ if __name__ == '__main__':
             for v in r:
                 k = LedgerEntry.to_key(v[1], z)
                 tx.put(k, v[1])
+        
+        for k in keys:
+            pubk = signer.get_pubkey(k)
+            name = signer.get_name(k).encode('utf-8')
+            tx.put(PFX_LEDGER_PUBKEY + pubk, b'CN=' + name)
+
