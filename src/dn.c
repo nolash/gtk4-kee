@@ -13,12 +13,17 @@ struct kee_dn_t* kee_dn_init(struct kee_dn_t *dn, size_t cap) {
 	dn->mem = malloc(cap);
 	dn->p = (char*)dn->mem;
 	dn->cn = NULL;
+	dn->c = NULL;
+	dn->uid = NULL;
+	dn->o = NULL;
+	dn->dc = NULL;
 	return dn;
 }
 
 int kee_dn_from_str(struct kee_dn_t *dn, const char *s, size_t l) {
 	int r;
 	int i;
+	int j;
 	LDAPDN ldn;
 	LDAPRDN lrdn;
 	LDAPAVA *ldnav;
@@ -39,15 +44,21 @@ int kee_dn_from_str(struct kee_dn_t *dn, const char *s, size_t l) {
 			break;	
 		}
 		ldnav = *lrdn;
-	
-		memcpy(tmp, ldnav->la_attr.bv_val, ldnav->la_attr.bv_len);
-		tmp[ldnav->la_attr.bv_len] = 0;
-		if (!strcmp(tmp, "CN")) {
+
+		for (j = 0; j < ldnav->la_attr.bv_len; j++) {
+			tmp[j] = ldnav->la_attr.bv_val[j] | 0x60;
+		}
+		tmp[j] = 0;
+
+		if (!strcmp(tmp, "cn")) {
 			dn->cn = dn->p;
 			dst = dn->cn;
-		} else if (!strcmp(tmp, "O")) {
+		} else if (!strcmp(tmp, "o")) {
 			dn->o = dn->p;
 			dst = dn->o;
+		} else if (!strcmp(tmp, "uid")) {
+			dn->uid = dn->p;
+			dst = dn->uid;
 		} else {
 			return 1;
 		}

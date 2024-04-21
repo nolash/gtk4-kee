@@ -131,6 +131,19 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	if (r) {
 		return ERR_FAIL;
 	}
+
+	last_value_length = 129;
+	strcpy(last_value, "uid=");
+	if (o->bob_dn.uid == NULL) {
+		r = bin_to_hex((unsigned char*)o->ledger.pubkey_bob, 32, (unsigned char*)last_value+4, &last_value_length);
+		if (r) {
+			return ERR_FAIL;
+		}
+		r = kee_dn_from_str(&o->bob_dn, last_value, last_value_length);
+		if (r) {
+			return ERR_FAIL;
+		}
+	}
 	
 	r = calculate_digest_algo(data, data_len, o->current_id, GCRY_MD_SHA512);	
 	if (r) {
@@ -161,32 +174,15 @@ static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data
 }
 
 void kee_entry_apply_list_item_widget(KeeEntry *o) {
-	int r;
 	GtkWidget *widget;
-	size_t l;
-	unsigned char alice_hex[129];
-	unsigned char bob_hex[129];
-	char *bob;
 
 	if (o->state)  {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "entry must be loaded first");
 		return;
 	}
 
-//	bob = NULL;
-//	r = ldap_rdn2str(*o->bob_dn, &bob, LDAP_DN_FORMAT_LDAPV3);
-//	if (r) {
-//		return;
-//	}
-
-	l = 129;
-	bin_to_hex((unsigned char*)o->ledger.pubkey_alice, 64, alice_hex, &l);
-	l = 129;
-	bin_to_hex((unsigned char*)o->ledger.pubkey_bob, 64, bob_hex, &l);
-	sprintf(o->header, "[%s] %s -> %s", o->ledger.uoa, alice_hex, bob_hex);
+	sprintf(o->header, "%s [%s]\n%s (%s)", o->ledger.content.subject, o->ledger.uoa, o->bob_dn.cn, o->bob_dn.uid);
 	widget = gtk_label_new(o->header);
-	gtk_box_append(GTK_BOX(o), widget);
-	widget = gtk_label_new(o->bob_dn.cn);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }

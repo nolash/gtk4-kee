@@ -2,8 +2,6 @@
 #include <libtasn1.h>
 #include <gcrypt.h>
 
-//#include "cmime.h"
-
 #include "ledger.h"
 #include "cadiz.h"
 #include "err.h"
