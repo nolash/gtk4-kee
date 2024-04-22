@@ -34,9 +34,11 @@ int kee_content_resolve(struct kee_content_t *content, Cadiz *cadiz) {
 	size_t c;
 
 	content->flags = 0;
-	c = content->mem_size;
+	c = content->mem_size - 1;
 	r = cadiz_resolve(cadiz, content->key, content->body, &c);
 	if (!r) {
+		*(content->body+c) = 0;
+		c -= 1;
 		content->mem_size -= c;
 		content->flags |= KEE_CONTENT_RESOLVED_DATA;
 		msg = cmime_message_new();

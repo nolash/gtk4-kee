@@ -29,12 +29,13 @@ static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *me
 	g_object_take_ref(G_OBJECT(o));
 
 	container = kee_menu_next(menu, "entry");
-	widget = gtk_widget_get_first_child(container);
-	if (widget) {
-		gtk_box_remove(GTK_BOX(container), widget);
+	if (!kee_entry_apply_display_widget(o)) {
+		widget = gtk_widget_get_first_child(container);
+		if (widget) {
+			gtk_box_remove(GTK_BOX(container), widget);
+		}
+		gtk_box_append(GTK_BOX(container), GTK_WIDGET(o));
 	}
-	kee_entry_apply_display_widget(o);
-	gtk_box_append(GTK_BOX(container), GTK_WIDGET(o));
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "list item selected %d", i);
 }

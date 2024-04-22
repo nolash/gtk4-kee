@@ -92,7 +92,8 @@ void kee_entry_item_apply_list_item_widget(KeeEntryItem *o) {
 
 	//sprintf(o->header, "%s [%s]\n%s (%s)", o->ledger.content.subject, o->ledger.uoa, o->bob_dn.cn, o->bob_dn.uid);
 	kee_content_resolve(&o->item->content, o->resolver);
-	widget = gtk_label_new(o->item->content.subject);
+	//widget = gtk_label_new(o->item->content.subject);
+	widget = gtk_label_new("foo");
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }

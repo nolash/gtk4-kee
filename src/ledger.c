@@ -287,6 +287,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
+
 	r = kee_content_init(&(cur->content), tmp, 0);
 	if (r) {
 		return NULL;

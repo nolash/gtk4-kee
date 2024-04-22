@@ -46,6 +46,7 @@ struct _KeeEntry {
 	int bob_credit_balance;
 	int alice_collateral_balance;
 	int bob_collateral_balance;
+	int is_displaying;
 	struct db_ctx *db;
 };
 
@@ -117,6 +118,7 @@ static void kee_entry_class_init(KeeEntryClass *kls) {
 static void kee_entry_init(KeeEntry *o) {
 	o->state = 2;
 	o->resolver = NULL;
+	o->is_displaying = 0;
 }
 
 KeeEntry* kee_entry_new(struct db_ctx *db) {
@@ -197,19 +199,21 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	sprintf(o->header, "%s [%s]\n%s (%s)", o->ledger.content.subject, o->ledger.uoa, o->bob_dn.cn, o->bob_dn.uid);
 	widget = gtk_label_new(o->header);
 	gtk_box_append(GTK_BOX(o), widget);
+	o->is_displaying = 0;
 	return;
 }
 
-void kee_entry_apply_display_widget(KeeEntry *o) {
+int kee_entry_apply_display_widget(KeeEntry *o) {
 	GtkWidget *widget;
 	GtkSingleSelection *sel;
 	GtkListItemFactory *factory;
 	KeeEntryItemStore *model;
 
-	widget = gtk_label_new(o->ledger.content.subject);
-	gtk_box_append(GTK_BOX(o), widget);
+	if (o->is_displaying) {
+		return 1;
+	}
+	o->is_displaying = 1;
 
-	return;
 	factory = gtk_signal_list_item_factory_new();
 	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_handle_item_setup), NULL);
 	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_handle_item_bind), NULL);
@@ -218,5 +222,5 @@ void kee_entry_apply_display_widget(KeeEntry *o) {
 	sel = gtk_single_selection_new(G_LIST_MODEL(model));
 	widget = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
 	gtk_box_append(GTK_BOX(o), widget);
-	return;
+	return 0;
 }
