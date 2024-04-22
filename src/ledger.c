@@ -373,6 +373,11 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 		return 1;
 	}
 
+	r = calculate_digest_algo(data, data_len, (char*)ledger->digest, GCRY_MD_SHA512);
+	if (r) {
+		return 1;
+	}
+
 	return ERR_OK;
 }
 

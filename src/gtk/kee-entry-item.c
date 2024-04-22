@@ -18,7 +18,8 @@ struct _KeeEntryItem {
 	GtkWidget parent;
 	int state;
 	char header[1024];
-	struct kee_ledger_t ledger;
+	struct kee_ledger_t *ledger;
+	struct kee_ledger_item_t *item;
 	struct Cadiz *resolver;
 	int alice_credit_delta;
 	int bob_credit_delta;
@@ -30,21 +31,26 @@ struct _KeeEntryItem {
 G_DEFINE_TYPE(KeeEntryItem, kee_entry_item, GTK_TYPE_BOX);
 
 void kee_entry_item_handle_setup(GtkListItemFactory* o, GtkListItem *item) {
-	GtkWidget *label;
+	GtkWidget *box;
 
-	label = gtk_label_new(NULL);
-	gtk_list_item_set_child(item, label);
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_list_item_set_child(item, box);
 }
 
 void kee_entry_item_handle_bind(GtkListItemFactory *o,  GtkListItem *item) {
-	GtkWidget *label;
-	GtkStringObject *s;
+	//GtkWidget *label;
+	GtkWidget *box;
+	GtkWidget *box_item;
+	//GtkStringObject *s;
 
-	label = gtk_list_item_get_child(item);
-	s = gtk_list_item_get_item(item);
-	gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
+	box = gtk_list_item_get_child(item);
+	//s = gtk_list_item_get_item(item);
+	box_item = gtk_list_item_get_item(item);
+	//gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
+	//gtk_label_set_label(GTK_LABEL(label), GTK_LABEL(s));
+	gtk_box_append(GTK_BOX(box), box_item);
+	
 }
-
 
 static void kee_entry_item_dispose(GObject *o) {
 }
@@ -67,27 +73,40 @@ void kee_entry_item_set_resolver(KeeEntryItem *o,  struct Cadiz *resolver) {
 	o->resolver = resolver;	
 }
 
-static int kee_entry_item_deserialize(KeeEntryItem *o, const char *data, size_t data_len, char *out, size_t *out_len) {
-	struct kee_ledger_item_t *item;
-
-	item = kee_ledger_parse_item(&o->ledger, data, data_len);
-	if (item == NULL) {
+int kee_entry_item_deserialize(KeeEntryItem *o, const char *data, size_t data_len) {
+	o->item = kee_ledger_parse_item(o->ledger, data, data_len);
+	if (o->item == NULL) {
 		return ERR_FAIL;
 	}
-	kee_content_resolve(&item->content, o->resolver);
+	kee_content_resolve(&o->item->content, o->resolver);
 	
-	if (item->content.flags & KEE_CONTENT_RESOLVED_SUBJECT) {
-		strcpy(out, item->content.subject);
+	if (o->item->content.flags & KEE_CONTENT_RESOLVED_SUBJECT) {
+		strcpy(o->header, o->item->content.subject);
 	} else {
-		strcpy(out, "(no subject)");
+		strcpy(o->header, "(no subject)");
 	}
 
 	return ERR_OK;
 }
 
-KeeEntryItem* kee_entry_item_new(struct db_ctx *db) {
+KeeEntryItem* kee_entry_item_new(struct db_ctx *db, struct kee_ledger_t *ledger) {
 	KeeEntryItem *o;
 	o = KEE_ENTRY_ITEM(g_object_new(KEE_TYPE_ENTRY_ITEM, "orientation", GTK_ORIENTATION_VERTICAL, NULL));
 	o->db = db;
+	o->ledger = ledger;
 	return o;
+}
+
+void kee_entry_item_apply_list_item_widget(KeeEntryItem *o) {
+	GtkWidget *widget;
+
+	//if (o->state)  {
+	//	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "entry must be loaded first");
+	//	return;
+	//}
+
+	//sprintf(o->header, "%s [%s]\n%s (%s)", o->ledger.content.subject, o->ledger.uoa, o->bob_dn.cn, o->bob_dn.uid);
+	widget = gtk_label_new(o->header);
+	gtk_box_append(GTK_BOX(o), widget);
+	return;
 }

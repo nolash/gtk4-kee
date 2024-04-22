@@ -236,7 +236,7 @@ void kee_entry_apply_display_widget(KeeEntry *o) {
 	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_item_handle_setup), NULL);
 	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_item_handle_bind), NULL);
 
-	model = kee_entry_item_store_new(o->db, o->current_id);
+	model = kee_entry_item_store_new(o->db, &o->ledger);
 	kee_entry_item_store_set_resolve(model, "./testdata_resource");
 	sel = gtk_single_selection_new(G_LIST_MODEL(model));
 	widget = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
@@ -245,12 +245,11 @@ void kee_entry_apply_display_widget(KeeEntry *o) {
 	return;
 }
 
-
 void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
 	target->db = orig->db;
 	memcpy(target->current_id, orig->current_id, 128);
 	target->resolver = orig->resolver;
-	target->ledger = orig->ledger;
+	memcpy(&target->ledger, &orig->ledger, sizeof(struct kee_ledger_t));
 	target->state = orig->state;
 	target->bob_dn = orig->bob_dn;
 	return;

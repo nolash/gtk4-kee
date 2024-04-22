@@ -25,6 +25,7 @@ struct kee_ledger_item_t {
 };
 
 struct kee_ledger_t {
+	const char digest[64];
 	struct kee_ledger_item_t *last_item;
 	char pubkey_alice[32];
 	char pubkey_bob[32];
