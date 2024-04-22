@@ -9,6 +9,8 @@
 #include "cmime.h"
 
 #include "kee-entry.h"
+#include "kee-entry-item.h"
+#include "kee-entry-item-store.h"
 #include "db.h"
 #include "err.h"
 #include "hex.h"
@@ -40,6 +42,10 @@ struct _KeeEntry {
 	char current_id[128];
 	struct kee_ledger_t ledger;
 	struct Cadiz *resolver;
+	int alice_credit_balance;
+	int bob_credit_balance;
+	int alice_collateral_balance;
+	int bob_collateral_balance;
 	struct db_ctx *db;
 };
 
@@ -155,24 +161,6 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	return ERR_OK;
 }
 
-static int kee_entry_deserialize_item(KeeEntry *o, const char *data, size_t data_len, char *out, size_t *out_len) {
-	struct kee_ledger_item_t *item;
-
-	item = kee_ledger_parse_item(&o->ledger, data, data_len);
-	if (item == NULL) {
-		return ERR_FAIL;
-	}
-	kee_content_resolve(&item->content, o->resolver);
-	
-	if (item->content.flags & KEE_CONTENT_RESOLVED_SUBJECT) {
-		strcpy(out, item->content.subject);
-	} else {
-		strcpy(out, "(no subject)");
-	}
-
-	return ERR_OK;
-}
-
 void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	GtkWidget *widget;
 
@@ -188,67 +176,71 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 }
 
 static int kee_entry_load_items(KeeEntry *o, GtkStringList *list) {
-	int r;
-	size_t key_len;
-	size_t entry_key_len;
-	char *mem = malloc(4096);
-	char *last_key;
-	char *entry_key;
-	char *last_value;
-	size_t last_value_length;
-	char out[1024];
-	size_t out_len;
-
-	entry_key_len = 65;
-	key_len = entry_key_len + 8;
-	last_key = (char*)mem;
-	entry_key = last_key + 128;
-	last_value = entry_key + 128;
-	*last_key = DbKeyLedgerEntry;
-	memcpy(last_key+1, o->current_id, key_len - 1);
-	memcpy(entry_key, last_key, entry_key_len);
-	while (1) {
-		last_value_length = 2048;
-		r = db_next(o->db, DbKeyLedgerEntry, &last_key, &key_len, &last_value, &last_value_length);
-		if (r) {
-			break;
-		}
-		if (memcmp(last_key, entry_key, entry_key_len)) {
-			break;
-		}
-		out_len = 1024;
-		r = kee_entry_deserialize_item(o, last_value, last_value_length, out, &out_len);
-		if (r) {
-			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "corrupt entry!");
-		} else {
-			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding entry: %s", out);
-			gtk_string_list_append(list, out);
-		}
-	}
-	db_rewind(o->db);
-	free(mem);
+//	int r;
+//	size_t key_len;
+//	size_t entry_key_len;
+//	char *mem = malloc(4096);
+//	char *last_key;
+//	char *entry_key;
+//	char *last_value;
+//	size_t last_value_length;
+//	char out[1024];
+//	size_t out_len;
+//
+//	entry_key_len = 65;
+//	key_len = entry_key_len + 8;
+//	last_key = (char*)mem;
+//	entry_key = last_key + 128;
+//	last_value = entry_key + 128;
+//	*last_key = DbKeyLedgerEntry;
+//	memcpy(last_key+1, o->current_id, key_len - 1);
+//	memcpy(entry_key, last_key, entry_key_len);
+//	while (1) {
+//		last_value_length = 2048;
+//		r = db_next(o->db, DbKeyLedgerEntry, &last_key, &key_len, &last_value, &last_value_length);
+//		if (r) {
+//			break;
+//		}
+//		if (memcmp(last_key, entry_key, entry_key_len)) {
+//			break;
+//		}
+//		out_len = 1024;
+//		r = kee_entry_deserialize_item(o, last_value, last_value_length, out, &out_len);
+//		if (r) {
+//			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "corrupt entry!");
+//		} else {
+//			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding entry: %s", out);
+//			gtk_string_list_append(list, out);
+//		}
+//		//o->alice_credit_balance += o->
+//	}
+//	db_rewind(o->db);
+//	free(mem);
 	return ERR_OK;
 }
 
 void kee_entry_apply_display_widget(KeeEntry *o) {
 	GtkWidget *widget;
-	GtkNoSelection *sel;
+	GtkSingleSelection *sel;
 	GtkListItemFactory *factory;
-	GtkStringList *list;
+	KeeEntryItemStore *model;
+	//GtkStringList *list;
 
-	list = gtk_string_list_new(NULL);
-	kee_entry_load_items(o, list);
+	//list = gtk_string_list_new(NULL);
+	//kee_entry_load_items(o, list);
 
 	widget = gtk_label_new(o->ledger.content.subject);
 	gtk_box_append(GTK_BOX(o), widget);
 
 	factory = gtk_signal_list_item_factory_new();
-	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_handle_item_setup), NULL);
-	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_handle_item_bind), NULL);
+	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_item_handle_setup), NULL);
+	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_item_handle_bind), NULL);
 
-	sel = gtk_no_selection_new(G_LIST_MODEL(list));
-
+	model = kee_entry_item_store_new(o->db, o->current_id);
+	kee_entry_item_store_set_resolve(model, "./testdata_resource");
+	sel = gtk_single_selection_new(G_LIST_MODEL(model));
 	widget = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
+	//g_signal_connect(view, "activate", G_CALLBACK(kee_entry_item_handle_select), win);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }

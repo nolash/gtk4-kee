@@ -155,9 +155,6 @@ class LedgerSigner:
         self.keypair[keyname] = (pk, pubk)
         self.pubkey_rindex[pubk] = keyname
 
-        #env = lmdb.open(d)
-        #dbi = env.open_db()
-
         self.__write_key(keyname, outdir, pin)
         
         self.names[keyname] = fake.name()

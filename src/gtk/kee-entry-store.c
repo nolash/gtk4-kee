@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <glib-object.h>
 #include <gtk/gtk.h>
 #include <gio/gio.h>
@@ -32,6 +33,7 @@ static void kee_entry_store_iface_init(GListModelInterface *ifc);
 G_DEFINE_TYPE_WITH_CODE(KeeEntryStore, kee_entry_store, G_TYPE_OBJECT, G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL, kee_entry_store_iface_init));
 
 static void kee_entry_store_finalize(GObject *o);
+
 static int kee_entry_store_seek(KeeEntryStore *o, int idx);
 
 // \todo add construct pointer for db
@@ -54,7 +56,6 @@ void kee_entry_store_set_resolve(KeeEntryStore *o, const char *locator) {
 static GType kee_entry_store_get_item_type(GListModel *list) {
 	return KEE_TYPE_ENTRY;
 }
-
 
 static guint kee_entry_store_get_n_items(GListModel *list) {
 	return KEE_ENTRY_STORE(list)->last_count;

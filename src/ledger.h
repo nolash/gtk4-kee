@@ -11,6 +11,7 @@ enum kee_initiator {
 	BOB,
 };
 
+
 struct kee_ledger_item_t {
 	struct kee_ledger_item_t *prev_item;
 	int alice_credit_delta;
