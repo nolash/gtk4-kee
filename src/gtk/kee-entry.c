@@ -39,7 +39,7 @@ struct _KeeEntry {
 	int state;
 	char header[1024];
 	struct kee_dn_t bob_dn;
-	char current_id[128];
+	char current_id[64];
 	struct kee_ledger_t ledger;
 	struct Cadiz *resolver;
 	int alice_credit_balance;
@@ -152,7 +152,7 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	last_value_length = 2048;
 	*last_key = DbKeyDN;
 	memcpy(last_key+1, o->ledger.pubkey_bob, 32);
-	key_len = 33;
+	key_len = 32;
 	r = db_next(o->db, DbKeyDN, &last_key, &key_len, &last_value, &last_value_length);
 	if (r) {
 		return ERR_FAIL;

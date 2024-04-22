@@ -67,18 +67,15 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 	KeeEntry *o;
 	KeeEntryStore *store;
 
-	//kee_entry_load(o, list->db);
 	store = KEE_ENTRY_STORE(list);
 	o = kee_entry_new(store->db);
 	kee_entry_set_resolver(o, &store->resolver);
 	kee_entry_store_seek(store, index);
-	//kee_entry_deserialize(o, store->last_key, 9, store->last_value, store->last_value_length);
 	r = kee_entry_deserialize(o, store->last_value, store->last_value_length);
 	if (r) {
-		return NULL;
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "entry index %d malformed", index);
 	}
 
-	//return o;
 	kee_entry_apply_list_item_widget(o);
 
 	return o;

@@ -360,7 +360,6 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 		return r;
 	}
 
-	
 	c = 64;
 	r = asn1_read_value(item, "body", content_key, &c);
 	if (r != ASN1_SUCCESS) {
