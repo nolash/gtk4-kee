@@ -51,25 +51,7 @@ struct _KeeEntry {
 };
 
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
-//
-//static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
-//	GtkWidget *label;
-//
-//	label = gtk_label_new(NULL);
-//	gtk_list_item_set_child(item, label);
-//}
-//
-//static void kee_entry_handle_item_bind(GtkListItemFactory *o,  GtkListItem *item) {
-//	GtkWidget *label;
-//	GtkStringObject *s;
-//
-//	label = gtk_list_item_get_child(item);
-//	s = gtk_list_item_get_item(item);
-//	//gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
-//	
-//}
-//
-//static void kee_entry_item_handle_setup(GtkListItemFactory* o, GtkListItem *item) {
+
 static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
 	GtkWidget *box;
 
@@ -77,22 +59,17 @@ static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item
 	gtk_list_item_set_child(item, box);
 }
 
-//static void kee_entry_item_handle_bind(GtkListItemFactory *o,  GtkListItem *item) {
 static void kee_entry_handle_item_bind(GtkListItemFactory *o,  GtkListItem *item) {
-	//GtkWidget *label;
 	GtkWidget *box;
 	GtkWidget *box_item;
-	//GtkStringObject *s;
 
 	box = gtk_list_item_get_child(item);
-	//s = gtk_list_item_get_item(item);
 	box_item = gtk_list_item_get_item(item);
 	g_object_take_ref(G_OBJECT(box_item));
-	//gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
-	//gtk_label_set_label(GTK_LABEL(label), GTK_LABEL(s));
 	gtk_box_append(GTK_BOX(box), box_item);
 	
 }
+
 /// \todo free reference to self from parent box necessary..?
 static void kee_entry_dispose(GObject *o) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "disposing entry");

@@ -160,12 +160,6 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 		/// \todo add to else case below
 		start[0] = (char)pfx;
 		ctx->k.mv_size = 1;
-//		if (!ctx->browsing) {
-//			if (*key != 0) {
-//				memcpy(start+1, *key, *key_len);
-//				ctx->k.mv_size += *key_len;
-//			}
-//		}
 		ctx->k.mv_data = start;
 
 		ctx->browsing = 1;
@@ -183,7 +177,6 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 	ctx->started = 1;
 	start[0] = (char)*((char*)ctx->k.mv_data);
 	if (start[0] != ctx->current_key) {
-		//db_reset(ctx);
 		ctx->browsing = 0;
 		return ERR_DB_NOMATCH;
 	}

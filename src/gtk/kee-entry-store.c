@@ -94,14 +94,7 @@ static int kee_entry_store_seek(KeeEntryStore *o, int idx) {
 	int r;
 	int i;
 	size_t key_len;
-	//int direction;
-
-	//c = o->last_idx;
-	//if (idx == c) {
-	//	return;
-	//}
-
-	//direction = 0;
+	
 	key_len = 9;
 	o->last_key = o->last;
 	memset(o->last_key, 0, key_len);
@@ -147,8 +140,3 @@ void kee_entry_store_finalize(GObject *go) {
 	free(o->resolver.locator);
 	free(o->last);
 }
-
-
-//void kee_entry_store_foo(KeeEntryStore* o) {
-//	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "foo db = %p", o->db);
-//}
