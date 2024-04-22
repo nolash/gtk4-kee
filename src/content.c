@@ -20,6 +20,7 @@ int kee_content_init(struct kee_content_t *content, const char *key, size_t size
 	}
 	content->body = content->mem;
 	content->flags = 0;
+	content->subject = 0;
 
 	memcpy(content->key, key, KEE_CONTENT_KEY_SIZE);
 	return ERR_OK;

@@ -204,7 +204,6 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	char tmp[64];
 	int v;
 
-
 	prev = ledger->last_item;
 	ledger->last_item = calloc(sizeof(struct kee_ledger_item_t), 1);
 	cur = ledger->last_item;
@@ -319,7 +318,6 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	char content_key[64];
 
 	memset(ledger, 0, sizeof(struct kee_ledger_t));
-
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
 	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);

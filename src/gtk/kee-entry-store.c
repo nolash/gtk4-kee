@@ -145,12 +145,13 @@ KeeEntryStore* kee_entry_store_new(struct db_ctx *db) {
 
 void kee_entry_store_finalize(GObject *go) {
 	KeeEntryStore *o = KEE_ENTRY_STORE(go);
+
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "freeing entry store");
 	free(o->resolver.locator);
 	free(o->last);
 }
 
 
-void kee_entry_store_foo(KeeEntryStore* o) {
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "foo db = %p", o->db);
-}
+//void kee_entry_store_foo(KeeEntryStore* o) {
+//	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "foo db = %p", o->db);
+//}

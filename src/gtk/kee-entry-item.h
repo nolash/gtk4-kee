@@ -21,7 +21,7 @@ enum KEE_ENTRY_ITEM_PROPS {
 #define KEE_TYPE_ENTRY_ITEM kee_entry_item_get_type()
 G_DECLARE_FINAL_TYPE(KeeEntryItem, kee_entry_item, KEE, ENTRY_ITEM, GtkBox);
 
-KeeEntryItem* kee_entry_item_new(struct db_ctx *db, struct kee_ledger_t *ledger);
+KeeEntryItem* kee_entry_item_new(struct db_ctx *db, struct kee_ledger_t *ledger, int idx);
 void kee_entry_item_handle_setup(GtkListItemFactory* o, GtkListItem *item);
 void kee_entry_item_handle_bind(GtkListItemFactory *o,  GtkListItem *item);
 void kee_entry_item_set_resolver(KeeEntryItem *o,  struct Cadiz *resolver);

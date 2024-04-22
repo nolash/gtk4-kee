@@ -50,23 +50,48 @@ struct _KeeEntry {
 };
 
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
-
+//
+//static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
+//	GtkWidget *label;
+//
+//	label = gtk_label_new(NULL);
+//	gtk_list_item_set_child(item, label);
+//}
+//
+//static void kee_entry_handle_item_bind(GtkListItemFactory *o,  GtkListItem *item) {
+//	GtkWidget *label;
+//	GtkStringObject *s;
+//
+//	label = gtk_list_item_get_child(item);
+//	s = gtk_list_item_get_item(item);
+//	//gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
+//	
+//}
+//
+//static void kee_entry_item_handle_setup(GtkListItemFactory* o, GtkListItem *item) {
 static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
-	GtkWidget *label;
+	GtkWidget *box;
 
-	label = gtk_label_new(NULL);
-	gtk_list_item_set_child(item, label);
+	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_list_item_set_child(item, box);
 }
 
+//static void kee_entry_item_handle_bind(GtkListItemFactory *o,  GtkListItem *item) {
 static void kee_entry_handle_item_bind(GtkListItemFactory *o,  GtkListItem *item) {
-	GtkWidget *label;
-	GtkStringObject *s;
+	//GtkWidget *label;
+	GtkWidget *box;
+	GtkWidget *box_item;
+	//GtkStringObject *s;
 
-	label = gtk_list_item_get_child(item);
-	s = gtk_list_item_get_item(item);
-	gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
+	box = gtk_list_item_get_child(item);
+	//s = gtk_list_item_get_item(item);
+	box_item = gtk_list_item_get_item(item);
+	g_object_take_ref(G_OBJECT(box_item));
+	//gtk_label_set_label(GTK_LABEL(label), gtk_string_object_get_string(s));
+	//gtk_label_set_label(GTK_LABEL(label), GTK_LABEL(s));
+	gtk_box_append(GTK_BOX(box), box_item);
+	
 }
-
 /// \todo free reference to self from parent box necessary..?
 static void kee_entry_dispose(GObject *o) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "disposing entry");
@@ -132,11 +157,11 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	if (r) {
 		return ERR_FAIL;
 	}
-	db_rewind(o->db);
 	r = kee_dn_from_str(&o->bob_dn, last_value, last_value_length);
 	if (r) {
 		return ERR_FAIL;
 	}
+	db_rewind(o->db);
 
 	last_value_length = 129;
 	strcpy(last_value, "uid=");
@@ -145,7 +170,7 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 		if (r) {
 			return ERR_FAIL;
 		}
-		r = kee_dn_from_str(&o->bob_dn, last_value, last_value_length);
+		r = kee_dn_from_str(&o->bob_dn, last_value, last_value_length+4);
 		if (r) {
 			return ERR_FAIL;
 		}
@@ -175,83 +200,23 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 	return;
 }
 
-static int kee_entry_load_items(KeeEntry *o, GtkStringList *list) {
-//	int r;
-//	size_t key_len;
-//	size_t entry_key_len;
-//	char *mem = malloc(4096);
-//	char *last_key;
-//	char *entry_key;
-//	char *last_value;
-//	size_t last_value_length;
-//	char out[1024];
-//	size_t out_len;
-//
-//	entry_key_len = 65;
-//	key_len = entry_key_len + 8;
-//	last_key = (char*)mem;
-//	entry_key = last_key + 128;
-//	last_value = entry_key + 128;
-//	*last_key = DbKeyLedgerEntry;
-//	memcpy(last_key+1, o->current_id, key_len - 1);
-//	memcpy(entry_key, last_key, entry_key_len);
-//	while (1) {
-//		last_value_length = 2048;
-//		r = db_next(o->db, DbKeyLedgerEntry, &last_key, &key_len, &last_value, &last_value_length);
-//		if (r) {
-//			break;
-//		}
-//		if (memcmp(last_key, entry_key, entry_key_len)) {
-//			break;
-//		}
-//		out_len = 1024;
-//		r = kee_entry_deserialize_item(o, last_value, last_value_length, out, &out_len);
-//		if (r) {
-//			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "corrupt entry!");
-//		} else {
-//			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding entry: %s", out);
-//			gtk_string_list_append(list, out);
-//		}
-//		//o->alice_credit_balance += o->
-//	}
-//	db_rewind(o->db);
-//	free(mem);
-	return ERR_OK;
-}
-
 void kee_entry_apply_display_widget(KeeEntry *o) {
 	GtkWidget *widget;
 	GtkSingleSelection *sel;
 	GtkListItemFactory *factory;
 	KeeEntryItemStore *model;
-	//GtkStringList *list;
-
-	//list = gtk_string_list_new(NULL);
-	//kee_entry_load_items(o, list);
 
 	widget = gtk_label_new(o->ledger.content.subject);
 	gtk_box_append(GTK_BOX(o), widget);
 
+	return;
 	factory = gtk_signal_list_item_factory_new();
-	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_item_handle_setup), NULL);
-	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_item_handle_bind), NULL);
+	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_handle_item_setup), NULL);
+	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_handle_item_bind), NULL);
 
-	model = kee_entry_item_store_new(o->db, &o->ledger);
-	kee_entry_item_store_set_resolve(model, "./testdata_resource");
+	model = kee_entry_item_store_new(o->db, &o->ledger, o->resolver);
 	sel = gtk_single_selection_new(G_LIST_MODEL(model));
 	widget = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
-	//g_signal_connect(view, "activate", G_CALLBACK(kee_entry_item_handle_select), win);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }
-
-void kee_entry_apply_entry(KeeEntry *target, KeeEntry *orig) {
-	target->db = orig->db;
-	memcpy(target->current_id, orig->current_id, 128);
-	target->resolver = orig->resolver;
-	memcpy(&target->ledger, &orig->ledger, sizeof(struct kee_ledger_t));
-	target->state = orig->state;
-	target->bob_dn = orig->bob_dn;
-	return;
-}
-
