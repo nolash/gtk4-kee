@@ -36,6 +36,7 @@ NOSIG = b''
 PFX_LEDGER_HEAD = b'\x01'
 PFX_LEDGER_ENTRY = b'\x02'
 PFX_LEDGER_PUBKEY = b'\x03'
+PFX_LEDGER_CACHE_SUMS = b'\x80'
 
 random.seed(int(time.time_ns()))
 

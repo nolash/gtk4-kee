@@ -29,11 +29,9 @@ struct _KeeEntryItemStore {
 static void kee_entry_item_store_iface_init(GListModelInterface *ifc);
 G_DEFINE_TYPE_WITH_CODE(KeeEntryItemStore, kee_entry_item_store, G_TYPE_OBJECT, G_IMPLEMENT_INTERFACE(G_TYPE_LIST_MODEL, kee_entry_item_store_iface_init));
 
+static int kee_entry_item_store_scan(KeeEntryItemStore *o);
 
 static void kee_entry_item_store_finalize(GObject *o);
-
-static int kee_entry_item_store_seek(KeeEntryItemStore *o, int idx);
-
 
 static void kee_entry_item_store_class_init(KeeEntryItemStoreClass *kls) {
 	GObjectClass *oc = G_OBJECT_CLASS(kls);
@@ -79,7 +77,7 @@ KeeEntryItemStore* kee_entry_item_store_new(struct db_ctx *db, struct kee_ledger
 	o->ledger = ledger;
 	o->resolver = resolver;
 	
-	o->last_count = kee_entry_item_store_seek(o, INT_MAX);
+	o->last_count = kee_entry_item_store_scan(o);
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "max key index is: %d", o->last_count - 1);
 	return o;
 }
@@ -87,7 +85,7 @@ KeeEntryItemStore* kee_entry_item_store_new(struct db_ctx *db, struct kee_ledger
 
 /// \todo always scans from 0, inefficient
 /// \todo enum lookup states
-static int kee_entry_item_store_seek(KeeEntryItemStore *o, int idx) {
+static int kee_entry_item_store_scan(KeeEntryItemStore *o) {
 	struct kee_ledger_item_t *item;
 	int r;
 	int i;
@@ -107,7 +105,7 @@ static int kee_entry_item_store_seek(KeeEntryItemStore *o, int idx) {
 	memcpy(entry_key, last_key, entry_ref_len);
 
 	i = 0;
-	while (i <= idx) {
+	while (i <= INT_MAX) {
 		last_value_length = 2048;
 		r = db_next(o->db, DbKeyLedgerEntry, &last_key, &key_len, &last_value, &last_value_length);
 		if (r) {

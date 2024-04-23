@@ -21,6 +21,9 @@ int main() {
 	
 	cadiz.locator = "./testdata_resource";
 
+	kee_ledger_init(&ledger);
+	kee_ledger_reset_cache(&ledger);
+
 	c = hex2bin(test_ledger_data, (unsigned char*)data);
 	r = kee_ledger_parse(&ledger, data, c);
 	if (r) {
@@ -40,6 +43,19 @@ int main() {
 	}
 
 	kee_ledger_resolve(&ledger, &cadiz);
+
+	if (ledger.cache->alice_credit_balance == 0) {
+		return 1;
+	}
+	if (ledger.cache->bob_credit_balance == 0) {
+		return 1;
+	}
+	if (ledger.cache->alice_collateral_balance == 0) {
+		return 1;
+	}
+	if (ledger.cache->bob_collateral_balance == 0) {
+		return 1;
+	}
 
 	kee_ledger_free(&ledger);
 

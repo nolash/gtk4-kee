@@ -6,11 +6,10 @@
 #include "content.h"
 #include "cadiz.h"
 
-enum kee_initiator {
+enum kee_initiator_e {
 	ALICE,
 	BOB,
 };
-
 
 struct kee_ledger_item_t {
 	struct kee_ledger_item_t *prev_item;
@@ -19,9 +18,17 @@ struct kee_ledger_item_t {
 	int alice_collateral_delta;
 	int bob_collateral_delta;
 	time_t time;
-	enum kee_initiator initiator;
+	enum kee_initiator_e initiator;
 	char response;
 	struct kee_content_t content;
+};
+
+struct kee_ledger_cache_t {
+	int count;
+	int alice_credit_balance;
+	int bob_credit_balance;
+	int alice_collateral_balance;
+	int bob_collateral_balance;
 };
 
 struct kee_ledger_t {
@@ -32,12 +39,15 @@ struct kee_ledger_t {
 	char uoa_decimals;
 	char uoa[64];
 	struct kee_content_t content;
+	struct kee_ledger_cache_t *cache;
 };
 
 struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len);
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len);
+void kee_ledger_init(struct kee_ledger_t *ledger);
 void kee_ledger_free(struct kee_ledger_t *ledger);
 void kee_ledger_item_free(struct kee_ledger_item_t *item);
 void kee_ledger_resolve(struct kee_ledger_t *ledger, Cadiz *cadiz);
+void kee_ledger_reset_cache(struct kee_ledger_t *ledger);
 
 #endif

@@ -36,16 +36,13 @@ extern const asn1_static_node schema_entry_asn1_tab[];
 /// \todo factor out separate struct for listitem
 struct _KeeEntry {
 	GtkWidget parent;
+	GtkWidget *entry_list;
 	int state;
 	char header[1024];
 	struct kee_dn_t bob_dn;
 	char current_id[64];
 	struct kee_ledger_t ledger;
 	struct Cadiz *resolver;
-	int alice_credit_balance;
-	int bob_credit_balance;
-	int alice_collateral_balance;
-	int bob_collateral_balance;
 	int is_displaying;
 	struct db_ctx *db;
 };
@@ -96,6 +93,8 @@ static void kee_entry_init(KeeEntry *o) {
 	o->state = 2;
 	o->resolver = NULL;
 	o->is_displaying = 0;
+	kee_ledger_init(&o->ledger);
+	kee_ledger_reset_cache(&o->ledger);
 }
 
 KeeEntry* kee_entry_new(struct db_ctx *db) {
@@ -108,6 +107,20 @@ KeeEntry* kee_entry_new(struct db_ctx *db) {
 
 void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 	o->resolver = resolver;	
+}
+
+static void kee_entry_init_list_widget(KeeEntry *o) {
+	GtkSingleSelection *sel;
+	GtkListItemFactory *factory;
+	KeeEntryItemStore *model;
+
+	factory = gtk_signal_list_item_factory_new();
+	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_handle_item_setup), NULL);
+	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_handle_item_bind), NULL);
+
+	model = kee_entry_item_store_new(o->db, &o->ledger, o->resolver);
+	sel = gtk_single_selection_new(G_LIST_MODEL(model));
+	o->entry_list = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
 }
 
 int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
@@ -162,6 +175,8 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 
 	o->state = 0;
 
+	kee_entry_init_list_widget(o);
+
 	return ERR_OK;
 }
 
@@ -173,31 +188,20 @@ void kee_entry_apply_list_item_widget(KeeEntry *o) {
 		return;
 	}
 
-	sprintf(o->header, "%s [%s]\n%s (%s)", o->ledger.content.subject, o->ledger.uoa, o->bob_dn.cn, o->bob_dn.uid);
+	sprintf(o->header, "%s [%s]\n%s (%s)\nalice: %d\nbob: %d", o->ledger.content.subject, o->ledger.uoa, o->bob_dn.cn, o->bob_dn.uid, o->ledger.cache->alice_credit_balance, o->ledger.cache->bob_credit_balance);
 	widget = gtk_label_new(o->header);
 	gtk_box_append(GTK_BOX(o), widget);
 	o->is_displaying = 0;
 	return;
 }
 
-int kee_entry_apply_display_widget(KeeEntry *o) {
-	GtkWidget *widget;
-	GtkSingleSelection *sel;
-	GtkListItemFactory *factory;
-	KeeEntryItemStore *model;
 
+int kee_entry_apply_display_widget(KeeEntry *o) {
 	if (o->is_displaying) {
 		return 1;
 	}
 	o->is_displaying = 1;
 
-	factory = gtk_signal_list_item_factory_new();
-	g_signal_connect(factory, "setup", G_CALLBACK(kee_entry_handle_item_setup), NULL);
-	g_signal_connect(factory, "bind", G_CALLBACK(kee_entry_handle_item_bind), NULL);
-
-	model = kee_entry_item_store_new(o->db, &o->ledger, o->resolver);
-	sel = gtk_single_selection_new(G_LIST_MODEL(model));
-	widget = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
-	gtk_box_append(GTK_BOX(o), widget);
+	gtk_box_append(GTK_BOX(o), o->entry_list);
 	return 0;
 }

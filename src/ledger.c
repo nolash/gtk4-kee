@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <string.h>
 #include <libtasn1.h>
 #include <gcrypt.h>
 
@@ -189,6 +190,26 @@ static int verify_item(asn1_node item, const char *pubkey_first_data, const char
 	return 0;
 }
 
+void kee_ledger_item_apply_cache(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item) {
+	if (ledger->cache == NULL) {
+		return;
+	}
+
+	ledger->cache->alice_credit_balance += item->alice_credit_delta;
+	ledger->cache->bob_credit_balance += item->bob_credit_delta;
+	ledger->cache->alice_collateral_balance += item->alice_collateral_delta;
+	ledger->cache->bob_collateral_balance += item->bob_collateral_delta;
+	ledger->cache->count++;
+}
+
+void kee_ledger_reset_cache(struct kee_ledger_t *ledger) {
+	if (ledger->cache == NULL) {
+		ledger->cache = calloc(sizeof(struct kee_ledger_cache_t), 1);
+	} else {
+		memset(ledger->cache, 0, sizeof(struct kee_ledger_cache_t));
+	}
+}
+
 struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len) {
 	int r;
 	int c;
@@ -293,6 +314,8 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		return NULL;
 	}
 
+	kee_ledger_item_apply_cache(ledger, cur);
+
 	return cur;
 }
 
@@ -307,7 +330,14 @@ void kee_ledger_item_free(struct kee_ledger_item_t *item) {
 }
 
 void kee_ledger_free(struct kee_ledger_t *ledger) {
+	if (ledger->cache) {
+		free(ledger->cache);
+	}
 	kee_ledger_item_free(ledger->last_item);
+}
+
+void kee_ledger_init(struct kee_ledger_t *ledger) {
+	memset(ledger, 0, sizeof(struct kee_ledger_t));
 }
 
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len) {
@@ -318,7 +348,6 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	int c;
 	char content_key[64];
 
-	memset(ledger, 0, sizeof(struct kee_ledger_t));
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
 	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);

@@ -69,7 +69,8 @@ void kee_entry_item_apply_list_item_widget(KeeEntryItem *o) {
 	GtkWidget *widget;
 
 	kee_content_resolve(&o->item->content, o->resolver);
-	widget = gtk_label_new(o->item->content.subject);
+	sprintf(o->header, "%s\nalice: %i\nbob: %i\n", o->item->content.subject, o->item->alice_credit_delta, o->item->bob_credit_delta);
+	widget = gtk_label_new(o->header);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
 }
