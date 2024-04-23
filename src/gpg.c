@@ -217,34 +217,26 @@ static int key_from_path(gcry_sexp_t *key, const char *p, const char *passphrase
  * \todo implement MAC
  * \todo test new data length location (part of ciphertext)
  */
-static int key_create(gcry_sexp_t *key, const char *p, const char *passphrase) {
+static int key_create_file(gcry_sexp_t *key, const char *p, const char *passphrase) {
 	int r;
-	FILE *f;
-	const char *sexp_quick = "(genkey(ecc(curve Ed25519)))";
-	//char *pv;
+	int kl;
+	char v[BUFLEN];
 	int i;
 	int l;
-	int kl;
 	size_t c;
-	gcry_sexp_t in;
-	gcry_error_t e;
-	char v[BUFLEN];
+	FILE *f;
 	char nonce[CHACHA20_NONCE_LENGTH_BYTES];
 
-	e = gcry_sexp_new(&in, (const void*)sexp_quick, strlen(sexp_quick), 0);
-	if (e) {
-		printf("error sexp: %s\n", gcry_strerror(e));
-		return (int)e;
+	r = gpg_key_create(key);
+	if (r) {
+		return ERR_KEYFAIL;
 	}
-	e = gcry_pk_genkey(key, in);
-	if (e) {
-		printf("error gen: %s\n", gcry_strerror(e));
-		return (int)e;
-	}
+
 	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, v+sizeof(int), BUFLEN);
 	memcpy(v, &kl, sizeof(int));
 
 	c = get_padsize(kl, ENCRYPT_BLOCKSIZE);
+	/// \todo malloc
 	char ciphertext[c];
 
 	gcry_create_nonce(nonce, CHACHA20_NONCE_LENGTH_BYTES);
@@ -279,6 +271,26 @@ static int key_create(gcry_sexp_t *key, const char *p, const char *passphrase) {
 	fclose(f);
 
 	return ERR_OK;
+}
+
+
+int gpg_key_create(gcry_sexp_t *key) {
+	const char *sexp_quick = "(genkey(ecc(curve Ed25519)))";
+	//char *pv;
+	gcry_sexp_t in;
+	gcry_error_t e;
+
+	e = gcry_sexp_new(&in, (const void*)sexp_quick, strlen(sexp_quick), 0);
+	if (e) {
+		printf("error sexp: %s\n", gcry_strerror(e));
+		return (int)e;
+	}
+	e = gcry_pk_genkey(key, in);
+	if (e) {
+		printf("error gen: %s\n", gcry_strerror(e));
+		return (int)e;
+	}
+	return 0;
 }
 
 static int sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
@@ -360,7 +372,7 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		char pp[2048];
 		//sprintf(pp, "%s/key.bin", p.c_str());
 		sprintf(pp, "%s/key.bin", p);
-		r = key_create(&k, pp, passphrase_hash);
+		r = key_create_file(&k, pp, passphrase_hash);
 		if (r != ERR_OK) {
 			return r;
 		}

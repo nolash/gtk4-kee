@@ -10,9 +10,11 @@
 #include "digest.h"
 #include "strip.h"
 #include "content.h"
+#include "endian.h"
 
 
 extern const asn1_static_node schema_entry_asn1_tab[];
+const char zero_content[64];
 
 static char *get_message(asn1_node item, char *out_digest, char *out_data, size_t *out_len) {
 	int r;
@@ -340,6 +342,10 @@ void kee_ledger_init(struct kee_ledger_t *ledger) {
 	memset(ledger, 0, sizeof(struct kee_ledger_t));
 }
 
+void kee_ledger_item_init(struct kee_ledger_item_t *item) {
+	memset(item, 0, sizeof(struct kee_ledger_item_t));
+}
+
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len) {
 	int r;
 	char err[1024];
@@ -417,4 +423,184 @@ void kee_ledger_resolve(struct kee_ledger_t *ledger, Cadiz *cadiz) {
 		kee_content_resolve(&item->content, cadiz);
 		item = item->prev_item;
 	}
+}
+
+int kee_ledger_serialize(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
+	int r;
+	char err[1024];
+	asn1_node node;
+	int c;
+
+	//memset(&root, 0, sizeof(root));
+	memset(&node, 0, sizeof(node));
+	//r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
+	r = asn1_array2tree(schema_entry_asn1_tab, &node, err);
+	if (r != ASN1_SUCCESS) {
+		return ERR_FAIL;
+	}
+
+	c = strlen(ledger->uoa);
+	r = asn1_write_value(node, "Kee.KeeEntryHead.uoa", ledger->uoa, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	c = 4;
+	r = asn1_write_value(node, "Kee.KeeEntryHead.uoaDecimals", &ledger->uoa_decimals, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	c = 32;
+	r = asn1_write_value(node, "Kee.KeeEntryHead.alicePubKey", ledger->pubkey_alice, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	c = 32;
+	r = asn1_write_value(node, "Kee.KeeEntryHead.bobPubKey", ledger->pubkey_bob, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	c = 64;
+	r = asn1_write_value(node, "Kee.KeeEntryHead.body", ledger->content.key, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	r = asn1_der_coding(node, "Kee.KeeEntryHead", out, (int*)out_len, err);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	return 0;
+}
+
+int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t *out_len, enum kee_item_serialize_mode_e mode) {
+	int r;
+	char err[1024];
+	asn1_node node;
+//	char timedata[8];
+	long long nanotime;
+	int c;
+	int credit_delta;
+	int collateral_delta;
+	char *signature_request;
+	char *signature_response;
+	char *response_s;
+
+	//memset(&root, 0, sizeof(root));
+	memset(&node, 0, sizeof(node));
+	//r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
+	r = asn1_array2tree(schema_entry_asn1_tab, &node, err);
+	if (r != ASN1_SUCCESS) {
+		return ERR_FAIL;
+	}
+
+	c = 64;
+	if (item->prev_item == NULL) {
+		r = asn1_write_value(node, "Kee.KeeEntry.parent", zero_content, c);
+	} else {
+		r = asn1_write_value(node, "Kee.KeeEntry.parent", item->prev_item, c);
+	}
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+//	memcpy(timedata, item->time, 4);
+//	r = to_endian(TO_ENDIAN_BIG, 4, timedata);
+//	if (r) {
+//		return 1;
+//	}
+//
+//	memcpy(timedata+4, item->time+4, 4);
+//	r = to_endian(TO_ENDIAN_BIG, 4, timedata+4);
+//	if (r) {
+//		return 1;
+//	}
+
+	nanotime = item->time.tv_sec * 1000000000;
+	nanotime += item->time.tv_nsec;
+	r = to_endian(TO_ENDIAN_BIG, 8, &nanotime);
+	if (r) {
+		return 1;
+	}
+
+	c = 8;
+	r = asn1_write_value(node, "Kee.KeeEntry.timestamp", &nanotime, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	if (item->initiator == BOB) {
+		credit_delta = item->bob_credit_delta;
+		collateral_delta = item->bob_collateral_delta;
+		signature_request = item->bob_signature;
+		signature_response = item->alice_signature;
+
+	} else {
+		credit_delta = item->alice_credit_delta;
+		collateral_delta = item->alice_collateral_delta;
+		signature_request = item->alice_signature;
+		signature_response = item->bob_signature;
+	}
+	c = 4;
+	r = asn1_write_value(node, "Kee.KeeEntry.creditDelta", &credit_delta, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	c = 4;
+	r = asn1_write_value(node, "Kee.KeeEntry.collateralDelta", &collateral_delta, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	c = 64;
+	r = asn1_write_value(node, "Kee.KeeEntry.body", item->content.key, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	if (mode == KEE_LEDGER_ITEM_SERIALIZE_REQUEST) {
+		signature_request = zero_content;
+		c = 0;
+	} else {
+		c = 64;
+	}
+	r = asn1_write_value(node, "Kee.KeeEntry.signatureRequest", signature_request, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	c = 5;
+	if (item->response) {
+		response_s = "TRUE";
+	} else {
+		response_s = "FALSE";
+		c++;
+	}
+	r = asn1_write_value(node, "Kee.KeeEntry.response", response_s, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	if (mode < KEE_LEDGER_ITEM_SERIALIZE_FINAL) {
+		signature_response = zero_content;
+		c = 0;
+	} else {
+		c = 64;
+	}
+	r = asn1_write_value(node, "Kee.KeeEntry.signatureResponse", signature_response, c);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	r = asn1_der_coding(node, "Kee.KeeEntry", out, (int*)out_len, err);
+	if (r != ASN1_SUCCESS) {
+		return r;
+	}
+
+	return 0;
 }

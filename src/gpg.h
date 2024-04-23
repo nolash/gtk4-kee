@@ -3,6 +3,7 @@
 
 //#include <string>
 #include <stddef.h>
+#include <gcrypt.h>
 
 #define GPG_MIN_VERSION "1.10.2"
 #define CHACHA20_KEY_LENGTH_BYTES 32
@@ -86,5 +87,6 @@ void gpg_store_init(struct gpg_store *gpg, const char *path);
 int gpg_store_check(struct gpg_store *gpg, const char *passphrase);
 int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in);
 char *gpg_store_get_fingerprint(struct gpg_store *gpg);
+int gpg_key_create(gcry_sexp_t *key);
 
 #endif

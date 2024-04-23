@@ -23,6 +23,7 @@ test_run:
 	./test_content
 	./test_ledger
 	./test_dn
+	./test_sign
 
 test: all test_run
 

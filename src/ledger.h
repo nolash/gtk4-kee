@@ -11,15 +11,23 @@ enum kee_initiator_e {
 	BOB,
 };
 
+enum kee_item_serialize_mode_e {
+	KEE_LEDGER_ITEM_SERIALIZE_REQUEST,
+	KEE_LEDGER_ITEM_SERIALIZE_RESPONSE,
+	KEE_LEDGER_ITEM_SERIALIZE_FINAL,
+};
+
 struct kee_ledger_item_t {
 	struct kee_ledger_item_t *prev_item;
 	int alice_credit_delta;
 	int bob_credit_delta;
 	int alice_collateral_delta;
 	int bob_collateral_delta;
-	time_t time;
+	struct timespec time;
 	enum kee_initiator_e initiator;
 	char response;
+	char alice_signature[64];
+	char bob_signature[64];
 	struct kee_content_t content;
 };
 
@@ -32,7 +40,7 @@ struct kee_ledger_cache_t {
 };
 
 struct kee_ledger_t {
-	const char digest[64];
+	char digest[64];
 	struct kee_ledger_item_t *last_item;
 	char pubkey_alice[32];
 	char pubkey_bob[32];
@@ -44,10 +52,14 @@ struct kee_ledger_t {
 
 struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len);
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len);
+int kee_ledger_serialize(struct kee_ledger_t *ledger, char *out, size_t *out_len);
 void kee_ledger_init(struct kee_ledger_t *ledger);
 void kee_ledger_free(struct kee_ledger_t *ledger);
 void kee_ledger_item_free(struct kee_ledger_item_t *item);
 void kee_ledger_resolve(struct kee_ledger_t *ledger, Cadiz *cadiz);
 void kee_ledger_reset_cache(struct kee_ledger_t *ledger);
+
+void kee_ledger_item_init(struct kee_ledger_item_t *item);
+int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t *out_len, enum kee_item_serialize_mode_e mode);
 
 #endif
