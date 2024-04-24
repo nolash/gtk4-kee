@@ -8,10 +8,12 @@
 #define GPG_MIN_VERSION "1.10.2"
 #define CHACHA20_KEY_LENGTH_BYTES 32
 #define CHACHA20_NONCE_LENGTH_BYTES 12
+#define PUBKEY_LENGTH 32
 
 #ifndef ENCRYPT_BLOCKSIZE
 #define ENCRYPT_BLOCKSIZE 4096
 #endif
+
 
 struct gpg_store {
 	size_t passphrase_digest_len;

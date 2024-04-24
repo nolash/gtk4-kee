@@ -4,6 +4,8 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
+#include "context.h"
+
 enum KEE_MENU_PROPS {
 	KEE_N_MENU_PROPS,
 };
@@ -18,7 +20,7 @@ G_BEGIN_DECLS
 #define KEE_TYPE_MENU kee_menu_get_type()
 G_DECLARE_FINAL_TYPE(KeeMenu, kee_menu, KEE, MENU, GtkApplicationWindow);
 
-KeeMenu* kee_menu_new(GtkApplication *app);
+KeeMenu* kee_menu_new(GtkApplication *app, struct kee_context *ctx);
 int kee_menu_add(KeeMenu *o, const char *k, GtkWidget *v);
 GtkWidget* kee_menu_next(KeeMenu *o, const char *k);
 int kee_menu_prev(KeeMenu *o);

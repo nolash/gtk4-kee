@@ -23,7 +23,7 @@
 #include "strip.h"
 #include "ledger.h"
 #include "dn.h"
-
+#include "gpg.h"
 
 typedef struct {
 } KeeEntryPrivate;
@@ -39,9 +39,12 @@ struct _KeeEntryClass {
 extern const asn1_static_node schema_entry_asn1_tab[];
 
 struct kee_entry_form_t {
+	GtkEntry *bob_name;
+	GtkEntry *bob_pubkey;
 	GtkEntry *subject;
 	GtkEntry *uoa;
 	GtkEntry *uoa_decimals;
+	GtkEntry *passphrase;
 };
 
 /// \todo factor out separate struct for listitem
@@ -59,7 +62,7 @@ struct _KeeEntry {
 	struct Cadiz *resolver;
 	struct db_ctx *db;
 	struct kee_entry_form_t *form;
-	struct gpg_store *signer;
+	struct gpg_store *gpg;
 };
 
 
@@ -77,10 +80,15 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	b = (char*)gtk_entry_buffer_get_text(buf);
 	o->ledger.uoa_decimals = (char)atoi(b);
 
+	buf = gtk_entry_get_buffer(o->form->uoa);
+	if (gtk_entry_buffer_get_length(buf) != PUBKEY_LENGTH * 2) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "wrong size for counterparty public key");
+		return;
+	}
+	memcpy(o->ledger.pubkey_bob, o->form->bob_pubkey, PUBKEY_LENGTH);
+
 	o->state |= ENTRYSTATE_LOAD;
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding ledger entry");
-
-
 }
 
 static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
@@ -177,6 +185,20 @@ static void kee_entry_setup_edit_widget(KeeEntry *o) {
 
 	o->form = calloc(sizeof(struct kee_entry_form_t), 1);
 
+	widget = gtk_label_new("counterparty name");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	widget = gtk_entry_new();
+	o->form->bob_name = GTK_ENTRY(widget);
+	gtk_entry_set_input_purpose(o->form->bob_name, GTK_INPUT_PURPOSE_NAME);
+	gtk_box_append(GTK_BOX(o->edit), widget);
+
+	widget = gtk_label_new("counterparty public key");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	widget = gtk_entry_new();
+	o->form->bob_pubkey = GTK_ENTRY(widget);
+	gtk_entry_set_max_length(o->form->bob_pubkey, PUBKEY_LENGTH * 2);
+	gtk_box_append(GTK_BOX(o->edit), widget);
+
 	widget = gtk_label_new("subject");
 	gtk_box_append(GTK_BOX(o->edit), widget);
 	widget = gtk_entry_new();
@@ -193,6 +215,16 @@ static void kee_entry_setup_edit_widget(KeeEntry *o) {
 	gtk_box_append(GTK_BOX(o->edit), widget);
 	widget = gtk_entry_new();
 	o->form->uoa_decimals = GTK_ENTRY(widget);
+	gtk_entry_set_input_purpose(o->form->uoa_decimals, GTK_INPUT_PURPOSE_DIGITS);
+	gtk_entry_set_max_length(o->form->uoa_decimals, 2);
+	gtk_box_append(GTK_BOX(o->edit), widget);
+
+	/// \todo DRY - kee-key.c
+	widget = gtk_label_new("private key passphrase");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	widget = gtk_entry_new();
+	o->form->passphrase = GTK_ENTRY(widget);
+	gtk_entry_set_input_purpose(o->form->passphrase, GTK_INPUT_PURPOSE_PASSWORD);
 	gtk_box_append(GTK_BOX(o->edit), widget);
 
 	widget = gtk_button_new_with_label("add");
@@ -241,7 +273,7 @@ void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 }
 
 void kee_entry_set_signer(KeeEntry *o, struct gpg_store *gpg) {
-	o->signer = gpg;
+	o->gpg = gpg;
 }
 
 static void kee_entry_init_list_widget(KeeEntry *o) {

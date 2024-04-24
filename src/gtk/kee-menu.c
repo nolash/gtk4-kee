@@ -7,6 +7,7 @@
 #include "menu.h"
 #include "nav.h"
 #include "err.h"
+#include "context.h"
 
 typedef struct {
 } KeeMenuPrivate;
@@ -16,6 +17,7 @@ struct _KeeMenu {
 	GtkHeaderBar *head;
 	GtkStack *stack;
 	struct KeeNav nav;
+	struct kee_context *ctx;
 };
 
 struct _KeeMenuClass {
@@ -41,6 +43,7 @@ static void kee_menu_act_new_entry(GAction *act, GVariant *param, KeeMenu *menu)
 	kee_menu_next(menu, "entry");
 
 	o = g_object_new(KEE_TYPE_ENTRY, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
+	kee_entry_set_signer(o, &menu->ctx->gpg);
 	kee_menu_set(menu, GTK_WIDGET(o));
 	kee_entry_modeswitch(o, KEE_ENTRY_VIEWMODE_EDIT);
 }
@@ -61,12 +64,13 @@ static void kee_menu_init(KeeMenu *o) {
 	o->stack = GTK_STACK(gtk_stack_new());
 }
 
-KeeMenu* kee_menu_new(GtkApplication *gapp) {
+KeeMenu* kee_menu_new(GtkApplication *gapp, struct kee_context *ctx) {
 	KeeMenu *o;
 	GtkWidget *butt;
 	GSimpleAction *act;
 
 	o = g_object_new(KEE_TYPE_MENU, "application", gapp, NULL);
+	o->ctx = ctx;
 	gtk_widget_set_vexpand(GTK_WIDGET(o->stack), true);
 
 	gapp = gtk_window_get_application(GTK_WINDOW(o));

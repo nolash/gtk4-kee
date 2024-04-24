@@ -53,7 +53,7 @@ void ui_build(GtkApplication *app, struct kee_context *ctx) {
 	KeeMenu *win;
 	KeeImport *import;
 
-	win = kee_menu_new(app);
+	win = kee_menu_new(app, ctx);
 
 	widget = GTK_WIDGET(kee_key_new(&ctx->gpg));
 	kee_menu_add(win, "unlock", widget);
