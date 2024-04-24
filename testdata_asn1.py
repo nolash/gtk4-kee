@@ -355,12 +355,12 @@ class LedgerEntry(Ledger):
         logg.debug('encoding new entry for request signature: {}'.format(o))
 
         b = der_encode(o)
-        self.request_signature = self.signer.sign(self.signer_sequence[0], b)
+        self.request_signature = self.signer.sign(self.signer_sequence[0], self.head + b)
         o['signatureRequest'] = self.request_signature
         o['response'] = True
 
         b = der_encode(o)
-        self.response_signature = self.signer.sign(self.signer_sequence[1], b)
+        self.response_signature = self.signer.sign(self.signer_sequence[1], self.head + b)
         o['signatureResponse'] = self.response_signature
 
         b = der_encode(o)

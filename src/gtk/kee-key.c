@@ -22,6 +22,7 @@ G_DEFINE_TYPE(KeeKey, kee_key, GTK_TYPE_BOX);
 static GParamSpec *kee_props[KEE_N_KEY_PROPS] = {NULL,};
 static guint kee_sigs[KEE_N_KEY_SIGS] = {0,};
 
+
 static void kee_key_set_property(GObject *oo, guint property_id, const GValue *value, GParamSpec *pspec) {
 	KeeKey *o = KEE_KEY(oo);
 	const gchar *s;
@@ -61,6 +62,17 @@ static void kee_key_class_init(KeeKeyClass *kls) {
 			G_TYPE_NONE,
 			0,
 			NULL);
+
+//	kee_sigs[KEE_S_KEY_UNLOCKED] = g_signal_new("sign", 
+//			G_TYPE_FROM_CLASS(o),
+//			G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | G_SIGNAL_NO_HOOKS,
+//			0,
+//			NULL,
+//			NULL,
+//			NULL,
+//			G_TYPE_NONE,
+//			1,
+//			NULL);
 
 	o->set_property = kee_key_set_property;
 	o->get_property = kee_key_get_property;

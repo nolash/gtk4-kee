@@ -6,6 +6,7 @@
 
 #include "db.h"
 #include "cadiz.h"
+#include "gpg.h"
 
 G_BEGIN_DECLS
 
@@ -34,6 +35,7 @@ int kee_entry_load(KeeEntry *o, struct db_ctx *db, const char *id);
 int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len);
 KeeEntry* kee_entry_new(struct db_ctx *db);
 void kee_entry_set_resolver(KeeEntry *o, struct Cadiz *resolver);
+void kee_entry_set_signer(KeeEntry *o, struct gpg_store *gpg);
 int kee_entry_modeswitch(KeeEntry *o, enum kee_entry_viewmode_e);
 
 G_END_DECLS

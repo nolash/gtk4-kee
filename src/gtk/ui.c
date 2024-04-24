@@ -30,7 +30,7 @@ static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 	kee_menu_prev(menu);
 }
 
-//
+
 //static GtkWidget* ui_build_view(KeeMenu *menu) {
 //	GtkListItemFactory *factory;
 //	GtkSelectionModel *sel;

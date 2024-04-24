@@ -59,6 +59,7 @@ struct _KeeEntry {
 	struct Cadiz *resolver;
 	struct db_ctx *db;
 	struct kee_entry_form_t *form;
+	struct gpg_store *signer;
 };
 
 
@@ -78,6 +79,8 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 
 	o->state |= ENTRYSTATE_LOAD;
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding ledger entry");
+
+
 }
 
 static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
@@ -235,6 +238,10 @@ KeeEntry* kee_entry_new(struct db_ctx *db) {
 
 void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 	o->resolver = resolver;	
+}
+
+void kee_entry_set_signer(KeeEntry *o, struct gpg_store *gpg) {
+	o->signer = gpg;
 }
 
 static void kee_entry_init_list_widget(KeeEntry *o) {

@@ -17,12 +17,13 @@ enum KEE_KEY_PROPS {
 
 enum KEE_KEY_SIGS {
 	KEE_S_KEY_UNLOCKED,
+//	KEE_S_KEY_WANT_SIGN,
 	KEE_N_KEY_SIGS,
 };
 
 G_END_DECLS
 
-KeeKey* kee_key_new();
+KeeKey* kee_key_new(const char *key_path);
 const char *kee_key_get_fingerprint(KeeKey *o, char *fingerprint);
 
 #endif // _GTK_KEE_KEY_H

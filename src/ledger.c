@@ -14,9 +14,10 @@
 
 
 extern const asn1_static_node schema_entry_asn1_tab[];
+
 char zero_content[64];
 
-static char *get_message(asn1_node item, char *out_digest, char *out_data, size_t *out_len) {
+static char *get_message(struct kee_ledger_t *ledger, asn1_node item, char *out_digest, char *out_data, size_t *out_len) {
 	int r;
 	size_t c;
 	asn1_node root;
@@ -92,11 +93,15 @@ static char *get_message(asn1_node item, char *out_digest, char *out_data, size_
 		return NULL;
 	}
 
-	r = asn1_der_coding(root, "Kee.KeeEntry", out_data, (int*)out_len, err);
+	memcpy(out_data, ledger->digest, 64);
+
+	r = asn1_der_coding(root, "Kee.KeeEntry", out_data+64, (int*)out_len, err);
 	if (r != ASN1_SUCCESS) {
 		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
 		return NULL;
 	}
+
+	*out_len += 64;
 
 	r = calculate_digest_algo(out_data, *out_len, out_digest, GCRY_MD_SHA512);
 	if (r) {
@@ -107,7 +112,7 @@ static char *get_message(asn1_node item, char *out_digest, char *out_data, size_
 }
 
 
-static int verify_item(asn1_node item, const char *pubkey_first_data, const char *pubkey_last_data) {
+static int verify_item(struct kee_ledger_t *ledger, asn1_node item, const char *pubkey_first_data, const char *pubkey_last_data) {
 	int r;
 	gcry_sexp_t sig;
 	gcry_sexp_t msg;
@@ -123,7 +128,7 @@ static int verify_item(asn1_node item, const char *pubkey_first_data, const char
 	size_t pubkey_sexp_len;
 
 	c = 1024;
-	p = get_message(item, p, p+64, &c);
+	p = get_message(ledger, item, p, p+64, &c);
 	if (p == NULL) {
 		return 1;
 	}
@@ -262,7 +267,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		return NULL;
 	}
 
-	r = verify_item(item, pubkey_first, pubkey_last);
+	r = verify_item(ledger, item, pubkey_first, pubkey_last);
 	if (r) {
 		return NULL;
 	}

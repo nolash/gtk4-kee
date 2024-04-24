@@ -99,7 +99,6 @@ KeeMenu* kee_menu_new(GtkApplication *gapp) {
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "win.new_entry");
 	g_signal_connect(act, "activate", G_CALLBACK(kee_menu_act_new_entry), o);
 
-
 	gtk_window_set_titlebar(GTK_WINDOW(o), GTK_WIDGET(o->head));
 
 	gtk_window_set_title (GTK_WINDOW (o), "kee");
