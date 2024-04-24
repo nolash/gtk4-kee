@@ -14,25 +14,32 @@ int main(int argc, char **argv) {
 	b = gtk_label_new("bar");
 	c = gtk_label_new("baz");
 
-	kee_nav_push(&nav, a);
-	kee_nav_push(&nav, b);
-	r = kee_nav_pop(&nav);
-	if (r != b) {
+	memset(&nav, 0, sizeof(struct KeeNav));
+	r = kee_nav_push(&nav, a);
+	if (r) {
 		return 1;
 	}
-	kee_nav_push(&nav, b);
-	r = kee_nav_pop(&nav);
-	if (r != b) {
+	r = kee_nav_push(&nav, b);
+	if (r) {
 		return 1;
 	}
 	r = kee_nav_pop(&nav);
 	if (r != a) {
 		return 1;
 	}
+	kee_nav_push(&nav, b);
+	r = kee_nav_pop(&nav);
+	if (r != a) {
+		return 1;
+	}
+	r = kee_nav_pop(&nav);
+	if (r != NULL) {
+		return 1;
+	}
 
 	kee_nav_push(&nav, c);
 	r = kee_nav_pop(&nav);
-	if (r != c) {
+	if (r != NULL) {
 		return 1;
 	}
 
