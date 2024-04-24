@@ -334,6 +334,7 @@ int gpg_verify(gcry_sexp_t *sig, gcry_sexp_t *key, const char *v) {
 		debug_log(DEBUG_ERROR, in);
 		return 1;
 	}
+	return 0;
 }
 
 char *gpg_store_get_fingerprint(struct gpg_store *gpg) {

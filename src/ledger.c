@@ -14,7 +14,7 @@
 
 
 extern const asn1_static_node schema_entry_asn1_tab[];
-const char zero_content[64];
+char zero_content[64];
 
 static char *get_message(asn1_node item, char *out_digest, char *out_data, size_t *out_len) {
 	int r;
@@ -22,7 +22,6 @@ static char *get_message(asn1_node item, char *out_digest, char *out_data, size_
 	asn1_node root;
 	char err[1024];
 	char buf[64];
-	char sig[64];
 
 	memset(&root, 0, sizeof(root));
 	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);

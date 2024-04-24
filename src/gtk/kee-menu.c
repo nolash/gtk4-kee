@@ -3,6 +3,7 @@
 #include <gtk/gtk.h>
 
 #include "kee-menu.h"
+#include "kee-entry.h"
 #include "menu.h"
 #include "nav.h"
 #include "err.h"
@@ -27,15 +28,21 @@ static void kee_menu_act_back(GAction *act, GVariant *param, KeeMenu *menu) {
 	kee_menu_prev(menu);
 }
 
-static void kee_menu_act_import(GAction *act, GVariant *param, KeeMenu *menu) {//GtkStack *stack) {
+static void kee_menu_act_import(GAction *act, GVariant *param, KeeMenu *menu) {
 	//gtk_stack_set_visible_child_name(stack, "import");
 	kee_menu_next(menu, "import");
 }
 
-static void kee_menu_act_new_entry(GAction *act, GVariant *param, KeeMenu *menu) {//GtkStack *stack) {
+static void kee_menu_act_new_entry(GAction *act, GVariant *param, KeeMenu *menu) {
+	KeeEntry *o;
+
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "act new entry");
 	//gtk_stack_set_visible_child_name(stack, "import");
 	kee_menu_next(menu, "entry");
+
+	o = g_object_new(KEE_TYPE_ENTRY, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
+	kee_menu_set(menu, GTK_WIDGET(o));
+	kee_entry_modeswitch(o, KEE_ENTRY_VIEWMODE_EDIT);
 }
 
 //static GParamSpec *kee_props[KEE_N_MENU_PROPS] = {NULL,};
@@ -114,6 +121,8 @@ static void kee_menu_header_update(KeeMenu *o, const char *label) {
 		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
 		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
+		act = g_action_map_lookup_action(G_ACTION_MAP(o), "new_entry");
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 	} else if (!(strcmp(label, "entry"))) {
 		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
 		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
@@ -136,6 +145,20 @@ GtkWidget* kee_menu_next(KeeMenu *o, const char *label) {
 	gtk_stack_set_visible_child(o->stack, widget);
 	kee_menu_header_update(o, label);
 	return widget;
+}
+
+int kee_menu_set(KeeMenu *o, GtkWidget *widget) {
+	GtkBox *container;
+	GtkWidget *widget_old;
+
+	container = GTK_BOX(o->nav.now);
+
+	widget_old = gtk_widget_get_first_child(GTK_WIDGET(container));
+	if (widget_old) {
+		gtk_box_remove(container, widget_old);
+	}
+	gtk_box_append(container, widget);
+	return 0;
 }
 
 int kee_menu_prev(KeeMenu *o) {

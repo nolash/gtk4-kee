@@ -18,8 +18,6 @@ struct _KeeEntryList {
 G_DEFINE_TYPE(KeeEntryList, kee_entry_list, GTK_TYPE_BOX);
 
 static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *menu) {
-	GtkWidget *widget;
-	GtkWidget *container;
 	GtkSingleSelection *sel;
 	KeeEntry *o;
 
@@ -27,13 +25,9 @@ static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *me
 
 	o = KEE_ENTRY(gtk_single_selection_get_selected_item(sel));
 	g_object_take_ref(G_OBJECT(o));
-	container = kee_menu_next(menu, "entry");
+	kee_menu_next(menu, "entry");
 	if (kee_entry_modeswitch(o, KEE_ENTRY_VIEWMODE_FULL)) {
-		widget = gtk_widget_get_first_child(container);
-		if (widget) {
-			gtk_box_remove(GTK_BOX(container), widget);
-		}
-		gtk_box_append(GTK_BOX(container), GTK_WIDGET(o));
+		kee_menu_set(menu, GTK_WIDGET(o));
 	}
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "list item selected %d", i);

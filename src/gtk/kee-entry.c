@@ -1,5 +1,6 @@
 #include <gcrypt.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include <glib-object.h>
 #include <gtk/gtk.h>
@@ -31,11 +32,17 @@ struct _KeeEntryClass {
 	GtkWidget parent_class;
 };
 
-#define	ENTRYSTATE_LOAD 1
-#define ENTRYSTATE_SHORT 2
-#define ENTRYSTATE_EDIT 4
+#define	ENTRYSTATE_LOAD 0x01
+#define ENTRYSTATE_SHORT 0x02
+#define ENTRYSTATE_EDIT 0x04
 
 extern const asn1_static_node schema_entry_asn1_tab[];
+
+struct kee_entry_form_t {
+	GtkEntry *subject;
+	GtkEntry *uoa;
+	GtkEntry *uoa_decimals;
+};
 
 /// \todo factor out separate struct for listitem
 struct _KeeEntry {
@@ -51,9 +58,27 @@ struct _KeeEntry {
 	struct kee_ledger_t ledger;
 	struct Cadiz *resolver;
 	struct db_ctx *db;
+	struct kee_entry_form_t *form;
 };
 
+
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
+
+static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
+	GtkEntryBuffer *buf;
+	char *b;
+
+	buf = gtk_entry_get_buffer(o->form->uoa);
+	b = (char*)gtk_entry_buffer_get_text(buf);
+	strcpy(o->ledger.uoa, b);
+
+	buf = gtk_entry_get_buffer(o->form->uoa);
+	b = (char*)gtk_entry_buffer_get_text(buf);
+	o->ledger.uoa_decimals = (char)atoi(b);
+
+	o->state |= ENTRYSTATE_LOAD;
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding ledger entry");
+}
 
 static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
 	GtkWidget *box;
@@ -100,6 +125,7 @@ static void kee_entry_init(KeeEntry *o) {
 	o->resolver = NULL;
 	o->showing = NULL;
 	o->display = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);;
+	o->edit = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	kee_ledger_init(&o->ledger);
 	kee_ledger_reset_cache(&o->ledger);
 }
@@ -138,9 +164,41 @@ static int kee_entry_apply_display_widget(KeeEntry *o) {
 	o->showing = o->display;
 	return 1;
 }
+
+static void kee_entry_setup_edit_widget(KeeEntry *o) {
+	GtkWidget *widget;
+
+	if (o->form) {
+		return;
+	}
+
+	o->form = calloc(sizeof(struct kee_entry_form_t), 1);
+
+	widget = gtk_label_new("subject");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	widget = gtk_entry_new();
+	o->form->subject = GTK_ENTRY(widget);
+	gtk_box_append(GTK_BOX(o->edit), widget);
+
+	widget = gtk_label_new("unit of account");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	widget = gtk_entry_new();
+	o->form->uoa = GTK_ENTRY(widget);
+	gtk_box_append(GTK_BOX(o->edit), widget);
+
+	widget = gtk_label_new("unit decimals");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	widget = gtk_entry_new();
+	o->form->uoa_decimals = GTK_ENTRY(widget);
+	gtk_box_append(GTK_BOX(o->edit), widget);
+
+	widget = gtk_button_new_with_label("add");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	g_signal_connect (widget, "clicked", G_CALLBACK(kee_entry_handle_add), o);
+}
 	
 static int kee_entry_apply_edit_widget(KeeEntry *o) {
-	o->edit = gtk_label_new("editing");
+	kee_entry_setup_edit_widget(o);	
 	o->showing = o->edit;
 	return 1;
 }
