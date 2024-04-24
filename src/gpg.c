@@ -14,6 +14,7 @@
 
 
 const char *gpgVersion = NULL;
+const char sign_test[64];
 
 
 size_t get_padsize(size_t insize, size_t blocksize) {
@@ -275,7 +276,7 @@ static int key_create_file(gcry_sexp_t *key, const char *p, const char *passphra
 
 
 int gpg_key_create(gcry_sexp_t *key) {
-	const char *sexp_quick = "(genkey(ecc(curve Ed25519)))";
+	const char *sexp_quick = "(genkey(ecc(flags eddsa)(curve Ed25519)))";
 	//char *pv;
 	gcry_sexp_t in;
 	gcry_error_t e;
@@ -293,20 +294,46 @@ int gpg_key_create(gcry_sexp_t *key) {
 	return 0;
 }
 
-static int sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
+int gpg_sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
 	gcry_error_t e;
 	gcry_sexp_t data;
+	size_t err_offset;
 	char in[BUFLEN];
 
-	sprintf(in, "(data(flags eddsa(hash-algo sha512(value %s))))", v);
-	gcry_sexp_new(&data, in, strlen(in), 0);
+	e = gcry_sexp_build(&data, &err_offset, "(data(flags eddsa)(hash-algo sha512)(value %b))", 64, v);
+	if (e) {
+		sprintf(in, "error sign sexp data build: %s\n", gcry_strerror(e));
+		debug_log(DEBUG_ERROR, in);
+		return ERR_KEYFAIL;
+	}
 	e = gcry_pk_sign(out, data, *key);
 	if (e) {
 		sprintf(in, "error sign: %s\n", gcry_strerror(e));
 		debug_log(DEBUG_ERROR, in);
 		return ERR_KEYFAIL;
 	}
+
 	return 0;
+}
+
+int gpg_verify(gcry_sexp_t *sig, gcry_sexp_t *key, const char *v) {
+	gcry_error_t e;
+	gcry_sexp_t data;
+	size_t err_offset;
+	char in[BUFLEN];
+
+	e = gcry_sexp_build(&data, &err_offset, "(data(flags eddsa)(hash-algo sha512)(value %b))", 64, v);
+	if (e) {
+		sprintf(in, "error sign sexp data build: %s\n", gcry_strerror(e));
+		debug_log(DEBUG_ERROR, in);
+		return ERR_KEYFAIL;
+	}
+	e = gcry_pk_verify(*sig, data, *key);
+	if (e != GPG_ERR_NO_ERROR) {
+		sprintf(in, "error verify: %s\n", gcry_strerror(e));
+		debug_log(DEBUG_ERROR, in);
+		return 1;
+	}
 }
 
 char *gpg_store_get_fingerprint(struct gpg_store *gpg) {
@@ -392,6 +419,6 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		sprintf(pp, "found key %s in %s", (unsigned char*)gpg->fingerprint, p);
 		debug_log(DEBUG_INFO, pp);
 	}
-	r = sign(&o, &k, "foo");
+	r = gpg_sign(&o, &k, sign_test);
 	return r;
 }

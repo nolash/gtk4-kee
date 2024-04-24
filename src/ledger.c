@@ -78,13 +78,13 @@ static char *get_message(asn1_node item, char *out_digest, char *out_data, size_
 		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
 		return NULL;
 	}
-
-	c = 64;
-	r = asn1_read_value(item, "signatureResponse", sig, (int*)&c);
-	if (r != ASN1_SUCCESS) {
-		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
-		return NULL;
-	}
+//
+//	c = 64;
+//	r = asn1_read_value(item, "signatureResponse", sig, (int*)&c);
+//	if (r != ASN1_SUCCESS) {
+//		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
+//		return NULL;
+//	}
 
 	buf[0] = 0;
 	c = 0;

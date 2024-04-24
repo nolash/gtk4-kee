@@ -88,5 +88,6 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase);
 int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in);
 char *gpg_store_get_fingerprint(struct gpg_store *gpg);
 int gpg_key_create(gcry_sexp_t *key);
+int gpg_sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v);
 
 #endif
