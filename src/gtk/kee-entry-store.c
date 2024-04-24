@@ -76,7 +76,7 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "entry index %d malformed", index);
 	}
 
-	kee_entry_apply_list_item_widget(o);
+	kee_entry_modeswitch(o, KEE_ENTRY_VIEWMODE_SHORT);
 
 	return o;
 }

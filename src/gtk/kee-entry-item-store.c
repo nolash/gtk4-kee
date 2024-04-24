@@ -82,7 +82,6 @@ KeeEntryItemStore* kee_entry_item_store_new(struct db_ctx *db, struct kee_ledger
 	return o;
 }
 
-
 /// \todo always scans from 0, inefficient
 /// \todo enum lookup states
 static int kee_entry_item_store_scan(KeeEntryItemStore *o) {

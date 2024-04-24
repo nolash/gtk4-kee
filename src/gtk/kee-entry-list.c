@@ -18,18 +18,17 @@ struct _KeeEntryList {
 G_DEFINE_TYPE(KeeEntryList, kee_entry_list, GTK_TYPE_BOX);
 
 static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *menu) {
-	GtkSingleSelection *sel;
-	KeeEntry *o;
 	GtkWidget *widget;
 	GtkWidget *container;
+	GtkSingleSelection *sel;
+	KeeEntry *o;
 
 	sel = GTK_SINGLE_SELECTION(gtk_list_view_get_model(view));
 
 	o = KEE_ENTRY(gtk_single_selection_get_selected_item(sel));
 	g_object_take_ref(G_OBJECT(o));
-
 	container = kee_menu_next(menu, "entry");
-	if (!kee_entry_apply_display_widget(o)) {
+	if (kee_entry_modeswitch(o, KEE_ENTRY_VIEWMODE_FULL)) {
 		widget = gtk_widget_get_first_child(container);
 		if (widget) {
 			gtk_box_remove(GTK_BOX(container), widget);
