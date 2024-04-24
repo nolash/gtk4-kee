@@ -34,7 +34,6 @@ int main(int argc, char **argv) {
 	struct kee_settings settings;
 	GtkApplication *gapp;
 	struct kee_context ctx;
-	KeeEntryStore *store;
 
 	gtk_init();
 	gst_init(0, NULL);
@@ -44,15 +43,10 @@ int main(int argc, char **argv) {
 	settings_new_from_xdg(&settings);
 	settings_init(&settings);
 
-	r = kee_context_new(&ctx, &settings);
+	r = kee_context_init(&ctx, &settings);
 	if (r) {
 		return r;
 	}
-
-	db_connect(&ctx.db, "./testdata_mdb");
-	store = kee_entry_store_new(&ctx.db);
-	kee_entry_store_set_resolve(store, "./testdata_resource");
-	ctx.entry_store = store;
 
 	g_signal_connect (gapp, "startup", G_CALLBACK (startup), &ctx);
 	g_signal_connect (gapp, "activate", G_CALLBACK (activate), &ctx);

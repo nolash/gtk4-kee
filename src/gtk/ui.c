@@ -30,7 +30,6 @@ static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 	kee_menu_prev(menu);
 }
 
-
 //static GtkWidget* ui_build_view(KeeMenu *menu) {
 //	GtkListItemFactory *factory;
 //	GtkSelectionModel *sel;
@@ -53,12 +52,10 @@ void ui_build(GtkApplication *app, struct kee_context *ctx) {
 	GtkWidget *widget;
 	KeeMenu *win;
 	KeeImport *import;
-	struct kee_settings *settings;
 
 	win = kee_menu_new(app);
 
-	settings = ctx->settings;
-	widget = GTK_WIDGET(kee_key_new(settings_get(settings, SETTINGS_KEY)));
+	widget = GTK_WIDGET(kee_key_new(&ctx->gpg));
 	kee_menu_add(win, "unlock", widget);
 	g_signal_connect (widget, "unlock", G_CALLBACK(ui_handle_unlock), win);
 
