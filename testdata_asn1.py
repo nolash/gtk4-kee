@@ -457,8 +457,8 @@ if __name__ == '__main__':
     keys = ['alice']
 
     alice_key = os.path.join(crypto_dir, 'alice.key.bin')
-    os.unlink('key.bin')
-    os.symlink(alice_key, 'key.bin')
+    os.unlink('kee.key')
+    os.symlink(alice_key, 'kee.key')
 
     count_ledgers = os.environ.get('COUNT', '1')
 

@@ -51,6 +51,7 @@ struct kee_ledger_t {
 };
 
 struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len);
+struct kee_ledger_item_t *kee_ledger_add_item(struct kee_ledger_t *ledger);
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len);
 int kee_ledger_serialize(struct kee_ledger_t *ledger, char *out, size_t *out_len);
 void kee_ledger_init(struct kee_ledger_t *ledger);

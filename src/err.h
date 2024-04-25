@@ -27,6 +27,8 @@ enum keeError {
 	ERR_NOKEY,
 	/// Crypto authentication fail
 	ERR_KEYFAIL,
+	///
+	ERR_ALREADY_SIGNED,
 };
 
 #endif // _KEE_ERR_H

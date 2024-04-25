@@ -10,6 +10,14 @@
 
 G_BEGIN_DECLS
 
+
+struct kee_entry_item_form_t {
+	GtkEntry *alice_credit_delta;
+	GtkEntry *alice_collateral_delta;
+	GtkEntry *bob_credit_delta;
+	GtkEntry *bob_collateral_delta;
+};
+
 enum KEE_ENTRY_ITEM_PROPS {
 	KEE_P_ENTRY_ITEM_ALICE_CREDIT_DELTA = 1,
 	KEE_P_ENTRY_ITEM_BOB_CREDIT_DELTA,
@@ -27,6 +35,7 @@ void kee_entry_item_handle_bind(GtkListItemFactory *o,  GtkListItem *item);
 void kee_entry_item_set_resolver(KeeEntryItem *o,  struct Cadiz *resolver);
 int kee_entry_item_deserialize(KeeEntryItem *o, const char *data, size_t data_len);
 void kee_entry_item_apply_list_item_widget(KeeEntryItem *o);
+void kee_entry_item_apply_edit_widget(GtkBox *box, struct kee_entry_item_form_t *form, int first);
 
 G_END_DECLS
 

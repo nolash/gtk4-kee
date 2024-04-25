@@ -45,6 +45,7 @@ struct kee_entry_form_t {
 	GtkEntry *uoa;
 	GtkEntry *uoa_decimals;
 	GtkEntry *passphrase;
+	struct kee_entry_item_form_t item_form;
 };
 
 /// \todo factor out separate struct for listitem
@@ -69,23 +70,40 @@ struct _KeeEntry {
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
 
 static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
+	struct kee_ledger_item_t *item;
 	GtkEntryBuffer *buf;
 	char *b;
+	size_t c;
 
 	buf = gtk_entry_get_buffer(o->form->uoa);
 	b = (char*)gtk_entry_buffer_get_text(buf);
 	strcpy(o->ledger.uoa, b);
 
-	buf = gtk_entry_get_buffer(o->form->uoa);
+	buf = gtk_entry_get_buffer(o->form->uoa_decimals);
 	b = (char*)gtk_entry_buffer_get_text(buf);
 	o->ledger.uoa_decimals = (char)atoi(b);
 
-	buf = gtk_entry_get_buffer(o->form->uoa);
-	if (gtk_entry_buffer_get_length(buf) != PUBKEY_LENGTH * 2) {
+	item = kee_ledger_add_item(&o->ledger);
+	item->initiator = ALICE;
+
+	buf = gtk_entry_get_buffer(o->form->item_form.alice_credit_delta);
+	b = (char*)gtk_entry_buffer_get_text(buf);
+	item->alice_credit_delta = atoi(b);
+
+	buf = gtk_entry_get_buffer(o->form->item_form.alice_collateral_delta);
+	b = (char*)gtk_entry_buffer_get_text(buf);
+	item->alice_collateral_delta = atoi(b);
+
+	buf = gtk_entry_get_buffer(o->form->bob_pubkey);
+	b = (char*)gtk_entry_buffer_get_text(buf);
+	c = hex2bin(b, (unsigned char*)o->ledger.pubkey_bob);
+	if (c == 0) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "invalid counterparty public key data");
+		return;
+	} else if (c != PUBKEY_LENGTH) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "wrong size for counterparty public key");
 		return;
 	}
-	memcpy(o->ledger.pubkey_bob, o->form->bob_pubkey, PUBKEY_LENGTH);
 
 	o->state |= ENTRYSTATE_LOAD;
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding ledger entry");
@@ -219,6 +237,8 @@ static void kee_entry_setup_edit_widget(KeeEntry *o) {
 	gtk_entry_set_max_length(o->form->uoa_decimals, 2);
 	gtk_box_append(GTK_BOX(o->edit), widget);
 
+	kee_entry_item_apply_edit_widget(GTK_BOX(o->edit), &o->form->item_form, 1);
+
 	/// \todo DRY - kee-key.c
 	widget = gtk_label_new("private key passphrase");
 	gtk_box_append(GTK_BOX(o->edit), widget);
@@ -290,6 +310,7 @@ static void kee_entry_init_list_widget(KeeEntry *o) {
 	sel = gtk_single_selection_new(G_LIST_MODEL(model));
 	view = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
 	gtk_box_append(GTK_BOX(o->display), GTK_WIDGET(view));
+
 }
 
 int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {

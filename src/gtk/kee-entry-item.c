@@ -31,6 +31,7 @@ struct _KeeEntryItem {
 G_DEFINE_TYPE(KeeEntryItem, kee_entry_item, GTK_TYPE_BOX);
 
 
+
 static void kee_entry_item_dispose(GObject *o) {
 }
 
@@ -73,4 +74,32 @@ void kee_entry_item_apply_list_item_widget(KeeEntryItem *o) {
 	widget = gtk_label_new(o->header);
 	gtk_box_append(GTK_BOX(o), widget);
 	return;
+}
+
+
+void kee_entry_item_apply_edit_widget(GtkBox *box, struct kee_entry_item_form_t *form, int first) {
+	GtkWidget *widget;
+
+	if (first) {
+		widget = gtk_label_new("Initial credit");
+	} else {
+		widget = gtk_label_new("Credit change");
+	}
+	gtk_box_append(box, widget);
+	widget = gtk_entry_new();
+	form->alice_credit_delta = GTK_ENTRY(widget);
+	gtk_entry_set_input_purpose(form->alice_credit_delta, GTK_INPUT_PURPOSE_NUMBER);
+	gtk_box_append(box, widget);
+
+	if (first) {
+		widget = gtk_label_new("Initial collateral");
+	} else {
+		widget = gtk_label_new("Collateral change");
+	}
+	gtk_box_append(box, widget);
+	widget = gtk_entry_new();
+	form->alice_collateral_delta = GTK_ENTRY(widget);
+	gtk_entry_set_input_purpose(form->alice_collateral_delta, GTK_INPUT_PURPOSE_NAME);
+	gtk_box_append(box, widget);
+
 }

@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <errno.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "err.h"
 #include "debug.h"
@@ -157,6 +159,45 @@ int decrypt(char *outdata, const char *ciphertext, size_t ciphertext_len, const 
 	return ERR_OK;
 }
 
+static int key_apply_public(struct gpg_store *gpg, gcry_sexp_t key) {
+	char *p;
+	size_t c;
+	gcry_sexp_t pubkey;
+
+	pubkey = gcry_sexp_find_token(key, "public-key", 10);
+	if (pubkey == NULL) {
+		return 1;
+	}
+	pubkey = gcry_sexp_find_token(pubkey, "q", 1);
+	if (pubkey == NULL) {
+		return 1;
+	}
+	c = PUBKEY_LENGTH;
+	p = (char*)gcry_sexp_nth_data(pubkey, 1, &c);
+	if (p == NULL) {
+		return 1;
+	}
+	memcpy(gpg->public_key, p, PUBKEY_LENGTH);
+	return 0;
+}
+
+static char *key_filename(struct gpg_store *gpg, char *path) {
+	int r;
+	char *p;
+	size_t c;
+
+	strcpy((char*)path, gpg->path);
+	p = (char*)path + strlen((char*)path);
+
+	c = 41;
+	r = bin_to_hex((unsigned char*)gpg->fingerprint, 20, (unsigned char*)p, &c);
+	if (r) {
+		return NULL;
+	}
+
+	return path;
+}
+
 static int key_from_data(gcry_sexp_t *key, const char *indata, size_t indata_len) {
 	gcry_error_t e;
 
@@ -168,24 +209,20 @@ static int key_from_data(gcry_sexp_t *key, const char *indata, size_t indata_len
 	return ERR_OK;
 }
 
-static int key_from_path(gcry_sexp_t *key, const char *p, const char *passphrase) {
+static int key_from_file(gcry_sexp_t *key, const char *path, const char *passphrase) {
+	char *p;
 	int r;
 	char v[BUFLEN];
 	size_t c;
 	size_t i;
 	FILE *f;
-	char *fullpath;
 	char nonce[CHACHA20_NONCE_LENGTH_BYTES];
 	void *outdata;
 
-	fullpath = (char*)malloc(strlen(p) + 8);
-	sprintf(fullpath, "%s/%s", p, "key.bin");
-
-	f = fopen(fullpath, "r");
+	f = fopen(path, "r");
 	if (f == NULL) {
 		return ERR_NOKEY;
 	}
-	free(fullpath);
 
 	/// \todo length must be in the ciphertext
 	//c = fread(&l, sizeof(int), 1, f);
@@ -208,45 +245,99 @@ static int key_from_path(gcry_sexp_t *key, const char *p, const char *passphrase
 		return ERR_NOKEY;
 	}
 	//r = key_from_data(key, (char*)outdata, l);
-	r = key_from_data(key, (char*)(outdata+sizeof(int)), (size_t)(*((int*)outdata)));
+	c = (size_t)(*((int*)outdata));
+	p = (char*)(outdata+sizeof(int));
+	r = key_from_data(key, p, c);
 	free(outdata);
 	return r;
 }
 
+static int key_create(struct gpg_store *gpg, gcry_sexp_t *key) {
+	int r;
+	char *p;
+	const char *sexp_quick = "(genkey(ecc(flags eddsa)(curve Ed25519)))";
+	//char *pv;
+	gcry_sexp_t in;
+	gcry_error_t e;
+
+	e = gcry_sexp_new(&in, (const void*)sexp_quick, strlen(sexp_quick), 0);
+	if (e) {
+		printf("error sexp: %s\n", gcry_strerror(e));
+		return (int)e;
+	}
+	e = gcry_pk_genkey(key, in);
+	if (e) {
+		printf("error gen: %s\n", gcry_strerror(e));
+		return (int)e;
+	}
+	p = (char*)gcry_pk_get_keygrip(*key, (unsigned char*)gpg->fingerprint);
+	if (p == NULL) {
+		return ERR_KEYFAIL;
+	}
+
+	r = key_apply_public(gpg, *key);
+	if (r) {
+		return ERR_KEYFAIL;
+	}
+
+	return 0;
+}
+
 /**
  * \todo consistent endianness for key length in persistent storage (fwrite)
- * \todo implement MAC
+ et* \todo implement MAC
  * \todo test new data length location (part of ciphertext)
+ * \todo doc must have enough in path for path + fingerprint hex
+ *
  */
-static int key_create_file(gcry_sexp_t *key, const char *p, const char *passphrase) {
+static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *passphrase) {
+	char *p;
 	int r;
 	int kl;
 	char v[BUFLEN];
 	int i;
 	int l;
 	size_t c;
+	size_t m;
 	FILE *f;
 	char nonce[CHACHA20_NONCE_LENGTH_BYTES];
+	char path[1024];
 
-	r = gpg_key_create(key);
+	r = key_create(gpg, key);
 	if (r) {
 		return ERR_KEYFAIL;
 	}
 
-	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, v+sizeof(int), BUFLEN);
-	memcpy(v, &kl, sizeof(int));
+	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, NULL, 0);
+	m = (size_t)kl;
+	p = (char*)v + sizeof(int);
+	c = 0;
+	while (m > 0) {
+		kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, p, BUFLEN-m);
+		m -= (size_t)(kl + 1);
+		p += kl;
+		c += kl;
+	}
+	memcpy(v, &c, sizeof(int));
 
-	c = get_padsize(kl, ENCRYPT_BLOCKSIZE);
+	m = c;
+	c = get_padsize(m, ENCRYPT_BLOCKSIZE);
 	/// \todo malloc
 	char ciphertext[c];
 
 	gcry_create_nonce(nonce, CHACHA20_NONCE_LENGTH_BYTES);
-	r = encryptb(ciphertext, c, v, kl, passphrase, nonce);
+	r = encryptb(ciphertext, c, v, m+sizeof(int), passphrase, nonce);
 	if (r) {
 		return ERR_KEYFAIL;
 	}
 
-	f = fopen(p, "w");
+
+	p = key_filename(gpg, path);
+	if (p == NULL) {
+		return ERR_KEYFAIL;
+	}
+
+	f = fopen((char*)path, "w");
 	if (f == NULL) {
 		return ERR_KEYFAIL;
 	}
@@ -275,26 +366,87 @@ static int key_create_file(gcry_sexp_t *key, const char *p, const char *passphra
 }
 
 
-int gpg_key_create(gcry_sexp_t *key) {
-	const char *sexp_quick = "(genkey(ecc(flags eddsa)(curve Ed25519)))";
-	//char *pv;
-	gcry_sexp_t in;
-	gcry_error_t e;
+int gpg_key_create(struct gpg_store *gpg, const char *passphrase) {
+	size_t c;
+	char *p;
+	int r;
+	gcry_sexp_t key;
+	char key_path[1024];
+	char link_path[1024];
 
-	e = gcry_sexp_new(&in, (const void*)sexp_quick, strlen(sexp_quick), 0);
-	if (e) {
-		printf("error sexp: %s\n", gcry_strerror(e));
-		return (int)e;
+	r = key_create_file(gpg, &key, passphrase);
+	if (r) {
+		return ERR_KEYFAIL;
 	}
-	e = gcry_pk_genkey(key, in);
-	if (e) {
-		printf("error gen: %s\n", gcry_strerror(e));
-		return (int)e;
+
+	p = key_filename(gpg, key_path);
+	if (p == NULL) {
+		return ERR_KEYFAIL;
 	}
-	return 0;
+
+	strcpy(link_path, gpg->path);
+	c = strlen(link_path);
+	strcpy(link_path + c, "kee.key");
+
+	r = unlink(link_path);
+	if (r == -1 && errno != ENOENT) {
+		return ERR_KEYFAIL;
+	}
+
+	r = symlink(key_path, link_path);
+	if (r) {
+		return ERR_KEYFAIL;
+	}
+	return ERR_OK;
 }
 
-int gpg_sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
+int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, void *criteria) {
+	int r;
+	size_t c;
+	char *p;
+	char path[1024];
+
+	switch(mode) {
+		case KEE_GPG_FIND_MAIN:
+			strcpy(path, gpg->path);
+			p = path + strlen(path);
+			strcpy(p, "kee.key");
+			r = key_from_file(gpg->k, path, passphrase);
+			if (r) {
+				return ERR_FAIL;
+			}
+			break;
+		case KEE_GPG_FIND_FINGERPRINT:
+			strcpy(path, gpg->path);
+			p = path + strlen(path);
+			c = 41;
+			r = bin_to_hex((const unsigned char*)criteria, FINGERPRINT_LENGTH, (unsigned char*)p, &c);
+			if (r) {
+				return ERR_FAIL;
+			}
+			r = key_from_file(gpg->k, path, passphrase);
+			if (r) {
+				return ERR_FAIL;
+			}
+			break;
+		default:
+			return ERR_FAIL;
+	}
+
+	p = (char*)gcry_pk_get_keygrip(*gpg->k, (unsigned char*)gpg->fingerprint);
+	if (p == NULL) {
+		return ERR_KEYFAIL;
+	}
+
+	r = key_apply_public(gpg, *gpg->k);
+	if (r) {
+		return ERR_FAIL;
+	}
+	
+	return ERR_OK;
+}
+
+static int gpg_sign_sexp(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
 	gcry_error_t e;
 	gcry_sexp_t data;
 	size_t err_offset;
@@ -315,6 +467,7 @@ int gpg_sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
 
 	return 0;
 }
+
 
 int gpg_verify(gcry_sexp_t *sig, gcry_sexp_t *key, const char *v) {
 	gcry_error_t e;
@@ -354,9 +507,18 @@ int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in) {
 
 /// \todo handle path length limit
 void gpg_store_init(struct gpg_store *gpg, const char *path) {
+	char *p;
+	size_t c;
+	memset(gpg, 0, sizeof(struct gpg_store));
 	gpg->passphrase_digest_len = gcry_md_get_algo_dlen(GCRY_MD_SHA256);
-	strcpy(gpg->path, path);
 
+	strcpy(gpg->path, path);
+	c = strlen(gpg->path);
+	p = gpg->path+c;
+	if (*p != '/') {
+		*p = '/';
+		*(p+1) = 0;
+	}
 }
 
 int gpg_store_check(struct gpg_store *gpg, const char *passphrase) { 
@@ -364,7 +526,6 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 	const char *v;
 	char d[1024];
 	gcry_sexp_t k;
-	gcry_sexp_t o;
 	char *p;
 	unsigned char fingerprint[20] = { 0x00 };
 	size_t fingerprint_len = 41;
@@ -386,9 +547,9 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 	gpgVersion = v;
 	sprintf(d, "Using gpg version: %s", gpgVersion);
 	debug_log(DEBUG_INFO, d);
-	//r = key_from_path(&k, p.c_str(), passphrase_hash);
-	//r = key_from_path(&k, p, passphrase_hash);
-	r = key_from_path(&k, gpg->path, passphrase_hash);
+	//r = key_from_file(&k, p.c_str(), passphrase_hash);
+	//r = key_from_file(&k, p, passphrase_hash);
+	r = key_from_file(&k, gpg->path, passphrase_hash);
 	if (r == ERR_KEYFAIL) {
 		char pp[2048];
 		//sprintf(pp, "could not decrypt key in %s/key.bin", p.c_str());
@@ -400,7 +561,7 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		char pp[2048];
 		//sprintf(pp, "%s/key.bin", p.c_str());
 		sprintf(pp, "%s/key.bin", p);
-		r = key_create_file(&k, pp, passphrase_hash);
+		r = key_create_file(gpg, &k, passphrase_hash);
 		if (r != ERR_OK) {
 			return r;
 		}
@@ -420,6 +581,132 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		sprintf(pp, "found key %s in %s", (unsigned char*)gpg->fingerprint, p);
 		debug_log(DEBUG_INFO, pp);
 	}
-	r = gpg_sign(&o, &k, sign_test);
-	return r;
+	//r = gpg_sign(&o, &k, sign_test);
+	//return r;
+	return ERR_OK;
+}
+
+int gpg_store_sign(struct gpg_store *gpg, char *data, size_t data_len, const char *passphrase) {
+	return gpg_store_sign_with(gpg, data, data_len, passphrase, NULL);
+}
+
+int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, const char *passphrase, const char *fingerprint) {
+	int r;
+	size_t c;
+	gcry_sexp_t key;
+	gcry_sexp_t pnt;
+	gcry_sexp_t msg;
+	gcry_sexp_t sig;
+	gcry_error_t e;
+	char *p;
+
+	r = calculate_digest_algo(data, data_len, gpg->last_data, GCRY_MD_SHA512);
+	if (r) {
+		return 1;
+	}
+
+	gpg->k = &key;
+	if (fingerprint == NULL) {
+		r = gpg_key_load(gpg, passphrase, KEE_GPG_FIND_MAIN, NULL);
+	} else {
+		r = gpg_key_load(gpg, passphrase, KEE_GPG_FIND_FINGERPRINT, fingerprint);
+	}
+	if (r) {
+		return 1;
+	}
+		 
+	c = 0;
+	e = gcry_sexp_build(&msg, &c, "(data(flags eddsa)(hash-algo sha512)(value %b))", 64, gpg->last_data);
+	if (e != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+
+	e = gcry_pk_sign(&sig, msg, *gpg->k);
+	if (e != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+
+	// retrieve r and write it
+	pnt = NULL;
+	pnt = gcry_sexp_find_token(sig, "r", 1);
+	if (pnt == NULL) {
+		return 1;
+	}
+	c = POINT_LENGTH;
+	p = gcry_sexp_nth_data(pnt, 1, &c);
+	if (p == NULL) {
+		return 1;
+	}
+	memcpy(gpg->last_signature, p, c);
+
+	// retrieve s and write it
+	pnt = NULL;
+	pnt = gcry_sexp_find_token(sig, "s", 1);
+	if (pnt == NULL) {
+		return 1;
+	}
+	c = POINT_LENGTH;
+	p = gcry_sexp_nth_data(pnt, 1, &c);
+	if (p == NULL) {
+		return 1;
+	}
+	memcpy(gpg->last_signature + POINT_LENGTH, p, c);
+
+	gcry_sexp_release(*gpg->k);
+	gpg->k = NULL;
+
+	return 0;
+}
+
+int gpg_store_verify(const char *sig_bytes, const char *digest, const char *pubkey_bytes) {
+	gcry_mpi_t sig_r;
+	gcry_mpi_t sig_s;
+	size_t c;
+	gcry_error_t err;
+	gcry_sexp_t sig;
+	gcry_sexp_t msg;
+	gcry_sexp_t pubkey;
+
+	c = 0;
+	err = gcry_sexp_build(&pubkey, &c, "(key-data(public-key(ecc(curve Ed25519)(q %b))))", PUBKEY_LENGTH, pubkey_bytes);
+	if (err != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+
+	c = 0;
+	err = gcry_mpi_scan(&sig_r, GCRYMPI_FMT_STD, sig_bytes, POINT_LENGTH, &c);
+	if (err != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+	if (c != 32) {
+		return 1;
+	}
+
+	c = 0;
+	err = gcry_mpi_scan(&sig_s, GCRYMPI_FMT_STD, sig_bytes + POINT_LENGTH, POINT_LENGTH, &c);
+	if (err != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+	if (c != 32) {
+		return 1;
+	}
+
+	c = 0;
+	err = gcry_sexp_build(&sig, &c, "(sig-val(eddsa(r %m)(s %m)))", sig_r, sig_s);
+	if (err != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+
+	c = 0;
+	err = gcry_sexp_build(&msg, &c, "(data(flags eddsa)(hash-algo sha512)(value %b))", DIGEST_LENGTH, digest);
+	if (err != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+
+	err = gcry_pk_verify(sig, msg, pubkey);
+	if (err != GPG_ERR_NO_ERROR) {
+		return 1;
+	}
+
+	return 0;
 }

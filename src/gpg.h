@@ -9,16 +9,28 @@
 #define CHACHA20_KEY_LENGTH_BYTES 32
 #define CHACHA20_NONCE_LENGTH_BYTES 12
 #define PUBKEY_LENGTH 32
+#define FINGERPRINT_LENGTH 20
+#define SIGNATURE_LENGTH 64
+#define DIGEST_LENGTH 64
+#define POINT_LENGTH 32
 
 #ifndef ENCRYPT_BLOCKSIZE
 #define ENCRYPT_BLOCKSIZE 4096
 #endif
 
+enum gpg_find_mode_e {
+	KEE_GPG_FIND_MAIN,
+	KEE_GPG_FIND_FINGERPRINT,	
+};
 
 struct gpg_store {
+	gcry_sexp_t *k;
 	size_t passphrase_digest_len;
-	char fingerprint[40];
+	char fingerprint[FINGERPRINT_LENGTH];
+	char public_key[PUBKEY_LENGTH];
 	char path[1024];
+	char last_signature[SIGNATURE_LENGTH];
+	char last_data[DIGEST_LENGTH];
 };
 
 /**
@@ -89,7 +101,12 @@ void gpg_store_init(struct gpg_store *gpg, const char *path);
 int gpg_store_check(struct gpg_store *gpg, const char *passphrase);
 int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in);
 char *gpg_store_get_fingerprint(struct gpg_store *gpg);
-int gpg_key_create(gcry_sexp_t *key);
-int gpg_sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v);
+//int gpg_key_create(gcry_sexp_t *key);
+int gpg_key_create(struct gpg_store *gpg, const char *passphrase);
+//int gpg_sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v);
+int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, void *criteria);
+int gpg_store_sign(struct gpg_store *gpg, char *data, size_t data_len, const char *passphrase);
+int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, const char *passphrase, const char *fingerprint);
+int gpg_store_verify(const char *sig_bytes, const char *digest, const char *pubkey_bytes);
 
 #endif

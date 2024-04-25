@@ -139,35 +139,40 @@ static int verify_item(struct kee_ledger_t *ledger, asn1_node item, const char *
 		return 1;
 	}
 
-	c = 0;
-	err = gcry_mpi_scan(&sr, GCRYMPI_FMT_STD, sig_data, 32, &c);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	if (c != 32) {
+	r = gpg_store_verify(sig_data, p, pubkey_last_data);
+	if (r) {
 		return 1;
 	}
 
-	c = 0;
-	err = gcry_mpi_scan(&ss, GCRYMPI_FMT_STD, sig_data+32, 32, &c);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	if (c != 32) {
-		return 1;
-	}
+//	c = 0;
+//	err = gcry_mpi_scan(&sr, GCRYMPI_FMT_STD, sig_data, 32, &c);
+//	if (err != GPG_ERR_NO_ERROR) {
+//		return 1;
+//	}
+//	if (c != 32) {
+//		return 1;
+//	}
+//
+//	c = 0;
+//	err = gcry_mpi_scan(&ss, GCRYMPI_FMT_STD, sig_data+32, 32, &c);
+//	if (err != GPG_ERR_NO_ERROR) {
+//		return 1;
+//	}
+//	if (c != 32) {
+//		return 1;
+//	}
 
-	c = 0;
-	err = gcry_sexp_build(&sig, &c, "(sig-val(eddsa(r %m)(s %m)))", sr, ss);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-
-	c = 0;
-	err = gcry_sexp_build(&msg, &c, "(data(flags eddsa)(hash-algo sha512)(value %b))", 64, p);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
+//	c = 0;
+//	err = gcry_sexp_build(&sig, &c, "(sig-val(eddsa(r %m)(s %m)))", sr, ss);
+//	if (err != GPG_ERR_NO_ERROR) {
+//		return 1;
+//	}
+//
+//	c = 0;
+//	err = gcry_sexp_build(&msg, &c, "(data(flags eddsa)(hash-algo sha512)(value %b))", 64, p);
+//	if (err != GPG_ERR_NO_ERROR) {
+//		return 1;
+//	}
 
 /// \todo "string too long" error when build same string as can "new" - bug in gcrypt?
 //	c = 0;
@@ -176,22 +181,22 @@ static int verify_item(struct kee_ledger_t *ledger, asn1_node item, const char *
 //		return 1;
 //	}
 
-	strcpy(pubkey_sexp_data, "(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(1:q32:");
-	c = strlen(pubkey_sexp_data);
-	memcpy(pubkey_sexp_data + c, pubkey_last_data, 32);
-	strcpy(pubkey_sexp_data + c + 32, "))))");
+//	strcpy(pubkey_sexp_data, "(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(1:q32:");
+//	c = strlen(pubkey_sexp_data);
+//	memcpy(pubkey_sexp_data + c, pubkey_last_data, 32);
+//	strcpy(pubkey_sexp_data + c + 32, "))))");
+//
+//	pubkey_sexp_len = c + 32 + 4;
+//	c = 0;
+//	err = gcry_sexp_new(&pubkey, pubkey_sexp_data, pubkey_sexp_len, 1);
+//	if (err != GPG_ERR_NO_ERROR) {
+//		return 1;
+//	}
 
-	pubkey_sexp_len = c + 32 + 4;
-	c = 0;
-	err = gcry_sexp_new(&pubkey, pubkey_sexp_data, pubkey_sexp_len, 1);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-
-	err = gcry_pk_verify(sig, msg, pubkey);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
+//	err = gcry_pk_verify(sig, msg, pubkey);
+//	if (err != GPG_ERR_NO_ERROR) {
+//		return 1;
+//	}
 
 	return 0;
 }
@@ -216,13 +221,22 @@ void kee_ledger_reset_cache(struct kee_ledger_t *ledger) {
 	}
 }
 
+struct kee_ledger_item_t *kee_ledger_add_item(struct kee_ledger_t *ledger) {
+	struct kee_ledger_item_t *prev;
+
+	prev = ledger->last_item;
+	ledger->last_item = calloc(sizeof(struct kee_ledger_item_t), 1);
+	ledger->last_item->prev_item = prev;
+	
+	return ledger->last_item;
+}
+
 struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len) {
 	int r;
 	int c;
 	char err[1024];
 	asn1_node root;
 	asn1_node item;
-	struct kee_ledger_item_t *prev;
 	struct kee_ledger_item_t *cur;
 	int *credit_delta;
 	int *collateral_delta;
@@ -231,10 +245,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	char tmp[64];
 	int v;
 
-	prev = ledger->last_item;
-	ledger->last_item = calloc(sizeof(struct kee_ledger_item_t), 1);
-	cur = ledger->last_item;
-	cur->prev_item = prev;
+	cur = kee_ledger_add_item(ledger);
 
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
@@ -608,3 +619,70 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 
 	return 0;
 }
+
+static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out, size_t out_len) {
+	int r;
+	char out_data[1024];
+
+	r = kee_ledger_serialize(ledger, out_data, &out_len);
+	if (r) {
+		return r;
+	}
+
+	r = calculate_digest_algo(out_data, out_len, out, GCRY_MD_SHA512);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	return ERR_OK;
+}
+
+//int kee_ledger_sign(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
+//	char *p;
+//	kee_ledger_item_t *item;
+//	char *signature_request;
+//	size_t c
+//	size_t l;
+//	enum kee_item_serialize_mode_e mode;
+//
+//	p = out;
+//	c = *out_len;
+//	l = *out_len;
+//	*out_len = 0;
+//
+//	item = ledger->last_item;
+//
+//	if (item->initiator == BOB) {
+//		mode = KEE_LEDGER_ITEM_SERIALIZE_RESPONSE;
+//	} else {
+//		signature_request = item->alice_signature;
+//	}
+//
+//	if (memcmp(signature_request, zero_content, 64)) {
+//		return ERR_ALREADY_SIGNED;
+//	}
+//
+//	r = kee_ledger_digest(ledger, p, &c);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//	p = out + c;
+//	l -= c;
+//	c = l;
+//
+//	r = kee_ledger_serialize(ledger, p, &c);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//	p = out + c;
+//	l -= c;
+//	c = l;
+//
+//	r = kee_ledger_item_serialize(ledger, p, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//
+//
+//	return ERR_OK;
+//}

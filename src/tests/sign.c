@@ -1,4 +1,6 @@
 #include <gcrypt.h>
+#include <stdlib.h>
+#include <fcntl.h>
 
 #include "ledger.h"
 #include "gpg.h"
@@ -7,24 +9,18 @@
 const char *content_test = "Subject: foo\n\nsome content\n";
 const char *content_test_item = "Subject: bar\n\nsome other content\n";
 
-int main() {
+/// \todo split up function
+int test_sign() {
 	int r;
-	size_t c;
 	gcry_sexp_t alice;
-	gcry_sexp_t alice_pub;
 	gcry_sexp_t bob;
-	gcry_sexp_t bob_pub;
-	gcry_sexp_t tmp;
-	gcry_sexp_t sig;
-	gcry_sexp_t msg;
-	gcry_mpi_t sr;
-	gcry_mpi_t ss;
-	gcry_error_t err;
+	char alice_fingerprint[20];
 	char *p;
 	char *out;
 	size_t out_len;
 	char *out_item;
 	size_t out_item_len;
+	struct gpg_store gpg;
 	struct kee_ledger_t ledger;
 	struct kee_ledger_item_t item;
 	struct kee_ledger_item_t *item_parsed;
@@ -32,6 +28,7 @@ int main() {
 	struct kee_content_t content_item;
 	char item_sum[64];
 	const char *version;
+	char path[1024];
 
 	version = gcry_check_version(NULL);
 	if (version == 0x0) {
@@ -40,46 +37,30 @@ int main() {
 	gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
 	gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
 
-	r = gpg_key_create(&alice);
-	if (r) {
-		return 1;
-	}
-	r = gpg_key_create(&bob);
-	if (r) {
+	strcpy(path, "/tmp/keetest_key_XXXXXX");
+	p = mkdtemp(path);
+	if (p == NULL) {
 		return 1;
 	}
 
 	kee_ledger_init(&ledger);
 
-	tmp = gcry_sexp_find_token(alice, "public-key", 10);
-	if (tmp == NULL) {
+	gpg_store_init(&gpg, p);
+	gpg.k = &alice;
+	r = gpg_key_create(&gpg, "1234"); // alice
+	if (r) {
 		return 1;
 	}
-	tmp = gcry_sexp_find_token(tmp, "q", 1);
-	if (tmp == NULL) {
-		return 1;
-	}
-	out_len = 32;	
-	out = gcry_sexp_nth_data(tmp, 1, &out_len);
-	if (tmp == NULL) {
-		return 1;
-	}
-	memcpy(ledger.pubkey_alice, out, 32);
+	memcpy(ledger.pubkey_alice, gpg.public_key, PUBKEY_LENGTH);
+	memcpy(alice_fingerprint, gpg.fingerprint, FINGERPRINT_LENGTH);
 
-	tmp = gcry_sexp_find_token(bob, "public-key", 10);
-	if (tmp == NULL) {
+	gpg_store_init(&gpg, p);
+	gpg.k = &bob;
+	r = gpg_key_create(&gpg, "1234"); // bob
+	if (r) {
 		return 1;
 	}
-	tmp = gcry_sexp_find_token(tmp, "q", 1);
-	if (tmp == NULL) {
-		return 1;
-	}
-	out_len = 32;	
-	out = gcry_sexp_nth_data(tmp, 1, &out_len);
-	if (tmp == NULL) {
-		return 1;
-	}
-	memcpy(ledger.pubkey_bob, out, 32);
+	memcpy(ledger.pubkey_bob, gpg.public_key, PUBKEY_LENGTH);
 
 	strcpy(ledger.uoa, "USD");
 	ledger.uoa_decimals = 2;
@@ -92,7 +73,6 @@ int main() {
 	if (r) {
 		return 1;
 	}
-
 	r = calculate_digest_algo(content_test, strlen(content_test), content.key, GCRY_MD_SHA512);
 	if (r) {
 		return 1;
@@ -105,7 +85,7 @@ int main() {
 		return 1;
 	}
 
-	r = calculate_digest_algo(out,  out_len, ledger.digest, GCRY_MD_SHA512);
+	r = calculate_digest_algo(out, out_len, ledger.digest, GCRY_MD_SHA512);
 	if (r) {
 		return 1;
 	}
@@ -122,11 +102,15 @@ int main() {
 	item.initiator = BOB;
 	item.response = 1;
 
-	r = calculate_digest_algo(content_test, strlen(content_test_item), content_item.key, GCRY_MD_SHA512);
+	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item.key, GCRY_MD_SHA512);
 	if (r) {
 		return 1;
 	}
 	r = kee_content_init(&content_item, content_item.key, 0);
+	if (r) {
+		return 1;
+	}
+	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item.key, GCRY_MD_SHA512);
 	if (r) {
 		return 1;
 	}
@@ -141,58 +125,15 @@ int main() {
 	if (r) {
 		return 1;
 	}
-	r = gpg_sign(&sig, &bob, item_sum);
+	r = gpg_store_sign(&gpg, out_item, out_item_len, "1234");
 	if (r) {
 		return 1;
 	}
-	c = 0;
-	bob_pub = gcry_sexp_find_token(bob, "public-key", 10);
-	if (bob_pub == NULL) {
-		return 1;
-	}
-	err = gcry_sexp_build(&bob_pub, &c, "(key-data%S)", bob_pub);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	r = gpg_verify(&sig, &bob, item_sum);
+	r = gpg_store_verify(gpg.last_signature, item_sum, ledger.pubkey_bob);
 	if (r) {
 		return 1;
 	}
-
-	tmp = gcry_sexp_find_token(sig, "r", 1);
-	if (tmp == NULL) {
-		return 1;
-	}
-	sr = gcry_sexp_nth_mpi(tmp, 1, GCRYMPI_FMT_STD);
-	if (sr == NULL) {
-		return 1;
-	}
-	tmp = gcry_sexp_find_token(sig, "s", 1);
-	if (tmp == NULL) {
-		return 1;
-	}
-	ss = gcry_sexp_nth_mpi(tmp, 1, GCRYMPI_FMT_STD);
-	if (ss == NULL) {
-		return 1;
-	}
-	c = 0;
-	err = gcry_mpi_print(GCRYMPI_FMT_STD, item_sum, 32, &c, sr);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	if (c != 32) {
-		return 1;
-	}
-	memcpy(item.bob_signature, item_sum, 32);
-	c = 0;
-	err = gcry_mpi_print(GCRYMPI_FMT_STD, item_sum, 32, &c, ss);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	if (c != 32) {
-		return 1;
-	}
-	memcpy(item.bob_signature+32, item_sum, 32);
+	memcpy(item.bob_signature, gpg.last_signature, SIGNATURE_LENGTH);
 
 	out_item_len = 4096;
 	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
@@ -203,59 +144,16 @@ int main() {
 	if (r) {
 		return 1;
 	}
-	r = gpg_sign(&sig, &alice, item_sum);
+	gpg.k = &alice;
+	r = gpg_store_sign_with(&gpg, out_item, out_item_len, "1234", alice_fingerprint);
 	if (r) {
 		return 1;
 	}
-	c = 0;
-	alice_pub = gcry_sexp_find_token(alice, "public-key", 10);
-	if (alice_pub == NULL) {
-		return 1;
-	}
-	err = gcry_sexp_build(&alice_pub, &c, "(key-data%S)", alice_pub);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	r = gpg_verify(&sig, &alice, item_sum);
+	r = gpg_store_verify(gpg.last_signature, item_sum, ledger.pubkey_alice);
 	if (r) {
 		return 1;
 	}
-	tmp = NULL;
-	tmp = gcry_sexp_find_token(sig, "r", 1);
-	if (tmp == NULL) {
-		return 1;
-	}
-	sr = gcry_sexp_nth_mpi(tmp, 1, GCRYMPI_FMT_STD);
-	if (sr == NULL) {
-		return 1;
-	}
-	tmp = NULL;
-	tmp = gcry_sexp_find_token(sig, "s", 1);
-	if (tmp == NULL) {
-		return 1;
-	}
-	ss = gcry_sexp_nth_mpi(tmp, 1, GCRYMPI_FMT_STD);
-	if (ss == NULL) {
-		return 1;
-	}
-	c = 0;
-	err = gcry_mpi_print(GCRYMPI_FMT_STD, item_sum, 32, &c, sr);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	if (c != 32) {
-		return 1;
-	}
-	memcpy(item.alice_signature, item_sum, 32);
-	c = 0;
-	err = gcry_mpi_print(GCRYMPI_FMT_STD, item_sum, 32, &c, ss);
-	if (err != GPG_ERR_NO_ERROR) {
-		return 1;
-	}
-	if (c != 32) {
-		return 1;
-	}
-	memcpy(item.alice_signature+32, item_sum, 32);
+	memcpy(item.alice_signature, gpg.last_signature, SIGNATURE_LENGTH);
 
 	out_item_len = 4096;
 	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_FINAL);
@@ -268,7 +166,6 @@ int main() {
 	if (item_parsed == NULL) {
 		return 1;
 	}
-	tmp = NULL;
 
 	free(out_item);
 	free(out);
@@ -276,5 +173,48 @@ int main() {
 	kee_content_free(&content);
 	kee_ledger_free(&ledger);
 
+	return 0;
+}
+
+int test_create() {
+	char *p;
+	int r;
+	struct gpg_store gpg;
+	char path[1024];
+	gcry_sexp_t key;
+
+	strcpy(path, "/tmp/keetest_key_XXXXXX");
+	p = mkdtemp(path);
+	if (p == NULL) {
+		return 1;
+	}
+	gpg_store_init(&gpg, p)
+		;
+	r = gpg_key_create(&gpg, "1234");
+	if (r) {
+		return 1;
+	}
+
+	memset(&gpg, 0, sizeof(struct gpg_store));
+	gpg_store_init(&gpg, p);
+	gpg.k = &key;
+	r = gpg_key_load(&gpg, "1234", KEE_GPG_FIND_MAIN, NULL);
+	if (r) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int main() {
+	int r;
+	r = test_create();
+	if (r) {
+		return 1;
+	}
+	r = test_sign();
+	if (r) {
+		return 1;
+	}
 	return 0;
 }
