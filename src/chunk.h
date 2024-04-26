@@ -8,7 +8,7 @@
 #endif
 
 struct kee_chunk_t {
-	char *data;
+	char data[KEE_TRANSPORT_CHUNK_MAX_SIZE];
 	size_t data_len;
 	size_t crsr;
 	short cardinality;

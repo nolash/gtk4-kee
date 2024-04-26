@@ -24,6 +24,7 @@ test_run:
 	./test_ledger
 	./test_dn
 	./test_sign
+	./test_transport
 
 test: all test_run
 

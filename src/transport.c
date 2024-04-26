@@ -115,6 +115,10 @@ int pack(char *in, size_t in_len, char *out, size_t *out_len) {
 		free(buf);	
 		return ERR_FAIL;
 	}
+	if (*(out+*out_len-1) == 0x0a) {
+		*(out+*out_len-1) = 0;
+		(*out_len)--;	
+	}
 
 	free(buf);
 	return ERR_OK;
@@ -143,70 +147,68 @@ int unpack(char *in, size_t in_len, char *out, size_t *out_len) {
 }
 
 /// \todo implement checksum
-int kee_transport_single(struct kee_transport_t *trans, char cmd, size_t data_len) {
+int kee_transport_single(struct kee_transport_t *trans, enum kee_transport_mode_e mode, char cmd, size_t data_len) {
 
-	memset(trans, 0, sizeof(struct kee_transport_header_t));
+	memset(trans, 0, sizeof(struct kee_transport_t));
 	if (cmd >= KEE_N_CMD) {
 		return ERR_INVALID_CMD;	
 	}
 
-	trans->chunk.data_len(in_len + 1);
-	trans->chunk.data = malloc(trans->chunk.data_len);
-	trans->cmd = trans->chunk.data;
+	trans->chunker.data_len = data_len + 1;
+	trans->cmd = (char*)trans->chunker.data;
+	trans->mode = mode;
+	*(trans->cmd) = cmd;
+	trans->chunker.crsr = 1;
 
 	return ERR_OK;
 }
 
 int kee_transport_write(struct kee_transport_t *trans, const char *in, size_t in_len) {
-	if (trans.state) {
+	if (trans->state) {
 		return ERR_FAIL;
 	}
-	memcpy(trans->chunk.data + trans->chunk.crsr, in, in_len);
-	trans->chunk.crsr += in_len;
+	memcpy(trans->chunker.data + trans->chunker.crsr, in, in_len);
+	trans->chunker.crsr += in_len;
 	return ERR_OK;
 }
 
 /// \todo consider pass validation function
 /// \todo implement chunking
-int kee_transport_next(struct kee_transport_t *trans, enum kee_transport_mode_e mode, char *out, size_t *out_len) {
+int kee_transport_next(struct kee_transport_t *trans, char *out, size_t *out_len) {
 	int r;
 	size_t l;
+	size_t remaining;
 
-	if (trans.state) {
-		if (trans.state > 1) {
+	if (trans->state) {
+		if (trans->state > 1) {
 			return ERR_FAIL;
 		}
-	else {
-		trans->chunk.data_len = trans->chunk.crsr;
-		trans->chunk.crsr = 0;
+	} else {
+		trans->chunker.data_len = trans->chunker.crsr;
+		trans->chunker.crsr = 0;
 		trans->state = 1;
 	}
 
-	if (trans->remaining < KEE_TRANSPORT_CHUNK_SIZE - 1) {
-		l = trans_remaining;
+	remaining = trans->chunker.data_len - trans->chunker.crsr;
+	if (remaining < KEE_TRANSPORT_CHUNK_MAX_SIZE - 1) {
+		l = remaining;
 	} else {
 		return 1; // unimplemented
 		//l = KEE_TRANSPORT_CHUNK_SIZE;
 	}
 
-	*(trans->buf) = trans->cmd;
-	memcpy(trans->buf + 1, trans->data, l - 1);
-	switch (mode) {
+	switch (trans->mode) {
 		case KEE_TRANSPORT_BASE64:
-			r = pack_encode(trans->data, trans->data_len + 1, out, out_len);
+			r = pack(trans->chunker.data, l, out, out_len);
 			if (r) {
-				retrun ERR_FAIL;
+				return ERR_FAIL;
 			}
 			break;
 		case KEE_TRANSPORT_RAW:
-			memcpy(out, trans->data, trans->data_len + 1);
+			memcpy(out, trans->chunker.data, l);
 			break;
 		default:
-			retrun ERR_FAIL;
+			return ERR_FAIL;
 	}
 	return 0;	
-}
-
-void kee_transport_header_free() {
-	free(trans->buf);
 }
