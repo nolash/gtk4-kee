@@ -670,6 +670,7 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 	c = DIGEST_LENGTH;
 	p = out + c;
 	l -= c;
+	*out_len += c;
 
 //	r = kee_ledger_serialize(ledger, p, &c);
 //	if (r) {
@@ -684,12 +685,13 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 	if (r) {
 		return ERR_FAIL;
 	}
+	*out_len += c;
 
-	r = gpg_store_sign_with(gpg, p, c, passphrase, gpg->fingerprint);
+	r = gpg_store_sign_with(gpg, out, *out_len, passphrase, gpg->fingerprint);
 	if (r) {
 		return ERR_FAIL;
 	}
-	memcpy(item->alice_signature, gpg->last_signature, 32);
+	memcpy(item->alice_signature, gpg->last_signature, SIGNATURE_LENGTH);
 
 	return ERR_OK;
 }
