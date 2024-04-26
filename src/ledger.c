@@ -640,11 +640,11 @@ static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
 	return ERR_OK;
 }
 
-int kee_ledger_sign(struct kee_ledger_t *ledger, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
+int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
 	int r;
 	char *p;
-	struct kee_ledger_item_t *item;
-	char *signature_request;
+	char *signature_check;
+	char *signature_target;
 	size_t c;
 	size_t l;
 	enum kee_item_serialize_mode_e mode;
@@ -654,16 +654,12 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct gpg_store *gpg, char *ou
 	l = *out_len;
 	*out_len = 0;
 
-	item = ledger->last_item;
-
+	mode = KEE_LEDGER_ITEM_SERIALIZE_REQUEST;
 	if (item->initiator == BOB) {
-//		mode = KEE_LEDGER_ITEM_SERIALIZE_RESPONSE;
-		signature_request = item->alice_signature;
-	} else {
-		signature_request = item->bob_signature;
+		mode = KEE_LEDGER_ITEM_SERIALIZE_RESPONSE;
 	}
 
-	if (memcmp(signature_request, zero_content, SIGNATURE_LENGTH)) {
+	if (memcmp(item->alice_signature, zero_content, SIGNATURE_LENGTH)) {
 		return ERR_ALREADY_SIGNED;
 	}
 
@@ -684,15 +680,16 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct gpg_store *gpg, char *ou
 //	c = l;
 
 	c = l;
-	r = kee_ledger_item_serialize(ledger->last_item, p, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+	r = kee_ledger_item_serialize(item, p, &c, mode);
 	if (r) {
 		return ERR_FAIL;
 	}
 
-	r = gpg_store_sign(gpg, p, c, passphrase);
+	r = gpg_store_sign_with(gpg, p, c, passphrase, gpg->fingerprint);
 	if (r) {
 		return ERR_FAIL;
 	}
+	memcpy(item->alice_signature, gpg->last_signature, 32);
 
 	return ERR_OK;
 }

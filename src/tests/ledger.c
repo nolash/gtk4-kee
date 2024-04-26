@@ -24,6 +24,8 @@ int main() {
 	char out[1024];
 	const char *version;
 	gcry_sexp_t alice;
+	gcry_sexp_t bob;
+	char fingerprint_bob[FINGERPRINT_LENGTH];
 	
 	cadiz.locator = "./testdata_resource";
 
@@ -44,6 +46,14 @@ int main() {
 		return 1;
 	}
 	gpg_store_init(&gpg, p);
+	gpg.k = &bob;
+	r = gpg_key_create(&gpg, "1234"); // bob
+	if (r) {
+		return 1;
+	}
+	memcpy(ledger.pubkey_bob, gpg.public_key, PUBKEY_LENGTH);
+	memcpy(fingerprint_bob, gpg.fingerprint, FINGERPRINT_LENGTH);
+
 	gpg.k = &alice;
 	r = gpg_key_create(&gpg, "1234"); // alice
 	if (r) {
@@ -85,11 +95,25 @@ int main() {
 	}
 
 	c = 1024;
-	r = kee_ledger_sign(&ledger, &gpg, out, &c, "1234");
+	r = kee_ledger_sign(&ledger, ledger.last_item, &gpg, out, &c, "1234");
 	if (r) {
 		return 1;
 	}
 
+	// counter-sign
+	gpg.k = &bob;
+	r = gpg_key_load(&gpg, "1234", KEE_GPG_FIND_FINGERPRINT, fingerprint_bob);
+	if (r) {
+		return 1;
+	}
+	memcpy(ledger.last_item->bob_signature, ledger.last_item->alice_signature, SIGNATURE_LENGTH);
+	memset(ledger.last_item->alice_signature, 0, SIGNATURE_LENGTH);
+	c = 1024;
+	r = kee_ledger_sign(&ledger, ledger.last_item, &gpg, out, &c, "1234");
+	if (r) {
+		return 1;
+	}
+	
 	kee_ledger_free(&ledger);
 
 	return 0;
