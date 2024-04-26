@@ -1,11 +1,31 @@
-#ifndef _TRANSPORT_H
-#define _TRANSPORT_H
+#ifndef _KEE_TRANSPORT_H
+#define _KEE_TRANSPORT_H
 
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+enum kee_transport_mode_e {
+	KEE_TRANSPORT_RAW,
+	KEE_TRANSPORT_BASE64,
+}
+
+enum kee_cmd_e { // max number 31
+	KEE_CMD_ID = 0,
+	KEE_CMD_LEDGER,
+	KEE_CMD_DELTA,
+	KEE_CMD_CLEAR,
+	KEE_N_CMD,
+};
+
+#define KEE_CMD_SIGN_RESPONSE 32
+#define KEE_CMD_SIGN_REQUEST 64
+#define KEE_CMD_CHUNKED 128
+
+struct kee_transport_header_t {
+	char *cmd;
+	struct kee_chunk_t chunker;
+	short checksum;
+	char state;
+};
 
 /**
  * 
@@ -33,8 +53,6 @@ int pack(char *in, size_t in_len, char *out, size_t *out_len);
  */
 int unpack(char *in, size_t in_len, char *out, size_t *out_len);
 
-#ifdef __cplusplus
-}
-#endif
+int kee_transport_single(enum kee_cmd_e cmd, int total);
 
-#endif // _TRANSPORT_H
+#endif // _KEE_TRANSPORT_H

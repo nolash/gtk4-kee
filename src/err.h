@@ -29,6 +29,8 @@ enum keeError {
 	ERR_KEYFAIL,
 	///
 	ERR_ALREADY_SIGNED,
+	//
+	ERR_INVALID_CMD,
 };
 
 #endif // _KEE_ERR_H

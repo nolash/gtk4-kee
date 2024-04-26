@@ -141,3 +141,72 @@ int unpack(char *in, size_t in_len, char *out, size_t *out_len) {
 	free(buf);
 	return ERR_OK;
 }
+
+/// \todo implement checksum
+int kee_transport_single(struct kee_transport_t *trans, char cmd, size_t data_len) {
+
+	memset(trans, 0, sizeof(struct kee_transport_header_t));
+	if (cmd >= KEE_N_CMD) {
+		return ERR_INVALID_CMD;	
+	}
+
+	trans->chunk.data_len(in_len + 1);
+	trans->chunk.data = malloc(trans->chunk.data_len);
+	trans->cmd = trans->chunk.data;
+
+	return ERR_OK;
+}
+
+int kee_transport_write(struct kee_transport_t *trans, const char *in, size_t in_len) {
+	if (trans.state) {
+		return ERR_FAIL;
+	}
+	memcpy(trans->chunk.data + trans->chunk.crsr, in, in_len);
+	trans->chunk.crsr += in_len;
+	return ERR_OK;
+}
+
+/// \todo consider pass validation function
+/// \todo implement chunking
+int kee_transport_next(struct kee_transport_t *trans, enum kee_transport_mode_e mode, char *out, size_t *out_len) {
+	int r;
+	size_t l;
+
+	if (trans.state) {
+		if (trans.state > 1) {
+			return ERR_FAIL;
+		}
+	else {
+		trans->chunk.data_len = trans->chunk.crsr;
+		trans->chunk.crsr = 0;
+		trans->state = 1;
+	}
+
+	if (trans->remaining < KEE_TRANSPORT_CHUNK_SIZE - 1) {
+		l = trans_remaining;
+	} else {
+		return 1; // unimplemented
+		//l = KEE_TRANSPORT_CHUNK_SIZE;
+	}
+
+	*(trans->buf) = trans->cmd;
+	memcpy(trans->buf + 1, trans->data, l - 1);
+	switch (mode) {
+		case KEE_TRANSPORT_BASE64:
+			r = pack_encode(trans->data, trans->data_len + 1, out, out_len);
+			if (r) {
+				retrun ERR_FAIL;
+			}
+			break;
+		case KEE_TRANSPORT_RAW:
+			memcpy(out, trans->data, trans->data_len + 1);
+			break;
+		default:
+			retrun ERR_FAIL;
+	}
+	return 0;	
+}
+
+void kee_transport_header_free() {
+	free(trans->buf);
+}
