@@ -11,18 +11,45 @@ const char *test_item_data_b = "3082011d0440c2b795d9d3183bcc9d6ae1ae2960c302d736
 
 
 int main() {
+	char *p;
 	int r;
 	size_t c;
+	struct gpg_store gpg;
 	struct kee_ledger_t ledger;
 	struct kee_ledger_item_t *ledger_item_a;
 	struct kee_ledger_item_t *ledger_item_b;
 	Cadiz cadiz;
 	char data[1024];
+	char path[1024];
+	char out[1024];
+	const char *version;
+	gcry_sexp_t alice;
 	
 	cadiz.locator = "./testdata_resource";
 
 	kee_ledger_init(&ledger);
 	kee_ledger_reset_cache(&ledger);
+
+	version = gcry_check_version(NULL);
+	if (version == 0x0) {
+		return 1;	
+	}
+	gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
+	gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+
+	/// \todo factor out key creation tost utils
+	strcpy(path, "/tmp/keetest_key_XXXXXX");
+	p = mkdtemp(path);
+	if (p == NULL) {
+		return 1;
+	}
+	gpg_store_init(&gpg, p);
+	gpg.k = &alice;
+	r = gpg_key_create(&gpg, "1234"); // alice
+	if (r) {
+		return 1;
+	}
+	memcpy(ledger.pubkey_alice, gpg.public_key, PUBKEY_LENGTH);
 
 	c = hex2bin(test_ledger_data, (unsigned char*)data);
 	r = kee_ledger_parse(&ledger, data, c);
@@ -54,6 +81,12 @@ int main() {
 		return 1;
 	}
 	if (ledger.cache->bob_collateral_balance == 0) {
+		return 1;
+	}
+
+	c = 1024;
+	r = kee_ledger_sign(&ledger, &gpg, out, &c, "1234");
+	if (r) {
 		return 1;
 	}
 

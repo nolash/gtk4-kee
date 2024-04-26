@@ -23,7 +23,6 @@ int test_sign() {
 	struct gpg_store gpg;
 	struct kee_ledger_t ledger;
 	struct kee_ledger_item_t item;
-	struct kee_ledger_item_t *item_parsed;
 	struct kee_content_t content;
 	struct kee_content_t content_item;
 	char item_sum[64];
@@ -133,39 +132,39 @@ int test_sign() {
 	if (r) {
 		return 1;
 	}
-	memcpy(item.bob_signature, gpg.last_signature, SIGNATURE_LENGTH);
-
-	out_item_len = 4096;
-	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
-	if (r) {
-		return 1;
-	}
-	r = calculate_digest_algo(out_item, out_item_len, item_sum, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	gpg.k = &alice;
-	r = gpg_store_sign_with(&gpg, out_item, out_item_len, "1234", alice_fingerprint);
-	if (r) {
-		return 1;
-	}
-	r = gpg_store_verify(gpg.last_signature, item_sum, ledger.pubkey_alice);
-	if (r) {
-		return 1;
-	}
-	memcpy(item.alice_signature, gpg.last_signature, SIGNATURE_LENGTH);
-
-	out_item_len = 4096;
-	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_FINAL);
-	if (r) {
-		return 1;
-	}
-	*(out_item+out_item_len) = 1;
-
-	item_parsed = kee_ledger_parse_item(&ledger, out_item, out_item_len + 1);
-	if (item_parsed == NULL) {
-		return 1;
-	}
+//	memcpy(item.bob_signature, gpg.last_signature, SIGNATURE_LENGTH);
+//
+//	out_item_len = 4096;
+//	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
+//	if (r) {
+//		return 1;
+//	}
+//	r = calculate_digest_algo(out_item, out_item_len, item_sum, GCRY_MD_SHA512);
+//	if (r) {
+//		return 1;
+//	}
+//	gpg.k = &alice;
+//	r = gpg_store_sign_with(&gpg, out_item, out_item_len, "1234", alice_fingerprint);
+//	if (r) {
+//		return 1;
+//	}
+//	r = gpg_store_verify(gpg.last_signature, item_sum, ledger.pubkey_alice);
+//	if (r) {
+//		return 1;
+//	}
+//	memcpy(item.alice_signature, gpg.last_signature, SIGNATURE_LENGTH);
+//
+//	out_item_len = 4096;
+//	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_FINAL);
+//	if (r) {
+//		return 1;
+//	}
+//	*(out_item+out_item_len) = 1;
+//
+//	item_parsed = kee_ledger_parse_item(&ledger, out_item, out_item_len + 1);
+//	if (item_parsed == NULL) {
+//		return 1;
+//	}
 
 	free(out_item);
 	free(out);

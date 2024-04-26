@@ -11,6 +11,7 @@
 #include "strip.h"
 #include "content.h"
 #include "endian.h"
+#include "gpg.h"
 
 
 extern const asn1_static_node schema_entry_asn1_tab[];
@@ -620,16 +621,18 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 	return 0;
 }
 
-static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out, size_t out_len) {
+static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
 	int r;
 	char out_data[1024];
+	size_t c;
 
-	r = kee_ledger_serialize(ledger, out_data, &out_len);
+	c = 1024;
+	r = kee_ledger_serialize(ledger, out_data, &c);
 	if (r) {
 		return r;
 	}
 
-	r = calculate_digest_algo(out_data, out_len, out, GCRY_MD_SHA512);
+	r = calculate_digest_algo(out_data, c, out, GCRY_MD_SHA512);
 	if (r) {
 		return ERR_FAIL;
 	}
@@ -637,39 +640,41 @@ static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out, size_t out_
 	return ERR_OK;
 }
 
-//int kee_ledger_sign(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
-//	char *p;
-//	kee_ledger_item_t *item;
-//	char *signature_request;
-//	size_t c
-//	size_t l;
-//	enum kee_item_serialize_mode_e mode;
-//
-//	p = out;
-//	c = *out_len;
-//	l = *out_len;
-//	*out_len = 0;
-//
-//	item = ledger->last_item;
-//
-//	if (item->initiator == BOB) {
+int kee_ledger_sign(struct kee_ledger_t *ledger, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
+	int r;
+	char *p;
+	struct kee_ledger_item_t *item;
+	char *signature_request;
+	size_t c;
+	size_t l;
+	enum kee_item_serialize_mode_e mode;
+
+	p = out;
+	c = *out_len;
+	l = *out_len;
+	*out_len = 0;
+
+	item = ledger->last_item;
+
+	if (item->initiator == BOB) {
 //		mode = KEE_LEDGER_ITEM_SERIALIZE_RESPONSE;
-//	} else {
-//		signature_request = item->alice_signature;
-//	}
-//
-//	if (memcmp(signature_request, zero_content, 64)) {
-//		return ERR_ALREADY_SIGNED;
-//	}
-//
-//	r = kee_ledger_digest(ledger, p, &c);
-//	if (r) {
-//		return ERR_FAIL;
-//	}
-//	p = out + c;
-//	l -= c;
-//	c = l;
-//
+		signature_request = item->alice_signature;
+	} else {
+		signature_request = item->bob_signature;
+	}
+
+	if (memcmp(signature_request, zero_content, SIGNATURE_LENGTH)) {
+		return ERR_ALREADY_SIGNED;
+	}
+
+	r = kee_ledger_digest(ledger, p);
+	if (r) {
+		return ERR_FAIL;
+	}
+	c = DIGEST_LENGTH;
+	p = out + c;
+	l -= c;
+
 //	r = kee_ledger_serialize(ledger, p, &c);
 //	if (r) {
 //		return ERR_FAIL;
@@ -677,12 +682,17 @@ static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out, size_t out_
 //	p = out + c;
 //	l -= c;
 //	c = l;
-//
-//	r = kee_ledger_item_serialize(ledger, p, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
-//	if (r) {
-//		return ERR_FAIL;
-//	}
-//
-//
-//	return ERR_OK;
-//}
+
+	c = l;
+	r = kee_ledger_item_serialize(ledger->last_item, p, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	r = gpg_store_sign(gpg, p, c, passphrase);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	return ERR_OK;
+}
