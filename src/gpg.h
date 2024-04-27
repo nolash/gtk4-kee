@@ -104,7 +104,7 @@ char *gpg_store_get_fingerprint(struct gpg_store *gpg);
 //int gpg_key_create(gcry_sexp_t *key);
 int gpg_key_create(struct gpg_store *gpg, const char *passphrase);
 //int gpg_sign(gcry_sexp_t *out, gcry_sexp_t *key, const char *v);
-int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, void *criteria);
+int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, const void *criteria);
 int gpg_store_sign(struct gpg_store *gpg, char *data, size_t data_len, const char *passphrase);
 int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, const char *passphrase, const char *fingerprint);
 int gpg_store_verify(const char *sig_bytes, const char *digest, const char *pubkey_bytes);

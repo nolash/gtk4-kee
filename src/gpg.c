@@ -400,7 +400,7 @@ int gpg_key_create(struct gpg_store *gpg, const char *passphrase) {
 	return ERR_OK;
 }
 
-int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, void *criteria) {
+int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, const void *criteria) {
 	int r;
 	size_t c;
 	char *p;
@@ -444,28 +444,6 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 	}
 	
 	return ERR_OK;
-}
-
-static int gpg_sign_sexp(gcry_sexp_t *out, gcry_sexp_t *key, const char *v) {
-	gcry_error_t e;
-	gcry_sexp_t data;
-	size_t err_offset;
-	char in[BUFLEN];
-
-	e = gcry_sexp_build(&data, &err_offset, "(data(flags eddsa)(hash-algo sha512)(value %b))", 64, v);
-	if (e) {
-		sprintf(in, "error sign sexp data build: %s\n", gcry_strerror(e));
-		debug_log(DEBUG_ERROR, in);
-		return ERR_KEYFAIL;
-	}
-	e = gcry_pk_sign(out, data, *key);
-	if (e) {
-		sprintf(in, "error sign: %s\n", gcry_strerror(e));
-		debug_log(DEBUG_ERROR, in);
-		return ERR_KEYFAIL;
-	}
-
-	return 0;
 }
 
 
@@ -633,7 +611,7 @@ int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, cons
 		return 1;
 	}
 	c = POINT_LENGTH;
-	p = gcry_sexp_nth_data(pnt, 1, &c);
+	p = (char*)gcry_sexp_nth_data(pnt, 1, &c);
 	if (p == NULL) {
 		return 1;
 	}
@@ -646,7 +624,7 @@ int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, cons
 		return 1;
 	}
 	c = POINT_LENGTH;
-	p = gcry_sexp_nth_data(pnt, 1, &c);
+	p = (char*)gcry_sexp_nth_data(pnt, 1, &c);
 	if (p == NULL) {
 		return 1;
 	}

@@ -115,18 +115,10 @@ static char *get_message(struct kee_ledger_t *ledger, asn1_node item, char *out_
 
 static int verify_item(struct kee_ledger_t *ledger, asn1_node item, const char *pubkey_first_data, const char *pubkey_last_data) {
 	int r;
-	gcry_sexp_t sig;
-	gcry_sexp_t msg;
-	gcry_sexp_t pubkey;
-	gcry_error_t err;
 	size_t c;
-	gcry_mpi_t sr;
-	gcry_mpi_t ss;
 	char sig_data[64];
 	char msg_data[1024 + 64];
 	char *p = (char*)msg_data;
-	char pubkey_sexp_data[1024];
-	size_t pubkey_sexp_len;
 
 	c = 1024;
 	p = get_message(ledger, item, p, p+64, &c);
@@ -643,8 +635,6 @@ static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
 int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
 	int r;
 	char *p;
-	char *signature_check;
-	char *signature_target;
 	size_t c;
 	size_t l;
 	enum kee_item_serialize_mode_e mode;

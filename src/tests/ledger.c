@@ -2,6 +2,7 @@
 
 #include "ledger.h"
 #include "hex.h"
+#include "digest.h"
 
 const char *test_ledger_data = "30818e0c035553440201020420c67ee54f93d63d00f4b8c9a7e1c11b39657b55c525704bb32e15ec85bc140d140420adcaf6474132ac36e97d3dbee693d3b186cd8399d402dc505073069c46b5bd780440878102c19c032fd0d06f6b054a01e969b823ccfe7d5ba37a37beef3e64feb5f9b38e1a0f7413b781a4626b884f89bb3052f662692c53578453dc7c7d911d8609";
 
@@ -183,8 +184,7 @@ int test_sign() {
 int test_alice() {
 	char *p;
 	int r;
-	size_t c;
-	unsigned char *version;
+	const char *version;
 	struct kee_ledger_t ledger;
 	struct kee_ledger_item_t item;
 	struct gpg_store gpg;
@@ -302,10 +302,11 @@ int test_alice() {
 	kee_content_free(&content_item);
 	kee_content_free(&content);
 	kee_ledger_free(&ledger);
+
+	return 0;
 }
 
 int test_parse() {
-	char *p;
 	int r;
 	size_t c;
 	struct kee_ledger_t ledger;
@@ -313,14 +314,6 @@ int test_parse() {
 	struct kee_ledger_item_t *ledger_item_b;
 	Cadiz cadiz;
 	char data[1024];
-	char path[1024];
-	char out[1024];
-	const char *version;
-	gcry_sexp_t alice;
-	gcry_sexp_t bob;
-	char fingerprint_bob[FINGERPRINT_LENGTH];
-	size_t out_len;
-	struct kee_ledger_item_t *item_parsed;
 	
 	cadiz.locator = "./testdata_resource";
 
