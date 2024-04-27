@@ -77,6 +77,7 @@ int test_msg() {
 	struct kee_test_t t;
 	struct kee_transport_t ledger_transport;
 	struct kee_transport_t item_transport;
+	struct kee_transport_t merged_transport;
 	char out[1024];
 	size_t out_len;
 
@@ -112,7 +113,12 @@ int test_msg() {
 	}
 
 	out_len = 1024;
-	r = kee_transport_encode_ledger(&ledger_transport, &item_transport, out, &out_len);
+	r = kee_transport_encode_ledger(&ledger_transport, &item_transport, &merged_transport, KEE_TRANSPORT_RAW);
+	if (r) {
+		return 1;
+	}
+
+	r = kee_transport_validate(&merged_transport);
 	if (r) {
 		return 1;
 	}
