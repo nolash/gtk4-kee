@@ -256,11 +256,13 @@ enum kee_cmd_e kee_transport_cmd(struct kee_transport_t *trans) {
 	return *trans->cmd & 0x1f;
 }
 
-int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, char *out, size_t out_len) {
+int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, char *out, size_t *out_len) {
 	int r;
 	char *p;
 	unsigned short part_length;
+	size_t l;
 
+	*out_len = 0;
 	*out = 0;
 	p = out + 1;
 	part_length = (unsigned short)trans_ledger->chunker.data_len;
@@ -268,18 +270,25 @@ int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee
 	if (r) {
 		return ERR_FAIL;
 	}
-	memcpy(p, &part_length, sizeof(unsigned short));
+	l = sizeof(unsigned short);
+	memcpy(p, &part_length, l);
 	p += sizeof(unsigned short);
+	*out_len += l;
 	memcpy(p, trans_ledger->chunker.data, trans_ledger->chunker.data_len);
+	p += trans_ledger->chunker.data_len;
+	*out_len += trans_ledger->chunker.data_len;
 
 	part_length = (unsigned short)trans_item->chunker.data_len;
 	r = to_endian(TO_ENDIAN_BIG, 2, &part_length);
 	if (r) {
 		return ERR_FAIL;
 	}
-	memcpy(p, &part_length, sizeof(unsigned short));
-	p += sizeof(unsigned short);
+	memcpy(p, &part_length, l);
+	p += l;
+	*out_len += l;
 	memcpy(p, trans_item->chunker.data, trans_item->chunker.data_len);
+	p += trans_item->chunker.data_len;
+	*out_len += trans_item->chunker.data_len;
 
 	return ERR_OK;
 }
