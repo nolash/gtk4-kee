@@ -32,6 +32,7 @@ enum keeError {
 	ERR_QR_MISSING,
 	ERR_QR_INVALID,
 	ERR_SPACE,
+	ERR_UNSUPPORTED,
 };
 
 #endif // _KEE_ERR_H

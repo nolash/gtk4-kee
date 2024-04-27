@@ -59,5 +59,7 @@ int kee_transport_single(struct kee_transport_t *trans, enum kee_transport_mode_
 int kee_transport_write(struct kee_transport_t *trans, const char *in, size_t in_len);
 int kee_transport_next(struct kee_transport_t *trans, char *out, size_t *out_len);
 void kee_transport_set_response(struct kee_transport_t *trans);
+int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode, const char *data, size_t data_len);
+int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len);
 
 #endif // _KEE_TRANSPORT_H

@@ -36,6 +36,7 @@ static void kee_transport_class_init(KeeTransportClass *kls) {
 	object_class->finalize = kee_transport_finalize;
 }
 
+/// \todo >6MB at module size 7, later copied to gbytes. improve if possible.
 static void kee_transport_init(KeeTransport *o) {
 	o->image_data = malloc(QR_IMAGE_SIZE);
 }
@@ -93,6 +94,7 @@ void kee_transport_handle_qr(GAction *Act, GVariant *v, KeeTransport *o) {
 		return;
 	}
 
+	// make rectangles in module size from qr data
 	p = o->image_data;
 	width_pixels = o->image_width * QR_IMAGE_COMPONENTS * QR_IMAGE_MODULE_SIZE;
 	for (i = 0; i < (int)(o->image_width * o->image_width); i++) {

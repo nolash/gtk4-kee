@@ -148,7 +148,6 @@ int unpack(char *in, size_t in_len, char *out, size_t *out_len) {
 
 /// \todo implement checksum
 int kee_transport_single(struct kee_transport_t *trans, enum kee_transport_mode_e mode, char cmd, size_t data_len) {
-
 	memset(trans, 0, sizeof(struct kee_transport_t));
 	if (cmd >= KEE_N_CMD) {
 		return ERR_INVALID_CMD;	
@@ -203,6 +202,7 @@ int kee_transport_next(struct kee_transport_t *trans, char *out, size_t *out_len
 		//l = KEE_TRANSPORT_CHUNK_SIZE;
 	}
 
+	/// \todo when chunking, dont forget this as a separate step before start to chunk
 	switch (trans->mode) {
 		case KEE_TRANSPORT_BASE64:
 			r = pack(trans->chunker.data, l, out, out_len);
@@ -217,4 +217,37 @@ int kee_transport_next(struct kee_transport_t *trans, char *out, size_t *out_len
 			return ERR_FAIL;
 	}
 	return 0;	
+}
+
+int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode, const char *data, size_t data_len) {
+	memset(trans, 0, sizeof(struct kee_transport_t));
+	memcpy(trans->chunker.data, data, data_len);
+	if (*data & KEE_CMD_CHUNKED) {
+		return ERR_UNSUPPORTED;
+	}
+	trans->chunker.crsr = 1;
+	trans->chunker.data_len = data_len - 1;
+	trans->mode = mode;
+
+	return ERR_OK;
+}
+
+int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len) {
+	int r;
+
+	switch (trans->mode) {
+		case KEE_TRANSPORT_BASE64:
+			r = unpack(trans->chunker.data, trans->chunker.data_len, out, out_len);
+			if (r) {
+				return ERR_FAIL;
+			}
+			break;
+		case KEE_TRANSPORT_RAW:
+			memcpy(out, trans->chunker.data, trans->chunker.data_len);
+			break;
+		default:
+			return ERR_FAIL;
+	}
+
+	return ERR_OK;
 }
