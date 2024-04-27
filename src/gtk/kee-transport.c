@@ -37,7 +37,7 @@ static void kee_transport_class_init(KeeTransportClass *kls) {
 }
 
 static void kee_transport_init(KeeTransport *o) {
-	o->image_data = malloc(QR_IMAGE_BYTES);
+	o->image_data = malloc(QR_IMAGE_SIZE);
 }
 
 /// \todo find a way to modify underlying bytes and keep the stack from pixbuf to widget
@@ -48,11 +48,13 @@ static void kee_transport_render(KeeTransport *o) {
 	GdkPixbuf *pixbuf;
 	GBytes *bytes;
 	size_t width_bytes;
+	size_t width_pixels;
 
-	width_bytes = o->image_width * QR_IMAGE_COMPONENTS;
+	width_pixels = o->image_width * QR_IMAGE_MODULE_SIZE;
+	width_bytes = width_pixels * QR_IMAGE_COMPONENTS;
 
 	bytes = g_bytes_new(o->image_data, o->image_size);
-	pixbuf = gdk_pixbuf_new_from_bytes(bytes, GDK_COLORSPACE_RGB, false, QR_IMAGE_BIT_DEPTH, o->image_width, o->image_width, width_bytes);
+	pixbuf = gdk_pixbuf_new_from_bytes(bytes, GDK_COLORSPACE_RGB, false, QR_IMAGE_BIT_DEPTH, width_pixels, width_pixels, width_bytes);
 	texture = gdk_texture_new_for_pixbuf(pixbuf);
 	widget = gtk_widget_get_first_child(GTK_WIDGET(o));
 	if (widget) {
@@ -71,36 +73,47 @@ static void kee_transport_render(KeeTransport *o) {
 void kee_transport_handle_qr(GAction *Act, GVariant *v, KeeTransport *o) {
 	size_t c;
 	char *p;
+	char *pp;
 	int i;
+	int ii;
+	int iii;
 	char r;
 	char *b;
 	char out[QR_CAP * QR_CAP];
+	size_t width_pixels;
 
 	b = (char*)g_variant_get_string(v, NULL);
 	if (b == NULL) {
 		return;
 	}
 
-	c = QR_CAP * QR_CAP;
+	o->image_width = QR_CAP * QR_CAP;
 	r = (char)qr_encode(b, out, &o->image_width);
 	if (r) {
 		return;
 	}
 
 	p = o->image_data;
+	width_pixels = o->image_width * QR_IMAGE_COMPONENTS * QR_IMAGE_MODULE_SIZE;
 	for (i = 0; i < (int)(o->image_width * o->image_width); i++) {
+		if (i != 0 && i % o->image_width == 0) {
+			p += (width_pixels * (QR_IMAGE_MODULE_SIZE - 1));
+		}
 		if (*(out+i) & 0x01) {
 			r = 0x00;
 		} else {
 			r = 0xff;
 		}
-		*p = r;
-		p++;
-		*p = r;
-		p++;
-		*p = r;
-		p++;
+		for (ii = 0; ii < QR_IMAGE_MODULE_SIZE * QR_IMAGE_COMPONENTS; ii++) {
+			*p = r;
+			pp = p;
+			for (iii = 0; iii < QR_IMAGE_MODULE_SIZE; iii++) {
+				pp += width_pixels;
+				*pp = r;
+			}
+			p++;
+		}
 	}
-	o->image_size = (o->image_width * QR_IMAGE_COMPONENTS) * (o->image_width * QR_IMAGE_COMPONENTS);
+	o->image_size = width_pixels * width_pixels;
 	kee_transport_render(o);
 }

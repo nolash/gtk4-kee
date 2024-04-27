@@ -3,9 +3,6 @@
 
 #include <stddef.h>
 
-#ifndef QR_MODULE_SIZE
-#define QR_MODULE_SIZE 7
-#endif
 
 #ifndef QR_CAP
 #define QR_CAP 125 // ~1024 bytes
