@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "transport.h"
+#include "testutil.h"
 
 
 int test_raw() {
@@ -69,6 +70,31 @@ int test_pack() {
 	return 0;
 }
 
+int test_msg() {
+	int r;
+	char *p;
+	size_t c;
+	struct kee_test_t t;
+
+	r = kee_test_generate(&t);
+	if (r) {
+		return 1;
+	}
+
+	c = kee_test_get_ledger_data(&t, &p);
+	if (c == 0) {
+		return 1;
+	}
+
+	c = kee_test_get_ledger_item_data(&t, 0, &p);
+	if (c == 0) {
+		return 1;
+	}
+
+	kee_test_free(&t);
+
+	return 0;
+}
 
 int main() {
 	int r;
@@ -81,5 +107,9 @@ int main() {
 	if (r) {
 		return 1;
 	}
-	
+	r = test_msg();
+	if (r) {
+		return 1;
+	}
+	return 0;	
 }

@@ -3,6 +3,8 @@
 #include "ledger.h"
 #include "hex.h"
 #include "digest.h"
+#include "testutil.h"
+
 
 const char *test_ledger_data = "30818e0c035553440201020420c67ee54f93d63d00f4b8c9a7e1c11b39657b55c525704bb32e15ec85bc140d140420adcaf6474132ac36e97d3dbee693d3b186cd8399d402dc505073069c46b5bd780440878102c19c032fd0d06f6b054a01e969b823ccfe7d5ba37a37beef3e64feb5f9b38e1a0f7413b781a4626b884f89bb3052f662692c53578453dc7c7d911d8609";
 
@@ -10,10 +12,20 @@ const char *test_item_data_a = "3082011d0440000000000000000000000000000000000000
 
 const char *test_item_data_b = "3082011d0440c2b795d9d3183bcc9d6ae1ae2960c302d7364a04996013dd9f31be628c46d2ee87b0cba51db67cd851a64dba04cc3e191dd48e7d7f3e063b0c850fd7b9b82218020817c94f8dec3e67aa02020ce20202049504401f78629f3015afa72f443005fc6711f7a7e2e20072eac86c98874c1dbe42095de3408d5711fb8fca56428461139992e8ff0452dc2092d2ba6ddb9658607f90ac0440d5d6cd6d905d0eb104ff3ab825cfc1be27f69a5377a3c84c33b3c5a0e6902e2af74d9024db58e1b90375be316e687a928edb881f8b6b3795682c20e533f9ed040101ff04409e8ffbbd5684b75aed7bf42a044914ea5813b1fccd9645462664317fa92dd9766c9ede39ea381e9648ef88bad220d0808660be63c94bf9954cf00daddad1150e01";
 
-const char *content_test = "Subject: foo\n\nsome content\n";
-const char *content_test_item = "Subject: bar\n\nsome other content\n";
 
-/// \todo split up function
+int test_util() {
+	int r;
+	struct kee_test_t t;
+
+	r = kee_test_generate(&t);
+	if (r) {
+		return r;
+	}
+	kee_test_free(&t);
+	return 0;
+}
+
+/// \todo split up function (use util.c)
 int test_sign() {
 	int r;
 	gcry_sexp_t alice;
@@ -360,6 +372,10 @@ int main() {
 	int r;
 
 	r = test_parse();
+	if (r) {
+		return 1;
+	}
+	r = test_util();
 	if (r) {
 		return 1;
 	}

@@ -251,3 +251,35 @@ int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len
 
 	return ERR_OK;
 }
+
+enum kee_cmd_e kee_transport_cmd(struct kee_transport_t *trans) {
+	return *trans->cmd & 0x1f;
+}
+
+int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, char *out, size_t out_len) {
+	int r;
+	char *p;
+	unsigned short part_length;
+
+	*out = 0;
+	p = out + 1;
+	part_length = (unsigned short)trans_ledger->chunker.data_len;
+	r = to_endian(TO_ENDIAN_BIG, 2, &part_length);
+	if (r) {
+		return ERR_FAIL;
+	}
+	memcpy(p, &part_length, sizeof(unsigned short));
+	p += sizeof(unsigned short);
+	memcpy(p, trans_ledger->chunker.data, trans_ledger->chunker.data_len);
+
+	part_length = (unsigned short)trans_item->chunker.data_len;
+	r = to_endian(TO_ENDIAN_BIG, 2, &part_length);
+	if (r) {
+		return ERR_FAIL;
+	}
+	memcpy(p, &part_length, sizeof(unsigned short));
+	p += sizeof(unsigned short);
+	memcpy(p, trans_item->chunker.data, trans_item->chunker.data_len);
+
+	return ERR_OK;
+}

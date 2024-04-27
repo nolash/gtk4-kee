@@ -31,6 +31,22 @@ static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 	kee_menu_prev(menu);
 }
 
+static void ui_handle_import(KeeImport *import, GString *v, KeeMenu *menu) {
+	GtkWidget *widget;
+	kee_transport_t trans;
+	char *s;
+
+	s = (char*)v.str;
+	kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, strlen(s) + 1);
+	kee_transport_read(&trans);
+
+	switch(kee_transport_cmd(&trans)) {
+		case KEE_CMD_DELTA:
+			widget = kee_menu_next("item");
+	}
+
+}
+
 //static GtkWidget* ui_build_view(KeeMenu *menu) {
 //	GtkListItemFactory *factory;
 //	GtkSelectionModel *sel;
@@ -70,10 +86,13 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 
 	import = kee_import_new(win);
 	kee_menu_add(win, "import", GTK_WIDGET(import));
-	g_signal_connect(import, "data_available", G_CALLBACK(kee_transport_handle_read));
+	g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import), win);
 
 	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	kee_menu_add(win, "entry", widget);
+
+	//widget = g_object(GTK_ORIENTATION_VERTICAL, 0);
+	//kee_menu_add(win, "item", widget);
 
 	trans = g_object_new(KEE_TYPE_TRANSPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
 	kee_menu_add(win, "transport", GTK_WIDGET(trans));

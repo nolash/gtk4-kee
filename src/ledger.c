@@ -218,7 +218,8 @@ struct kee_ledger_item_t *kee_ledger_add_item(struct kee_ledger_t *ledger) {
 	struct kee_ledger_item_t *prev;
 
 	prev = ledger->last_item;
-	ledger->last_item = calloc(sizeof(struct kee_ledger_item_t), 1);
+	ledger->last_item = malloc(sizeof(struct kee_ledger_item_t));
+	kee_ledger_item_init(ledger->last_item);
 	ledger->last_item->prev_item = prev;
 	
 	return ledger->last_item;
