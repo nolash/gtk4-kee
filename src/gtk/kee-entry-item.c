@@ -132,4 +132,6 @@ KeeEntryItem* kee_entry_item_import(const char *data, size_t data_len) {
 	KeeEntryItem *item;
 
 	item = g_object_new(KEE_TYPE_ENTRY_ITEM, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
+
+	return item;
 }

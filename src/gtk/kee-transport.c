@@ -72,7 +72,6 @@ static void kee_transport_render(KeeTransport *o) {
 
 /// \todo share buffer with image data?
 void kee_transport_handle_qr(GAction *Act, GVariant *v, KeeTransport *o) {
-	size_t c;
 	char *p;
 	char *pp;
 	int i;
