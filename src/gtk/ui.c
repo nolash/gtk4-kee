@@ -16,6 +16,7 @@
 #include "kee-entry-store.h"
 #include "kee-menu.h"
 #include "kee-key.h"
+#include "kee-transport.h"
 
 
 static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
@@ -48,12 +49,14 @@ static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 //}
 
 
-void ui_build(GtkApplication *app, struct kee_context *ctx) {
+void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
+	KeeTransport *trans;
+	GSimpleAction *act;
 	GtkWidget *widget;
 	KeeMenu *win;
 	KeeImport *import;
 
-	win = kee_menu_new(app, ctx);
+	win = kee_menu_new(gapp, ctx);
 
 	widget = GTK_WIDGET(kee_key_new(&ctx->gpg));
 	kee_menu_add(win, "unlock", widget);
@@ -70,6 +73,14 @@ void ui_build(GtkApplication *app, struct kee_context *ctx) {
 
 	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	kee_menu_add(win, "entry", widget);
+
+	trans = g_object_new(KEE_TYPE_TRANSPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
+	kee_menu_add(win, "transport", GTK_WIDGET(trans));
+
+	/// \todo make kee-entry action map/group
+	act = g_simple_action_new("qr", G_VARIANT_TYPE_STRING);
+	g_action_map_add_action(G_ACTION_MAP(gapp), G_ACTION(act));
+	g_signal_connect(act, "activate", G_CALLBACK(kee_transport_handle_qr), trans);
 
 	gtk_window_present(GTK_WINDOW (win));
 }

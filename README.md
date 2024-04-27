@@ -12,11 +12,13 @@ Below are the library versions of the [archlinux](https://archlinux.org/) compon
 | package | version |
 |---|---|
 | gcc | 13.2.1 |
+| graphicsmagick | 1.3.42 |
 | gst-plugins-bad  | 1.24.0 |
 | gstreamer | 1.24.0 |
 | gtk4 | 4.12.5 |
 | libb64 | 1.2.1 |
 | libgcrypt | 1.10.3 |
+| qrencode | 4.1.1 |
 | libxdg-basedir | 1.2.3 |
 | lmdb | 0.9.32 |
 | openldap | 2.6.7 |

@@ -27,10 +27,11 @@ enum keeError {
 	ERR_NOKEY,
 	/// Crypto authentication fail
 	ERR_KEYFAIL,
-	///
 	ERR_ALREADY_SIGNED,
-	//
 	ERR_INVALID_CMD,
+	ERR_QR_MISSING,
+	ERR_QR_INVALID,
+	ERR_SPACE,
 };
 
 #endif // _KEE_ERR_H

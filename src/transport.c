@@ -163,6 +163,12 @@ int kee_transport_single(struct kee_transport_t *trans, enum kee_transport_mode_
 	return ERR_OK;
 }
 
+void kee_transport_set_response(struct kee_transport_t *trans) {
+	if (trans->state == 0) {
+		*trans->cmd |= KEE_CMD_SIGN_RESPONSE;
+	}
+}
+
 int kee_transport_write(struct kee_transport_t *trans, const char *in, size_t in_len) {
 	if (trans->state) {
 		return ERR_FAIL;

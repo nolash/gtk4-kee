@@ -12,6 +12,7 @@
 #include "kee-entry.h"
 #include "kee-entry-item.h"
 #include "kee-entry-item-store.h"
+#include "kee-transport.h"
 #include "db.h"
 #include "err.h"
 #include "hex.h"
@@ -24,6 +25,8 @@
 #include "ledger.h"
 #include "dn.h"
 #include "gpg.h"
+#include "transport.h"
+#include "qr.h"
 
 typedef struct {
 } KeeEntryPrivate;
@@ -70,10 +73,19 @@ struct _KeeEntry {
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
 
 static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
+	int r;
+	GtkWindow *win;
+	GtkWidget *widget;
+	GtkApplication *gapp;
+	GAction *act;
 	struct kee_ledger_item_t *item;
 	GtkEntryBuffer *buf;
 	char *b;
 	size_t c;
+	struct kee_transport_t trans;
+	char *out;
+	size_t out_len;
+	GVariant *transport_data;
 
 	buf = gtk_entry_get_buffer(o->form->uoa);
 	b = (char*)gtk_entry_buffer_get_text(buf);
@@ -97,16 +109,53 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	buf = gtk_entry_get_buffer(o->form->bob_pubkey);
 	b = (char*)gtk_entry_buffer_get_text(buf);
 	c = hex2bin(b, (unsigned char*)o->ledger.pubkey_bob);
-	if (c == 0) {
-		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "invalid counterparty public key data");
-		return;
-	} else if (c != PUBKEY_LENGTH) {
-		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "wrong size for counterparty public key");
-		return;
-	}
+//	if (c == 0) {
+//		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "invalid counterparty public key data");
+//		return;
+//	} else if (c != PUBKEY_LENGTH) {
+//		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "wrong size for counterparty public key");
+//		return;
+//	}
 
 	o->state |= ENTRYSTATE_LOAD;
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding ledger entry");
+
+	out_len = 1024;
+	out = malloc(out_len);
+	if (out == NULL) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "memory for item serialization buffer for qr transport fail");
+		return;
+	}
+	r = kee_ledger_item_serialize(item, out, &out_len, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "item serialization failed");
+		return;
+	}
+
+	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_LEDGER, c);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "qr transport renderer failed");
+		return;
+	}
+
+	r = kee_transport_write(&trans, out, out_len);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "write to qr transport renderer failed");
+		return;
+	}
+
+	r = kee_transport_next(&trans, out, &out_len);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "read from qr transport renderer failed");
+		return;
+	}
+	transport_data = g_variant_new_take_string(out);
+
+	widget = gtk_widget_get_ancestor(GTK_WIDGET(o), GTK_TYPE_WINDOW);
+	win = GTK_WINDOW(widget);
+	gapp = gtk_window_get_application(win);
+	act = g_action_map_lookup_action(G_ACTION_MAP(gapp), "qr");
+	g_action_activate(act, transport_data);
 }
 
 static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
