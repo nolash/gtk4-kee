@@ -24,4 +24,6 @@ Kee DEFINITIONS EXPLICIT TAGS ::= BEGIN
 		response BOOLEAN,
 		signatureResponse OCTET STRING
 	}
+
+	KeeTransport ::= SEQUENCE OF ANY
 END

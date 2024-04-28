@@ -64,6 +64,6 @@ void kee_transport_set_response(struct kee_transport_t *trans);
 int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode, const char *data, size_t data_len);
 int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len);
 
-int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, struct kee_transport_t *trans_out, enum kee_transport_mode_e mode);
-int kee_transport_validate(struct kee_transport_t *trans);
+//int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, struct kee_transport_t *trans_out, enum kee_transport_mode_e mode);
+//int kee_transport_validate(struct kee_transport_t *trans);
 #endif // _KEE_TRANSPORT_H

@@ -12,9 +12,8 @@
 #include "content.h"
 #include "endian.h"
 #include "gpg.h"
+#include "wire.h"
 
-
-extern const asn1_static_node schema_entry_asn1_tab[];
 
 char zero_content[64];
 
@@ -683,6 +682,97 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 		return ERR_FAIL;
 	}
 	memcpy(item->alice_signature, gpg->last_signature, SIGNATURE_LENGTH);
+
+	return ERR_OK;
+}
+
+//int kee_ledger_serialize_pair() {
+//	int r;
+//	asn1_node root;
+//	asn1_node item;
+//	asn1_node entry;
+//	asn1_node pair;
+//	char err[1024];
+//
+//	memset(&root, 0, sizeof(root));
+//	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
+//	if (r != ASN1_SUCCESS) {
+//		debug_log(DEBUG_ERROR, err);
+//		return ERR_FAIL;
+//	}
+//
+//	r = asn1_create_element(root, "Kee.KeeEntryInit.KeeEntryHead", &entry);
+//	if (r != ASN1_SUCCESS) {
+//		return ERR_FAIL;
+//	}
+//
+//	r = asn1_create_element(root, "Kee.KeeEntryInit.KeeEntryHead", &entry);
+//	if (r != ASN1_SUCCESS) {
+//		return ERR_FAIL;
+//	}
+//
+//	r = asn1_create_element(root, "Kee.KeeEntryInit.KeeEntry", &item);
+//	if (r != ASN1_SUCCESS) {
+//		return ERR_FAIL;
+//	}
+//
+//	c = strlen(ledger->uoa);
+//	r = asn1_write_value(node, "Kee.KeeEntryHead.uoa", ledger->uoa, c);
+//	if (r != ASN1_SUCCESS) {
+//		return ERR_FAIL;
+//	}
+//
+//	return ERR_OK;
+//}
+
+int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
+	int r;
+	char err[1024];
+	char b[1024];
+	size_t c;
+	asn1_node root;
+
+	memset(&root, 0, sizeof(root));
+	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;	
+	}
+
+	c = 1024;
+	r = kee_ledger_serialize(ledger, b, &c);
+	if (r) {
+		return ERR_FAIL;	
+	}
+	r = asn1_write_value(root, "Kee.KeeTransport", "NEW", 1);
+	if (r) {
+		return ERR_FAIL;	
+	}
+	r = asn1_write_value(root, "Kee.KeeTransport.?1", b, c);
+	if (r) {
+		return ERR_FAIL;	
+	}
+
+	c = 1024;
+	r = kee_ledger_item_serialize(ledger->last_item, b, &c, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
+	if (r) {
+		return ERR_FAIL;	
+	}
+
+	r = asn1_write_value(root, "Kee.KeeTransport", "NEW", 1);
+	if (r) {
+		return ERR_FAIL;	
+	}
+	r = asn1_write_value(root, "Kee.KeeTransport.?2", b, c);
+	if (r) {
+		return ERR_FAIL;	
+	}
+
+	r = asn1_der_coding(root, "Kee.KeeTransport", out, (int*)out_len, err);
+	if (r) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;	
+	}
 
 	return ERR_OK;
 }

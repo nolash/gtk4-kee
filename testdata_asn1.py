@@ -457,7 +457,10 @@ if __name__ == '__main__':
     keys = ['alice']
 
     alice_key = os.path.join(crypto_dir, 'alice.key.bin')
-    os.unlink('kee.key')
+    try:
+        os.unlink('kee.key')
+    except FileNotFoundError:
+        pass
     os.symlink(alice_key, 'kee.key')
 
     count_ledgers = os.environ.get('COUNT', '1')

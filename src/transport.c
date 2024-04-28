@@ -6,6 +6,7 @@
 #include <zlib.h>
 #include "transport.h"
 #include "err.h"
+#include "ledger.h"
 
 
 static int pack_compress(char *in, size_t in_len, char *out, size_t *out_len) {
@@ -252,6 +253,7 @@ int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len
 	return ERR_OK;
 }
 
+// make sure reported sizes add up to data boundary
 static int validate_multi(char *data, size_t data_len) {
 	char *p;
 	size_t c;
@@ -293,59 +295,59 @@ int kee_transport_validate(struct kee_transport_t *trans) {
 }
 
 
-int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, struct kee_transport_t *trans_out, enum kee_transport_mode_e mode) {
-	int r;
-	char *p;
-	unsigned short part_length;
-	size_t l;
-	size_t c;
-	char *out;
-
-	l = sizeof(unsigned short);
-	out = malloc(trans_ledger->chunker.data_len + trans_item->chunker.data_len + (l * 2) + 1);
-	// only use raw mode for this, since we are joining data
-	if (trans_ledger->mode != KEE_TRANSPORT_RAW) {
-		return ERR_FAIL;
-	}
-	if (trans_item->mode != KEE_TRANSPORT_RAW) {
-		return ERR_FAIL;
-	}
-	c = 0;
-	p = out;
-	part_length = (unsigned short)trans_ledger->chunker.data_len;
-	r = to_endian(TO_ENDIAN_BIG, 2, &part_length);
-	if (r) {
-		return ERR_FAIL;
-	}
-	memcpy(p, &part_length, l);
-	p += sizeof(unsigned short);
-	c += l;
-	memcpy(p, trans_ledger->chunker.data, trans_ledger->chunker.data_len);
-	p += trans_ledger->chunker.data_len;
-	c += trans_ledger->chunker.data_len;
-
-	part_length = (unsigned short)trans_item->chunker.data_len;
-	r = to_endian(TO_ENDIAN_BIG, 2, &part_length);
-	if (r) {
-		return ERR_FAIL;
-	}
-	memcpy(p, &part_length, l);
-	p += l;
-	c += l;
-	memcpy(p, trans_item->chunker.data, trans_item->chunker.data_len);
-	p += trans_item->chunker.data_len;
-	c += trans_item->chunker.data_len;
-
-	r = kee_transport_single(trans_out, mode, KEE_CMD_PACKED, c);
-	if (r) {
-		return ERR_FAIL;
-	}
-	r = kee_transport_write(trans_out, out, c);
-	if (r) {
-		return ERR_FAIL;
-	}
-
-	free(out);
-
-	return ERR_OK;
-}
+//int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, struct kee_transport_t *trans_out, enum kee_transport_mode_e mode) {
+//	int r;
+//	char *p;
+//	unsigned short part_length;
+//	size_t l;
+//	size_t c;
+//	char *out;
+//
+//	l = sizeof(unsigned short);
+//	out = malloc(trans_ledger->chunker.data_len + trans_item->chunker.data_len + (l * 2) + 1);
+//	// only use raw mode for this, since we are joining data
+//	if (trans_ledger->mode != KEE_TRANSPORT_RAW) {
+//		return ERR_FAIL;
+//	}
+//	if (trans_item->mode != KEE_TRANSPORT_RAW) {
+//		return ERR_FAIL;
+//	}
+//	c = 0;
+//	p = out;
+//	part_length = (unsigned short)trans_ledger->chunker.data_len;
+//	r = to_endian(TO_ENDIAN_BIG, 2, &part_length);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//	memcpy(p, &part_length, l);
+//	p += sizeof(unsigned short);
+//	c += l;
+//	memcpy(p, trans_ledger->chunker.data, trans_ledger->chunker.data_len);
+//	p += trans_ledger->chunker.data_len;
+//	c += trans_ledger->chunker.data_len;
+//
+//	part_length = (unsigned short)trans_item->chunker.data_len;
+//	r = to_endian(TO_ENDIAN_BIG, 2, &part_length);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//	memcpy(p, &part_length, l);
+//	p += l;
+//	c += l;
+//	memcpy(p, trans_item->chunker.data, trans_item->chunker.data_len);
+//	p += trans_item->chunker.data_len;
+//	c += trans_item->chunker.data_len;
+//
+//	r = kee_transport_single(trans_out, mode, KEE_CMD_PACKED, c);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//	r = kee_transport_write(trans_out, out, c);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//
+//	free(out);
+//
+//	return ERR_OK;
+//}

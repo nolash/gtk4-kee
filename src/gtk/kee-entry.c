@@ -120,19 +120,27 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	o->state |= ENTRYSTATE_LOAD;
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding ledger entry");
 
+	// serialize ledger
+	
+	// serialize item
 	out_len = 1024;
 	out = malloc(out_len);
 	if (out == NULL) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "memory for item serialization buffer for qr transport fail");
 		return;
 	}
-	r = kee_ledger_item_serialize(item, out, &out_len, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+//	r = kee_ledger_item_serialize(item, out, &out_len, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+//	if (r) {
+//		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "item serialization failed");
+//		return;
+//	}
+	r = kee_ledger_serialize_open(&o->ledger, out, &out_len);
 	if (r) {
-		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "item serialization failed");
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "qr transport renderer failed");
 		return;
 	}
 
-	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_LEDGER, c);
+	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_LEDGER, out_len);
 	if (r) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "qr transport renderer failed");
 		return;

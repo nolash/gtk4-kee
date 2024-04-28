@@ -368,6 +368,26 @@ int test_parse() {
 	return 0;
 }
 
+int test_pair() {
+	int r;
+	struct kee_test_t t;
+	char out[1024];
+	size_t out_len;
+
+	r = kee_test_generate(&t);
+	if (r) {
+		return 1;
+	}
+
+	out_len = 1024;
+	r = kee_ledger_serialize_open(&t.ledger, out, &out_len);
+	if (r) {
+		return 1;
+	}
+
+	return 0;
+}
+
 int main() {
 	int r;
 
@@ -387,7 +407,10 @@ int main() {
 	if (r) {
 		return 1;
 	}
-
+	r = test_pair();
+	if (r) {
+		return 1;
+	}
 
 	return 0;
 }
