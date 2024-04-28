@@ -253,46 +253,47 @@ int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len
 	return ERR_OK;
 }
 
-// make sure reported sizes add up to data boundary
-static int validate_multi(char *data, size_t data_len) {
-	char *p;
-	size_t c;
-	unsigned short l;
-
-	c = 0;
-	p = data;
-	while (c < data_len - 1) {
-		memcpy(&l, p, sizeof(unsigned short));
-		if (l == 0) {
-			break;
-		}
-		if (is_le()) {
-			flip_endian(2, &l);
-		}
-		c += l + sizeof(unsigned short);
-		p += c;
-	}
-	if (p == data) {
-		return ERR_FAIL;
-	}
-	return c != data_len - 1;
-}
-
-/// \todo check state
-int kee_transport_validate(struct kee_transport_t *trans) {
-	int r;
-	char cmd;
-
-	cmd = *trans->cmd & 0x1f;
-
-	if (cmd == 0) {
-		r = validate_multi(trans->chunker.data + 1, trans->chunker.data_len);	
-		if (r) {
-			return ERR_FAIL;
-		}	
-	}
-	return ERR_OK;
-}
+//
+//// make sure reported sizes add up to data boundary
+//static int validate_multi(char *data, size_t data_len) {
+//	char *p;
+//	size_t c;
+//	unsigned short l;
+//
+//	c = 0;
+//	p = data;
+//	while (c < data_len - 1) {
+//		memcpy(&l, p, sizeof(unsigned short));
+//		if (l == 0) {
+//			break;
+//		}
+//		if (is_le()) {
+//			flip_endian(2, &l);
+//		}
+//		c += l + sizeof(unsigned short);
+//		p += c;
+//	}
+//	if (p == data) {
+//		return ERR_FAIL;
+//	}
+//	return c != data_len - 1;
+//}
+//
+///// \todo check state
+//int kee_transport_validate(struct kee_transport_t *trans) {
+//	int r;
+//	char cmd;
+//
+//	cmd = *trans->cmd & 0x1f;
+//
+//	if (cmd == 0) {
+//		r = validate_multi(trans->chunker.data + 1, trans->chunker.data_len);	
+//		if (r) {
+//			return ERR_FAIL;
+//		}	
+//	}
+//	return ERR_OK;
+//}
 
 
 //int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, struct kee_transport_t *trans_out, enum kee_transport_mode_e mode) {

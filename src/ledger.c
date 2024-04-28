@@ -776,3 +776,54 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 
 	return ERR_OK;
 }
+
+int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
+	int r;
+	char err[1024];
+	char b[1024];
+	size_t c;
+	asn1_node root;
+	asn1_node pair;
+	asn1_node item;
+	asn1_node entry;
+
+	memset(&root, 0, sizeof(root));
+	memset(&pair, 0, sizeof(root));
+	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;	
+	}
+
+	r = asn1_create_element(root, "Kee.KeeTransport", &pair);
+	if (r) {
+		debug_log(DEBUG_ERROR, asn1_strerror(r));
+		return ERR_FAIL;	
+	}
+
+	r = asn1_der_decoding(&pair, out, *out_len, err);
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;	
+	}
+
+	r = asn1_copy_node(root, "Kee.KeeEntryHead", pair, "?1");
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, asn1_strerror(r));
+		return ERR_FAIL;	
+	}
+
+	r = asn1_copy_node(root, "Kee.KeeEntry", pair, "?2");
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, asn1_strerror(r));
+		return ERR_FAIL;	
+	}
+
+	r = asn1_der_coding(root, "Kee.KeeEntryHead", out, out_len, err);
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;	
+	}
+
+	return ERR_OK;
+}

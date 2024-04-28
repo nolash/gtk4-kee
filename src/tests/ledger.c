@@ -373,6 +373,7 @@ int test_pair() {
 	struct kee_test_t t;
 	char out[1024];
 	size_t out_len;
+	struct kee_ledger_t ledger;
 
 	r = kee_test_generate(&t);
 	if (r) {
@@ -384,6 +385,12 @@ int test_pair() {
 	if (r) {
 		return 1;
 	}
+
+	r = kee_ledger_parse_open(&ledger, out, &out_len);
+	if (r) {
+		return 1;
+	}
+
 
 	return 0;
 }
