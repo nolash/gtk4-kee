@@ -402,6 +402,28 @@ int test_pair() {
 	return 0;
 }
 
+int test_put() {
+	int r;
+	struct kee_test_t t;
+
+	r = kee_test_generate(&t);
+	if (r) {
+		return 1;
+	}
+
+	r = kee_test_db(&t);
+	if (r) {
+		return 1;
+	}
+
+	r = kee_ledger_put(&t.ledger, &t.db);
+	if (r) {
+		return 1;
+	}
+
+	return 0;
+}
+
 int main() {
 	int r;
 
@@ -422,6 +444,10 @@ int main() {
 		return 1;
 	}
 	r = test_pair();
+	if (r) {
+		return 1;
+	}
+	r = test_put();
 	if (r) {
 		return 1;
 	}

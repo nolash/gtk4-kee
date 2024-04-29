@@ -479,6 +479,9 @@ if __name__ == '__main__':
             z = v[0]
             k = LedgerHead.to_key(v[0])
             tx.put(k, v[1])
+            # reverse lookup
+            kr = b'\xff' + v[0]
+            tx.put(kr, k[1:])
 
             for v in r:
                 k = LedgerEntry.to_key(v[1], z)
@@ -488,4 +491,3 @@ if __name__ == '__main__':
             pubk = signer.get_pubkey(k)
             name = signer.get_name(k).encode('utf-8')
             tx.put(PFX_LEDGER_PUBKEY + pubk, b'CN=' + name)
-

@@ -81,7 +81,6 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	struct kee_ledger_item_t *item;
 	GtkEntryBuffer *buf;
 	char *b;
-	size_t c;
 	struct kee_transport_t trans;
 	char *out;
 	size_t out_len;

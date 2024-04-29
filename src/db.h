@@ -15,6 +15,7 @@
 enum DbErr {
 	ERR_DB_FAIL = 1,
 	ERR_DB_NOMATCH,
+	ERR_DB_EXISTS,
 	ERR_DB_INVALID,
 };
 
@@ -54,7 +55,8 @@ struct db_ctx {
 };
 
 int db_connect(struct db_ctx *ctx, char *conn);
-int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len);
+//int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len);
+int db_put(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len);
 int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, char **value, size_t *value_len);
 void db_rewind(struct db_ctx *ctx);
 void db_reset(struct db_ctx *ctx);

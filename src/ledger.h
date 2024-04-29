@@ -6,6 +6,7 @@
 #include "content.h"
 #include "cadiz.h"
 #include "gpg.h"
+#include "db.h"
 
 enum kee_initiator_e {
 	ALICE,
@@ -66,5 +67,7 @@ void kee_ledger_item_init(struct kee_ledger_item_t *item);
 int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t *out_len, enum kee_item_serialize_mode_e mode);
 int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *out_len);
 int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *in, size_t in_len);
+int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db);
+
 
 #endif

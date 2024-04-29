@@ -8,7 +8,26 @@
 #include "err.h"
 #include "content.h"
 #include "digest.h"
+#include "db.h"
 
+int kee_test_db(struct kee_test_t *t) {
+	int r;
+	char *p;
+	char path[64];
+
+	strcpy(path, "/tmp/keetest_db_XXXXXX");
+	p = mkdtemp(path);
+	if (p == NULL) {
+		return 1;
+	}
+
+	r = db_connect(&t->db, p);
+	if (r) {
+		return 1;
+	}
+
+	return 0;
+}
 
 int kee_test_generate(struct kee_test_t *t) {
 	int r;
@@ -85,6 +104,7 @@ int kee_test_generate(struct kee_test_t *t) {
 		return 1;
 	}
 
+	/// \todo oh dear, they are serialized as platform endian, should be big.
 	item = kee_ledger_add_item(&t->ledger);
 	item->alice_credit_delta = 666;
 	item->bob_credit_delta = -42;

@@ -29,96 +29,108 @@ int db_connect(struct db_ctx *ctx, char *conn) {
 	return ERR_OK;
 }
 
-/**
- * \todo split up and optimize
- */
-int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len) {
+
+/// \todo atomic tx put
+int db_put(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len) {
 	int r;
-	char *buf;
-	char buf_reverse[33];
-	unsigned char *rv;
-	char kv;
-	struct timespec ts;
-	char rts[sizeof(struct timespec)];
-	gcry_error_t e;
-	gcry_md_hd_t h;
 	MDB_txn *tx;
 	MDB_dbi dbi;
 	MDB_val k;
 	MDB_val v;
 
-	buf = (char*)malloc(1 + 32 + sizeof(struct timespec)); // length should be lookup in sizes array for each key
-
-	r = clock_gettime(CLOCK_REALTIME, &ts);
-	if (r) {
-		free(buf);
-		return ERR_FAIL;
-	}
-	memcpy(rts, &ts.tv_sec, sizeof(ts.tv_sec));
-	memcpy(rts + sizeof(ts.tv_sec), &ts.tv_nsec, sizeof(ts.tv_nsec));
-	to_endian(0, sizeof(ts.tv_sec), rts);
-	to_endian(0, sizeof(ts.tv_nsec), rts + sizeof(ts.tv_sec));
-
-	e = gcry_md_open(&h, GCRY_MD_SHA256, 0);
-	if (e) {
-		free(buf);
-		return ERR_DIGESTFAIL;
-	}
-	gcry_md_write(h, data, data_len);
-	rv = gcry_md_read(h, 0);
-	kv = (char)pfx;
-	memcpy(buf, &kv, 1);
-	memcpy(buf + 1, rts, sizeof(struct timespec));
-	memcpy(buf + 1 + sizeof(struct timespec), rv, 32);
-
 	r = mdb_txn_begin(ctx->env, NULL, 0, &tx);
 	if (r) {
-		free(buf);
 		return ERR_FAIL;
 	}
 
 	r = mdb_dbi_open(tx, NULL, MDB_CREATE, &dbi);
 	if (r) {
-		free(buf);
 		return ERR_FAIL;
 	}
 
-	k.mv_data = buf;
-	k.mv_size = 1 + 32 + sizeof(struct timespec);
+	k.mv_data = key;
+	k.mv_size = key_len;
 	v.mv_data = data;
 	v.mv_size = data_len;
 
 	r = mdb_put(tx, dbi, &k, &v, 0);
 	if (r) {
-		free(buf);
-		return ERR_FAIL;
-	}
-
-	// put reverse lookup
-	buf_reverse[0] = (char)DbKeyReverse;
-	memcpy(buf_reverse+1, rv, 32);
-	k.mv_data = buf_reverse; 
-	k.mv_size = 33;
-	v.mv_data = buf;
-	v.mv_size = 1 + 32 + sizeof(struct timespec);
-	gcry_md_close(h); // keep the handle open until here because we use its digest value again for the key
-
-	r = mdb_put(tx, dbi, &k, &v, 0);
-	if (r) {
-		free(buf);
 		return ERR_FAIL;
 	}
 
 	r = mdb_txn_commit(tx);
 	if (r) {
-		free(buf);
 		return ERR_FAIL;
 	}
-	free(buf);
 
 	return ERR_OK;
-
 }
+
+///**
+// * \todo split up and optimize
+// */
+//int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len) {
+//	int r;
+//	char *buf;
+//	char buf_reverse[33];
+//	unsigned char *rv;
+//	char kv;
+//	struct timespec ts;
+//	char rts[sizeof(struct timespec)];
+//	gcry_error_t e;
+//	gcry_md_hd_t h;
+//	
+//	buf = (char*)malloc(1 + 32 + sizeof(struct timespec)); // length should be lookup in sizes array for each key
+//
+//	r = clock_gettime(CLOCK_REALTIME, &ts);
+//	if (r) {
+//		free(buf);
+//		return ERR_FAIL;
+//	}
+//	memcpy(rts, &ts.tv_sec, sizeof(ts.tv_sec));
+//	memcpy(rts + sizeof(ts.tv_sec), &ts.tv_nsec, sizeof(ts.tv_nsec));
+//	to_endian(0, sizeof(ts.tv_sec), rts);
+//	to_endian(0, sizeof(ts.tv_nsec), rts + sizeof(ts.tv_sec));
+//
+//	e = gcry_md_open(&h, GCRY_MD_SHA256, 0);
+//	if (e) {
+//		free(buf);
+//		return ERR_DIGESTFAIL;
+//	}
+//	gcry_md_write(h, data, data_len);
+//	rv = gcry_md_read(h, 0);
+//	kv = (char)pfx;
+//	memcpy(buf, &kv, 1);
+//	memcpy(buf + 1, rts, sizeof(struct timespec));
+//	memcpy(buf + 1 + sizeof(struct timespec), rv, 32);
+//
+//	
+//
+//	// put reverse lookup
+//	buf_reverse[0] = (char)DbKeyReverse;
+//	memcpy(buf_reverse+1, rv, 32);
+//	k.mv_data = buf_reverse; 
+//	k.mv_size = 33;
+//	v.mv_data = buf;
+//	v.mv_size = 1 + 32 + sizeof(struct timespec);
+//	gcry_md_close(h); // keep the handle open until here because we use its digest value again for the key
+//
+//	r = mdb_put(tx, dbi, &k, &v, 0);
+//	if (r) {
+//		free(buf);
+//		return ERR_FAIL;
+//	}
+//
+//	r = mdb_txn_commit(tx);
+//	if (r) {
+//		free(buf);
+//		return ERR_FAIL;
+//	}
+//	free(buf);
+//
+//	return ERR_OK;
+//
+//}
 
 /**
  *

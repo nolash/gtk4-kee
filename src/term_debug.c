@@ -2,6 +2,6 @@
 #include "debug.h"
 
 
-void debugLog(enum debugLevel level, const char *s) {
-	fprintf(stderr, "%d: %s\n", level, s);
-}
+//void debug_log(enum debugLevel level, const char *s) {
+//	fprintf(stderr, "%d: %s\n", level, s);
+//}
