@@ -14,6 +14,7 @@ enum kee_initiator_e {
 };
 
 enum kee_item_serialize_mode_e {
+	KEE_LEDGER_ITEM_SERIALIZE_AUTO,
 	KEE_LEDGER_ITEM_SERIALIZE_REQUEST,
 	KEE_LEDGER_ITEM_SERIALIZE_RESPONSE,
 	KEE_LEDGER_ITEM_SERIALIZE_FINAL,
@@ -68,6 +69,7 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *out_len);
 int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *in, size_t in_len);
 int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db);
+int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx);
 
 
 #endif

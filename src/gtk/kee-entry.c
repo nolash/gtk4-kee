@@ -84,6 +84,7 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	struct kee_transport_t trans;
 	char *out;
 	size_t out_len;
+	size_t c;
 	GVariant *transport_data;
 
 	buf = gtk_entry_get_buffer(o->form->uoa);

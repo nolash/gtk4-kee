@@ -866,30 +866,43 @@ int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *in, size_t in_len) 
 	return ERR_OK;
 }
 
-static size_t ledger_db_key(char *out) {
-	int r;
-	char *p;
-	struct timespec ts;
+static size_t timespec_to_keypart(struct timespec *ts, char *out)  {
 	unsigned int sec;
 	unsigned int nsec;
 
-	*out = DbKeyLedgerHead;
-	p = out + 1;
+	sec = (unsigned int)ts->tv_sec;
+	nsec = (unsigned int)ts->tv_nsec;
 
-	r = clock_gettime(CLOCK_REALTIME, &ts);
-	if (r) {
-		return 0;
+	memcpy(out, &sec, sizeof(sec));
+	memcpy(out + sizeof(sec), &nsec, sizeof(nsec));
+	to_endian(TO_ENDIAN_BIG, sizeof(sec), out);
+	to_endian(TO_ENDIAN_BIG, sizeof(nsec), out + sizeof(sec));
+	
+	return sizeof(sec) + sizeof(nsec);
+}
+
+// will return (offset + sizeof(unsigned int) * 2) bytes
+static size_t db_key(enum DbKey pfx, struct timespec *ts, char *out, size_t offset) {
+	size_t c;
+	int r;
+	char *p;
+	struct timespec ts_fallback;
+
+	if (ts == NULL) {
+		ts = &ts_fallback;
+		r = clock_gettime(CLOCK_REALTIME, ts);
+		if (r) {
+			return 0;
+		}
 	}
 
-	sec = (unsigned int)ts.tv_sec;
-	nsec = (unsigned int)ts.tv_nsec;
+	*out = (char)pfx;
+	p = out + 1;
 
-	memcpy(p, &sec, sizeof(sec));
-	memcpy(p + sizeof(sec), &nsec, sizeof(nsec));
-	to_endian(TO_ENDIAN_BIG, sizeof(sec), p);
-	to_endian(TO_ENDIAN_BIG, sizeof(nsec), p + sizeof(sec));
-	return sizeof(sec) + sizeof(nsec) + 1;
-}
+	c = timespec_to_keypart(ts, p+offset);
+
+	return offset + 1 + c;
+ }
 
 int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	int r;
@@ -919,7 +932,7 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 		}
 	}
 
-	l = ledger_db_key(k);
+	l = db_key(DbKeyLedgerHead, NULL, k, 0);
 	if (l == 0) {
 		return ERR_FAIL;
 	}
@@ -946,4 +959,63 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	}
 
 	return ERR_OK;
+}
+
+// idx is reverse chronological order
+static struct kee_ledger_item_t* get_item_by_idx(struct kee_ledger_t *ledger, int idx) {
+	int i;
+	struct kee_ledger_item_t *item;
+	
+	item = ledger->last_item;
+
+	for (i = 0; i < idx; i++) {
+		if (item == NULL) {
+			return NULL;
+		}
+		item = item->prev_item;
+	}
+	return item;
+}
+
+int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx) {
+	int r;
+	size_t c;
+	size_t l;
+	char mem[1024];
+	char *k;
+	char *v;
+	struct kee_ledger_item_t *item;
+
+	item = get_item_by_idx(ledger, idx);
+	if (item == NULL) {
+		return ERR_FAIL;
+	}
+
+	k = (char*)mem;
+	v = ((char*)mem)+96;
+
+	memcpy(k, ledger->digest, DIGEST_LENGTH);
+
+	l = db_key(DbKeyLedgerEntry, &item->time, k, DIGEST_LENGTH);
+	if (l == 0) {
+		return ERR_FAIL;
+	}
+
+	db_rewind(db);
+	r = db_next(db, DbKeyLedgerEntry, &k, &l, &v, &c);
+	if (!r) {
+		return ERR_DB_EXISTS;
+	}
+
+	c = 928;
+	r = kee_ledger_item_serialize(item, v, &c, KEE_LEDGER_ITEM_SERIALIZE_FINAL);
+	if (r) {
+		return ERR_FAIL;
+	}
+	r = db_put(db, k, l, v, c);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	return ERR_OK;	
 }
