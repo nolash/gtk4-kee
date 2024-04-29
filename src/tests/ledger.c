@@ -386,11 +386,18 @@ int test_pair() {
 		return 1;
 	}
 
-	r = kee_ledger_parse_open(&ledger, out, &out_len);
+	r = kee_ledger_parse_open(&ledger, out, out_len);
 	if (r) {
 		return 1;
 	}
 
+	if (memcmp(ledger.uoa, "USD", 3)) {
+		return 1;
+	}
+
+	if (ledger.last_item->alice_credit_delta == 666) {
+		return 1;
+	}
 
 	return 0;
 }

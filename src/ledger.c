@@ -131,9 +131,12 @@ static int verify_item(struct kee_ledger_t *ledger, asn1_node item, const char *
 		return 1;
 	}
 
-	r = gpg_store_verify(sig_data, p, pubkey_last_data);
-	if (r) {
-		return 1;
+	if (c) {
+		r = gpg_store_verify(sig_data, p, pubkey_last_data);
+		if (r) {
+			return 1;
+		}
+		debug_log(DEBUG_DEBUG, "ledger item verified\n");
 	}
 
 //	c = 0;
@@ -361,6 +364,7 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	asn1_node item;
 	int c;
 	char content_key[64];
+	int decimals;
 
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
@@ -386,11 +390,12 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 		return r;
 	}
 	
-	c = 1;
-	r = asn1_read_value(item, "uoaDecimals", &ledger->uoa_decimals, &c);
+	c = 8;
+	r = asn1_read_value(item, "uoaDecimals", &decimals, &c);
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
+	ledger->uoa_decimals = (char)decimals;
 
 	c = 32;
 	r = asn1_read_value(item, "alicePubKey", ledger->pubkey_alice, &c);
@@ -758,7 +763,6 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 	if (r) {
 		return ERR_FAIL;	
 	}
-
 	r = asn1_write_value(root, "Kee.KeeTransport", "NEW", 1);
 	if (r) {
 		return ERR_FAIL;	
@@ -773,19 +777,26 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 		debug_log(DEBUG_ERROR, err);
 		return ERR_FAIL;	
 	}
+	*(out+*out_len) = 0;
+	if (ledger->last_item->initiator == BOB) {
+		*(out+*out_len) = 1;
+	}
+	*out_len += 1;
 
 	return ERR_OK;
 }
 
-int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
+int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *in, size_t in_len) {
 	int r;
 	char err[1024];
 	char b[1024];
 	size_t c;
 	asn1_node root;
 	asn1_node pair;
-	asn1_node item;
-	asn1_node entry;
+	//asn1_node item;
+	//asn1_node entry;
+	struct kee_ledger_item_t *item;
+	char is_bob;
 
 	memset(&root, 0, sizeof(root));
 	memset(&pair, 0, sizeof(root));
@@ -801,28 +812,52 @@ int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *out, size_t *out_le
 		return ERR_FAIL;	
 	}
 
-	r = asn1_der_decoding(&pair, out, *out_len, err);
+	is_bob = (char)*(in+in_len-1);
+	in_len--;
+	r = asn1_der_decoding(&pair, in, in_len, err);
 	if (r != ASN1_SUCCESS) {
 		debug_log(DEBUG_ERROR, err);
 		return ERR_FAIL;	
 	}
 
-	r = asn1_copy_node(root, "Kee.KeeEntryHead", pair, "?1");
-	if (r != ASN1_SUCCESS) {
-		debug_log(DEBUG_ERROR, asn1_strerror(r));
-		return ERR_FAIL;	
-	}
+//	r = asn1_copy_node(root, "Kee.KeeEntryHead", pair, "?1");
+//	if (r != ASN1_SUCCESS) {
+//		debug_log(DEBUG_ERROR, asn1_strerror(r));
+//		return ERR_FAIL;	
+//	}
+//
+//	r = asn1_copy_node(root, "Kee.KeeEntry", pair, "?2");
+//	if (r != ASN1_SUCCESS) {
+//		debug_log(DEBUG_ERROR, asn1_strerror(r));
+//		return ERR_FAIL;	
+//	}
 
-	r = asn1_copy_node(root, "Kee.KeeEntry", pair, "?2");
-	if (r != ASN1_SUCCESS) {
-		debug_log(DEBUG_ERROR, asn1_strerror(r));
-		return ERR_FAIL;	
-	}
-
-	r = asn1_der_coding(root, "Kee.KeeEntryHead", out, out_len, err);
+	c = 1024;
+	//r = asn1_der_coding(root, "Kee.KeeEntryHead", out, &c, err);
+	r = asn1_der_coding(pair, "?1", b, (int*)&c, err);
 	if (r != ASN1_SUCCESS) {
 		debug_log(DEBUG_ERROR, err);
 		return ERR_FAIL;	
+	}
+
+	r = kee_ledger_parse(ledger, b, c);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	c = 1024;
+	//r = asn1_der_coding(root, "Kee.KeeEntry", out, &c, err);
+	r = asn1_der_coding(pair, "?2", b, (int*)&c, err);
+	if (r != ASN1_SUCCESS) {
+		debug_log(DEBUG_ERROR, err);
+		return ERR_FAIL;	
+	}
+
+	*(b+c) = is_bob;
+	c++;
+	item = kee_ledger_parse_item(ledger, b, c);
+	if (item == NULL) {
+		return ERR_FAIL;
 	}
 
 	return ERR_OK;
