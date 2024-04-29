@@ -391,7 +391,7 @@ int test_pair() {
 		return 1;
 	}
 
-	if (memcmp(ledger.uoa, "USD", 3)) {
+	if (strcmp(ledger.uoa, "USD")) {
 		return 1;
 	}
 

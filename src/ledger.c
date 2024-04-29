@@ -452,7 +452,7 @@ int kee_ledger_serialize(struct kee_ledger_t *ledger, char *out, size_t *out_len
 		return ERR_FAIL;
 	}
 
-	c = strlen(ledger->uoa);
+	c = strlen(ledger->uoa) + 1;
 	r = asn1_write_value(node, "Kee.KeeEntryHead.uoa", ledger->uoa, c);
 	if (r != ASN1_SUCCESS) {
 		return r;
