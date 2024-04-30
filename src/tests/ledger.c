@@ -439,23 +439,23 @@ int main() {
 	}
 	r = test_util();
 	if (r) {
-		return 1;
+		return 2;
 	}
 	r = test_sign();
 	if (r) {
-		return 1;
+		return 3;
 	}
 	r = test_alice();
 	if (r) {
-		return 1;
+		return 4;
 	}
 	r = test_pair();
 	if (r) {
-		return 1;
+		return 5;
 	}
 	r = test_put();
 	if (r) {
-		return 1;
+		return 6;
 	}
 
 	return 0;
