@@ -109,12 +109,29 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 
 	return out_digest;
 }
+//
+//static char *get_message_data(struct kee_ledger_t *ledger, const char *item_data, size_t item_data_len, char *out_digest) {
+//	char *p;
+//	char msg_data[1024 + 64];
+//	size_t c;
+//
+//	p = (char*)msg_data;
+//	memcpy(p, ledger->digest, DIGEST_LENGTH);
+//	p += DIGEST_LENGTH;
+//	memcpy(p, item_data, item_data_len);
+//	c = DIGEST_LENGTH + item_data_len;
+//	r = calculate_digest_algo(msg_data, &c, out_digest, GCRY_MD_SHA512);
+//	if (r) {
+//		return NULL;
+//	}
+//	
+//	return out_digest;
+//}
+
 
 static int verify_item_data(struct kee_ledger_t *ledger, const char* item_data, const char *sig_data, const char *pubkey_data) {
 	int r;
 	size_t c;
-	//char msg_data[1024 + 64];
-	//char *p = (char*)msg_data;
 
 	if (c) {
 		r = gpg_store_verify(sig_data, item_data, pubkey_data);
@@ -228,19 +245,21 @@ static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
 	return ERR_OK;
 }
 
-int kee_item_digest(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, enum kee_item_serialize_mode_e mode, char *out) {
+static int kee_ledger_item_digest(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, enum kee_item_serialize_mode_e mode, char *out) {
 	char *p;
 	int r;
 	char b[1024];
 	size_t c;
 
 	p = (char*)b;
-	r = kee_ledger_digest(ledger, p);
-	if (r) {
-		return ERR_FAIL;
-	}
+//	r = kee_ledger_digest(ledger, p);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+	memcpy(p, ledger->digest, DIGEST_LENGTH);
 	p += DIGEST_LENGTH;
 
+	c = 1024;
 	r = kee_ledger_item_serialize(item, p, &c, mode);
 	if (r) {
 		return ERR_FAIL;
@@ -1019,30 +1038,86 @@ static struct kee_ledger_item_t* get_item_by_idx(struct kee_ledger_t *ledger, in
 	return item;
 }
 
-// err idx shows which item in ledger reported error
-int kee_ledger_verify(struct kee_ledger_t *ledger, int *err_idx) {
+static void get_authentication_params(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, char **pubkey_request, char **sig_request, char **pubkey_response, char **sig_response) {
+	if (item->initiator == BOB) {
+		*pubkey_request = ledger->pubkey_bob;
+		*pubkey_response = ledger->pubkey_alice;
+		*sig_request = item->bob_signature;
+		*sig_response = item->alice_signature;
+	} else {
+		*pubkey_request = ledger->pubkey_alice;
+		*pubkey_response = ledger->pubkey_bob;
+		*sig_request = item->alice_signature;
+		*sig_response = item->bob_signature;
+	}
+	if (!memcmp(sig_request, zero_content, SIGNATURE_LENGTH)) {
+		*sig_request = NULL;
+	}
+	if (!memcmp(sig_response, zero_content, SIGNATURE_LENGTH)) {
+		*sig_response = NULL;
+	}
+}
+
+// idx shows which item in ledger execution terminated
+int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 	int r;
 	char b[1024];
 	size_t c;
 	struct kee_ledger_item_t *item;
+	char *pubkey_request;
+	char *pubkey_response;
+	char *sig_request;
+	char *sig_response;
 
-	*err_idx = 0;
+	*idx = 0;
 	item = ledger->last_item;
 	if (item == NULL) {
 		return ERR_FAIL;
 	}
 
 	while (1) {
-		if (memcpy(item->alice_signature, zero_content, SIGNATURE_LENGTH)) {
-			r = kee_ledger_item_serialize(item, b, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+		get_authentication_params(ledger, item, &pubkey_request, &sig_request, &pubkey_response, &sig_response);
+		if (*sig_response == NULL) {
+			if (*idx > 0) {
+				return ERR_FAIL;
+			}
+		} else {
+			c = 960;
+			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
+			if (r) {
+				return ERR_FAIL;
+			}
+			r = kee_ledger_item_digest(ledger, item, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE, b);
+			if (r) {
+				return ERR_FAIL;
+			}
+			r = verify_item_data(ledger, b, sig_response, pubkey_response);
 			if (r) {
 				return ERR_FAIL;
 			}
 		}
-		//verify_item();
+		if (*sig_request != NULL) {
+			c = 960;
+			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+			if (r) {
+				return ERR_FAIL;
+			}
+			r = kee_ledger_item_digest(ledger, item, KEE_LEDGER_ITEM_SERIALIZE_REQUEST, b);
+			if (r) {
+				return ERR_FAIL;
+			}
+			r = verify_item_data(ledger, b, sig_response, pubkey_response);
+			if (r) {
+				return ERR_FAIL;
+			}
+		}
 		item = item->prev_item;
-		*err_idx++;
+		if (item == NULL) {
+			break;
+		}
+		*idx++;
 	}
+	return ERR_OK;
 }
 
 int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx) {

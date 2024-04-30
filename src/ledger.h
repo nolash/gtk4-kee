@@ -70,6 +70,7 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *in, size_t in_len);
 int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db);
 int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx);
+int kee_ledger_verify(struct kee_ledger_t *ledger, int *err_idx);
 
 
 #endif

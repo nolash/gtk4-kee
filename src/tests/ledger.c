@@ -368,6 +368,7 @@ int test_parse() {
 	return 0;
 }
 
+
 int test_pair() {
 	int r;
 	struct kee_test_t t;
@@ -430,32 +431,65 @@ int test_put() {
 	return 0;
 }
 
-int main() {
+int test_verify() {
 	int r;
+	int i;
+	struct kee_test_t t;
 
-	r = test_parse();
+	r = kee_test_generate(&t);
 	if (r) {
 		return 1;
 	}
+
+	r = kee_ledger_verify(&t.ledger, &i);
+	if (r) {
+		return 1;
+	}
+	//if (i != 0) {
+	//	return 1;
+	//}
+
+	return 0;
+}
+
+int main() {
+	int i;
+	int r;
+
+	i = 1;
+	r = test_parse();
+	if (r) {
+		return i;
+	}
+	i++;
 	r = test_util();
 	if (r) {
-		return 2;
+		return i;
 	}
+	i++;
 	r = test_sign();
 	if (r) {
-		return 3;
+		return i;
 	}
+	i++;
 	r = test_alice();
 	if (r) {
-		return 4;
+		return i;
 	}
+	i++;
+	r = test_verify();
+	if (r) {
+		return i;
+	}
+	i++;
 	r = test_pair();
 	if (r) {
-		return 5;
+		return i;
 	}
+	i++;
 	r = test_put();
 	if (r) {
-		return 6;
+		return i;
 	}
 
 	return 0;
