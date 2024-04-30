@@ -29,6 +29,58 @@ int kee_test_db(struct kee_test_t *t) {
 	return 0;
 }
 
+int kee_test_sign_request(struct kee_test_t *t) {
+	int r;
+	char b[1024];
+	size_t c;
+
+	c = 1024;
+	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
+	if (r) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int kee_test_sign_response(struct kee_test_t *t) {
+	int r;
+	char b[1024];
+	size_t c;
+	struct kee_ledger_item_t item_swap;
+
+	c = 1024;
+	t->gpg.k = &t->bob;
+	r = gpg_key_load(&t->gpg, "1234", KEE_GPG_FIND_FINGERPRINT, t->bob_fingerprint);
+	if (r) {
+		return 1;
+	}
+
+	memcpy(&item_swap, t->ledger.last_item, sizeof(struct kee_ledger_item_t));
+
+	t->ledger.last_item->initiator = BOB;
+	t->ledger.last_item->bob_credit_delta = t->ledger.last_item->alice_credit_delta;
+	t->ledger.last_item->bob_collateral_delta = t->ledger.last_item->alice_collateral_delta;
+	memcpy(t->ledger.last_item->bob_signature, t->ledger.last_item->alice_signature, SIGNATURE_LENGTH);
+	memset(t->ledger.last_item->alice_signature, 0, SIGNATURE_LENGTH);
+
+	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
+	if (r) {
+		return 1;
+	}
+	memcpy(item_swap.bob_signature, t->gpg.last_signature, SIGNATURE_LENGTH);
+	memcpy(t->ledger.last_item, &item_swap, sizeof(struct kee_ledger_item_t));
+
+	t->gpg.k = &t->alice;
+	r = gpg_key_load(&t->gpg, "1234", KEE_GPG_FIND_FINGERPRINT, t->alice_fingerprint);
+	if (r) {
+		return 1;
+	}
+	
+	return 0;
+}
+
+
 int kee_test_generate(struct kee_test_t *t) {
 	int r;
 	char *p;
@@ -75,7 +127,7 @@ int kee_test_generate(struct kee_test_t *t) {
 		return 1;
 	}
 	memcpy(t->ledger.pubkey_bob, t->gpg.public_key, PUBKEY_LENGTH);
-	memcpy(t->alice_fingerprint, t->gpg.fingerprint, FINGERPRINT_LENGTH);
+	memcpy(t->bob_fingerprint, t->gpg.fingerprint, FINGERPRINT_LENGTH);
 
 	strcpy(t->ledger.uoa, "USD");
 	t->ledger.uoa_decimals = 2;
@@ -88,10 +140,7 @@ int kee_test_generate(struct kee_test_t *t) {
 	if (r) {
 		return 1;
 	}
-	r = calculate_digest_algo(content_test, strlen(content_test), t->content_ledger.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
+	memcpy(&t->ledger.content, &t->content_ledger, sizeof(struct kee_content_t));
 
 	out_len = 1024;
 	r = kee_ledger_serialize(&t->ledger, out, &out_len);
@@ -126,7 +175,10 @@ int kee_test_generate(struct kee_test_t *t) {
 	if (r) {
 		return 1;
 	}
-	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item->key, GCRY_MD_SHA512);
+	memcpy(&item->content, content_item, sizeof(struct kee_content_t));
+
+	t->gpg.k = &t->alice;
+	r = gpg_key_load(&t->gpg, "1234", KEE_GPG_FIND_FINGERPRINT, t->alice_fingerprint);
 	if (r) {
 		return 1;
 	}

@@ -17,7 +17,8 @@
 
 char zero_content[64];
 
-static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *out_digest, char *out_data, size_t *out_len) {
+/// \todo consolidate with get_message_data
+static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *out_digest, char *out_data, size_t *out_len, enum kee_item_serialize_mode_e mode) {
 	int r;
 	size_t c;
 	asn1_node root;
@@ -38,22 +39,12 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 		return NULL;
 	}
 
-	r = asn1_copy_node(root, "Kee.KeeEntry.signatureRequest", item, "signatureRequest");
+		r = asn1_copy_node(root, "Kee.KeeEntry.response", item, "response");
 	if (r != ASN1_SUCCESS) {
 		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
 		return NULL;
 	}
-	r = asn1_copy_node(root, "Kee.KeeEntry.response", item, "response");
-	if (r != ASN1_SUCCESS) {
-		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
-		return NULL;
-	}
-//
-//	r = asn1_copy_node(root, "Kee.KeeEntry.signatureResponse", item, "signatureResponse");
-//	if (r != ASN1_SUCCESS) {
-//		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
-//		return NULL;
-//	}
+
 
 	r = asn1_copy_node(root, "Kee.KeeEntry.timestamp", item, "timestamp");
 	if (r != ASN1_SUCCESS) {
@@ -78,7 +69,7 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
 		return NULL;
 	}
-//
+
 //	c = 64;
 //	r = asn1_read_value(item, "signatureResponse", sig, (int*)&c);
 //	if (r != ASN1_SUCCESS) {
@@ -86,14 +77,35 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 //		return NULL;
 //	}
 
-	buf[0] = 0;
-	c = 0;
-	r = asn1_write_value(root, "Kee.KeeEntry.signatureResponse", buf, c);
-	if (r != ASN1_SUCCESS) {
-		return NULL;
+	if (mode == KEE_LEDGER_ITEM_SERIALIZE_FINAL) {
+		r = asn1_copy_node(root, "Kee.KeeEntry.signatureResponse", item, "signatureResponse");
+		if (r != ASN1_SUCCESS) {
+			printf("%d (%s) %s\n", r, err, asn1_strerror(r));
+			return NULL;
+		}
+	} else {
+		buf[0] = 0;
+		c = 0;
+		r = asn1_write_value(root, "Kee.KeeEntry.signatureResponse", buf, c);
+		if (r != ASN1_SUCCESS) {
+			return NULL;
+		}
 	}
 
-	memcpy(out_data, ledger->digest, 64);
+	if (mode > KEE_LEDGER_ITEM_SERIALIZE_REQUEST) {
+		r = asn1_copy_node(root, "Kee.KeeEntry.signatureRequest", item, "signatureRequest");
+		if (r != ASN1_SUCCESS) {
+			printf("%d (%s) %s\n", r, err, asn1_strerror(r));
+			return NULL;
+		}
+	} else {
+		buf[0] = 0;
+		c = 0;
+		r = asn1_write_value(root, "Kee.KeeEntry.signatureRequest", buf, c);
+		if (r != ASN1_SUCCESS) {
+			return NULL;
+		}
+	}
 
 	r = asn1_der_coding(root, "Kee.KeeEntry", out_data+64, (int*)out_len, err);
 	if (r != ASN1_SUCCESS) {
@@ -101,13 +113,17 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 		return NULL;
 	}
 
+	memcpy(out_data, ledger->digest, 64);
 	*out_len += DIGEST_LENGTH;
-	r = calculate_digest_algo(out_data, *out_len, out_digest, GCRY_MD_SHA512);
-	if (r) {
-		return NULL;
-	}
 
-	return out_digest;
+	return out_data;
+
+//	r = calculate_digest_algo(out_data, *out_len, out_digest, GCRY_MD_SHA512);
+//	if (r) {
+//		return NULL;
+//	}
+//
+//	return out_digest;
 }
 //
 //static char *get_message_data(struct kee_ledger_t *ledger, const char *item_data, size_t item_data_len, char *out_digest) {
@@ -129,12 +145,18 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 //}
 
 
-static int verify_item_data(struct kee_ledger_t *ledger, const char* item_data, const char *sig_data, const char *pubkey_data) {
+/// \todo consolidate with verify_item_asn
+static int verify_item_data(struct kee_ledger_t *ledger, const char* item_data, size_t item_data_len, const char *sig_data, const char *pubkey_data) {
+	char b[DIGEST_LENGTH];
 	int r;
-	size_t c;
 
-	if (c) {
-		r = gpg_store_verify(sig_data, item_data, pubkey_data);
+	if (item_data_len) {
+		r = calculate_digest_algo(item_data, item_data_len, b, GCRY_MD_SHA512);
+		if (r) {
+			return NULL;
+		}
+
+		r = gpg_store_verify(sig_data, b, pubkey_data);
 		if (r) {
 			return 1;
 		}
@@ -213,17 +235,20 @@ static int verify_item_asn(struct kee_ledger_t *ledger, asn1_node item, const ch
 		return 1;
 	}
 
-	c = 1024;
-	p = get_message_asn(ledger, item, p, p+64, &c);
-	if (p == NULL) {
-		return 1;
-	}
-
 	if (c) {
-		return 0;
+		c = 1024;
+		p = get_message_asn(ledger, item, p, p+64, &c, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
+		if (p == NULL) {
+			return 1;
+		}
+
+		r = verify_item_data(ledger, p, c, sig_data, pubkey_last_data);
+		if (r) {
+			return 1;
+		}
 	}
 
-	return verify_item_data(ledger, p, sig_data, pubkey_last_data);
+	return;
 }
 
 static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
@@ -699,6 +724,7 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 }
 
 
+/// \todo remove external buffer
 int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
 	int r;
 	char *p;
@@ -729,14 +755,6 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 	l -= c;
 	*out_len += c;
 
-//	r = kee_ledger_serialize(ledger, p, &c);
-//	if (r) {
-//		return ERR_FAIL;
-//	}
-//	p = out + c;
-//	l -= c;
-//	c = l;
-
 	c = l;
 	r = kee_ledger_item_serialize(item, p, &c, mode);
 	if (r) {
@@ -752,45 +770,6 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 
 	return ERR_OK;
 }
-
-//int kee_ledger_serialize_pair() {
-//	int r;
-//	asn1_node root;
-//	asn1_node item;
-//	asn1_node entry;
-//	asn1_node pair;
-//	char err[1024];
-//
-//	memset(&root, 0, sizeof(root));
-//	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
-//	if (r != ASN1_SUCCESS) {
-//		debug_log(DEBUG_ERROR, err);
-//		return ERR_FAIL;
-//	}
-//
-//	r = asn1_create_element(root, "Kee.KeeEntryInit.KeeEntryHead", &entry);
-//	if (r != ASN1_SUCCESS) {
-//		return ERR_FAIL;
-//	}
-//
-//	r = asn1_create_element(root, "Kee.KeeEntryInit.KeeEntryHead", &entry);
-//	if (r != ASN1_SUCCESS) {
-//		return ERR_FAIL;
-//	}
-//
-//	r = asn1_create_element(root, "Kee.KeeEntryInit.KeeEntry", &item);
-//	if (r != ASN1_SUCCESS) {
-//		return ERR_FAIL;
-//	}
-//
-//	c = strlen(ledger->uoa);
-//	r = asn1_write_value(node, "Kee.KeeEntryHead.uoa", ledger->uoa, c);
-//	if (r != ASN1_SUCCESS) {
-//		return ERR_FAIL;
-//	}
-//
-//	return ERR_OK;
-//}
 
 int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
 	int r;
@@ -1050,10 +1029,10 @@ static void get_authentication_params(struct kee_ledger_t *ledger, struct kee_le
 		*sig_request = item->alice_signature;
 		*sig_response = item->bob_signature;
 	}
-	if (!memcmp(sig_request, zero_content, SIGNATURE_LENGTH)) {
+	if (!memcmp(*sig_request, zero_content, SIGNATURE_LENGTH)) {
 		*sig_request = NULL;
 	}
-	if (!memcmp(sig_response, zero_content, SIGNATURE_LENGTH)) {
+	if (!memcmp(*sig_response, zero_content, SIGNATURE_LENGTH)) {
 		*sig_response = NULL;
 	}
 }
@@ -1077,7 +1056,7 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 
 	while (1) {
 		get_authentication_params(ledger, item, &pubkey_request, &sig_request, &pubkey_response, &sig_response);
-		if (*sig_response == NULL) {
+		if (sig_response == NULL) {
 			if (*idx > 0) {
 				return ERR_FAIL;
 			}
@@ -1087,26 +1066,26 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 			if (r) {
 				return ERR_FAIL;
 			}
-			r = kee_ledger_item_digest(ledger, item, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE, b);
+			r = kee_ledger_digest(ledger, b);
 			if (r) {
 				return ERR_FAIL;
 			}
-			r = verify_item_data(ledger, b, sig_response, pubkey_response);
+			r = verify_item_data(ledger, b, c + DIGEST_LENGTH, sig_response, pubkey_response);
 			if (r) {
 				return ERR_FAIL;
 			}
 		}
-		if (*sig_request != NULL) {
+		if (sig_request != NULL) {
 			c = 960;
 			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
 			if (r) {
 				return ERR_FAIL;
 			}
-			r = kee_ledger_item_digest(ledger, item, KEE_LEDGER_ITEM_SERIALIZE_REQUEST, b);
+			r = kee_ledger_digest(ledger, b);
 			if (r) {
 				return ERR_FAIL;
 			}
-			r = verify_item_data(ledger, b, sig_response, pubkey_response);
+			r = verify_item_data(ledger, b, c + DIGEST_LENGTH, sig_request, pubkey_request);
 			if (r) {
 				return ERR_FAIL;
 			}
@@ -1115,7 +1094,7 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 		if (item == NULL) {
 			break;
 		}
-		*idx++;
+		*idx += 1;
 	}
 	return ERR_OK;
 }

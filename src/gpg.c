@@ -636,6 +636,7 @@ int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, cons
 	return 0;
 }
 
+/// \todo data input
 int gpg_store_verify(const char *sig_bytes, const char *digest, const char *pubkey_bytes) {
 	gcry_mpi_t sig_r;
 	gcry_mpi_t sig_s;

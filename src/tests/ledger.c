@@ -25,299 +25,6 @@ int test_util() {
 	return 0;
 }
 
-/// \todo split up function (use util.c)
-int test_sign() {
-	int r;
-	gcry_sexp_t alice;
-	gcry_sexp_t bob;
-	char alice_fingerprint[20];
-	char *p;
-	char *out;
-	size_t out_len;
-	char *out_item;
-	size_t out_item_len;
-	struct gpg_store gpg;
-	struct kee_ledger_t ledger;
-	struct kee_ledger_item_t item;
-	struct kee_ledger_item_t *item_parsed;
-	struct kee_content_t content;
-	struct kee_content_t content_item;
-	char item_sum[64];
-	const char *version;
-	char path[1024];
-
-	version = gcry_check_version(NULL);
-	if (version == 0x0) {
-		return 1;	
-	}
-	gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
-	gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
-
-	strcpy(path, "/tmp/keetest_key_XXXXXX");
-	p = mkdtemp(path);
-	if (p == NULL) {
-		return 1;
-	}
-
-	kee_ledger_init(&ledger);
-
-	gpg_store_init(&gpg, p);
-	gpg.k = &alice;
-	r = gpg_key_create(&gpg, "1234"); // alice
-	if (r) {
-		return 1;
-	}
-	memcpy(ledger.pubkey_alice, gpg.public_key, PUBKEY_LENGTH);
-	memcpy(alice_fingerprint, gpg.fingerprint, FINGERPRINT_LENGTH);
-
-	gpg_store_init(&gpg, p);
-	gpg.k = &bob;
-	r = gpg_key_create(&gpg, "1234"); // bob
-	if (r) {
-		return 1;
-	}
-	memcpy(ledger.pubkey_bob, gpg.public_key, PUBKEY_LENGTH);
-
-	strcpy(ledger.uoa, "USD");
-	ledger.uoa_decimals = 2;
-
-	r = calculate_digest_algo(content_test, strlen(content_test), content.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	r = kee_content_init(&content, content.key, 0);
-	if (r) {
-		return 1;
-	}
-	r = calculate_digest_algo(content_test, strlen(content_test), content.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-
-	out_len = 1024*1024;
-	out = malloc(out_len);
-	r = kee_ledger_serialize(&ledger, out, &out_len);
-	if (r) {
-		return 1;
-	}
-
-	r = calculate_digest_algo(out, out_len, ledger.digest, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-
-	kee_ledger_item_init(&item);
-	item.alice_credit_delta = 666;
-	item.bob_credit_delta = -42;
-	item.alice_collateral_delta = 1024;
-	item.bob_collateral_delta = 2048;
-	r = clock_gettime(CLOCK_REALTIME, &item.time);
-	if (r) {
-		return 1;
-	}
-	item.initiator = BOB;
-	item.response = 1;
-
-	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	r = kee_content_init(&content_item, content_item.key, 0);
-	if (r) {
-		return 1;
-	}
-	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-
-	out_item_len = 4096;
-	out_item = malloc(out_item_len);
-	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
-	if (r) {
-		return 1;
-	}
-	r = calculate_digest_algo(out_item, out_item_len, item_sum, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	r = gpg_store_sign(&gpg, out_item, out_item_len, "1234");
-	if (r) {
-		return 1;
-	}
-	memcpy(item.bob_signature, gpg.last_signature, SIGNATURE_LENGTH);
-	r = gpg_store_verify(gpg.last_signature, item_sum, ledger.pubkey_bob);
-	if (r) {
-		return 1;
-	}
-
-	gpg.k = &alice;
-	r = gpg_key_load(&gpg, "1234", KEE_GPG_FIND_FINGERPRINT, alice_fingerprint);
-	if (r) {
-		return 1;
-	}
-
-	out_item_len = 1024;
-	r = kee_ledger_sign(&ledger, &item, &gpg, out_item, &out_item_len, "1234");
-	if (r) {
-		return 1;
-	}
-	memcpy(item.alice_signature, gpg.last_signature, SIGNATURE_LENGTH);
-	r = calculate_digest_algo(out_item, out_item_len, item_sum, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	r = gpg_store_verify(gpg.last_signature, item_sum, ledger.pubkey_alice);
-	if (r) {
-		return 1;
-	}
-
-	out_item_len = 4096;
-	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_FINAL);
-	if (r) {
-		return 1;
-	}
-	*(out_item+out_item_len) = 1;
-
-	item_parsed = kee_ledger_parse_item(&ledger, out_item, out_item_len + 1);
-	if (item_parsed == NULL) {
-		return 1;
-	}
-
-	free(out_item);
-	free(out);
-	kee_content_free(&content_item);
-	kee_content_free(&content);
-	kee_ledger_free(&ledger);
-
-	return 0;
-}
-
-int test_alice() {
-	char *p;
-	int r;
-	const char *version;
-	struct kee_ledger_t ledger;
-	struct kee_ledger_item_t item;
-	struct gpg_store gpg;
-	gcry_sexp_t alice;
-	char path[1024];
-	struct kee_content_t content;
-	struct kee_content_t content_item;
-	char item_sum[64];
-	size_t out_len;
-	size_t out_item_len;
-	char *out;
-	char *out_item;
-
-	version = gcry_check_version(NULL);
-	if (version == 0x0) {
-		return 1;	
-	}
-	gcry_control (GCRYCTL_DISABLE_SECMEM, 0);
-	gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
-
-	strcpy(path, "/tmp/keetest_key_XXXXXX");
-	p = mkdtemp(path);
-	if (p == NULL) {
-		return 1;
-	}
-
-	kee_ledger_init(&ledger);
-
-	gpg_store_init(&gpg, p);
-	gpg.k = &alice;
-	r = gpg_key_create(&gpg, "1234"); // alice
-	if (r) {
-		return 1;
-	}
-	memcpy(ledger.pubkey_alice, gpg.public_key, PUBKEY_LENGTH);
-
-	r = calculate_digest_algo(content_test, strlen(content_test), content.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	r = kee_content_init(&content, content.key, 0);
-	if (r) {
-		return 1;
-	}
-	r = calculate_digest_algo(content_test, strlen(content_test), content.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-
-	out_len = 1024*1024;
-	out = malloc(out_len);
-	r = kee_ledger_serialize(&ledger, out, &out_len);
-	if (r) {
-		return 1;
-	}
-
-	r = calculate_digest_algo(out, out_len, ledger.digest, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-
-	kee_ledger_item_init(&item);
-	item.alice_credit_delta = 666;
-	item.bob_credit_delta = -42;
-	item.alice_collateral_delta = 1024;
-	item.bob_collateral_delta = 2048;
-	r = clock_gettime(CLOCK_REALTIME, &item.time);
-	if (r) {
-		return 1;
-	}
-	item.initiator = ALICE;
-	item.response = 0;
-
-	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	r = kee_content_init(&content_item, content_item.key, 0);
-	if (r) {
-		return 1;
-	}
-	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item.key, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-
-	out_item_len = 1024;
-	out_item = malloc(out_item_len);
-	r = kee_ledger_item_serialize(&item, out_item, &out_item_len, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
-	if (r) {
-		return 1;
-	}
-	r = calculate_digest_algo(out_item, out_item_len, item_sum, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-
-	out_item_len = 1024;
-	r = kee_ledger_sign(&ledger, &item, &gpg, out_item, &out_item_len, "1234");
-	if (r) {
-		return 1;
-	}
-	memcpy(item.alice_signature, gpg.last_signature, SIGNATURE_LENGTH);
-	r = calculate_digest_algo(out_item, out_item_len, item_sum, GCRY_MD_SHA512);
-	if (r) {
-		return 1;
-	}
-	r = gpg_store_verify(gpg.last_signature, item_sum, ledger.pubkey_alice);
-	if (r) {
-		return 1;
-	}
-
-	free(out_item);
-	free(out);
-	kee_content_free(&content_item);
-	kee_content_free(&content);
-	kee_ledger_free(&ledger);
-
-	return 0;
-}
-
 int test_parse() {
 	int r;
 	size_t c;
@@ -431,6 +138,23 @@ int test_put() {
 	return 0;
 }
 
+int test_sign() {
+	int r;
+	struct kee_test_t t;
+
+	r = kee_test_generate(&t);
+	if (r) {
+		return 1;
+	}
+
+	r = kee_test_sign_request(&t);
+	if (r) {
+		return 1;
+	}
+
+	return 0;
+}
+
 int test_verify() {
 	int r;
 	int i;
@@ -441,13 +165,25 @@ int test_verify() {
 		return 1;
 	}
 
+	r = kee_test_sign_request(&t);
+	if (r) {
+		return 1;
+	}
+
 	r = kee_ledger_verify(&t.ledger, &i);
 	if (r) {
 		return 1;
 	}
-	//if (i != 0) {
-	//	return 1;
-	//}
+
+	r = kee_test_sign_response(&t);
+	if (r) {
+		return 1;
+	}
+
+	r = kee_ledger_verify(&t.ledger, &i);
+	if (r) {
+		return 1;
+	}
 
 	return 0;
 }
@@ -468,11 +204,6 @@ int main() {
 	}
 	i++;
 	r = test_sign();
-	if (r) {
-		return i;
-	}
-	i++;
-	r = test_alice();
 	if (r) {
 		return i;
 	}
