@@ -18,6 +18,7 @@
 #include "kee-key.h"
 #include "kee-transport.h"
 #include "transport.h"
+#include "debug.h"
 
 
 static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
@@ -34,11 +35,16 @@ static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 
 static void ui_handle_import(KeeImport *import, GString *v, KeeMenu *menu) {
 	//GtkWidget *widget;
+	int r;
 	struct kee_transport_t trans;
 	char *s;
 
 	s = (char*)v->str;
-	kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, strlen(s) + 1);
+	r = kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, strlen(s) + 1);
+	if (r) {
+		debug_log(DEBUG_INFO, "invalid input for transport");
+		return;
+	}
 	//kee_transport_read(&trans);
 
 	//switch(kee_transport_cmd(&trans)) {

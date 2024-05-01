@@ -109,21 +109,25 @@ static void kee_import_handle_import_data_focus(KeeImport *o, const char *data, 
 	gtk_widget_activate(o->toggler_text);
 }
 
-static void kee_import_handle_import_data_text(KeeImport *o, const char *data, GtkTextBuffer *buf) {
-	gtk_text_buffer_set_text(buf, data, strlen(data));
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import data %s", data);
+//static void kee_import_handle_import_data_text(KeeImport *o, const char *data, GtkTextBuffer *buf) {
+static void kee_import_handle_import_data_text(KeeImport *o, GString *v, GtkTextBuffer *buf) {
+	GAction *act;
+	GActionMap *am;
+	char *s;
+
+	s = (char*)v->str;
+	//gtk_text_buffer_set_text(buf, data, strlen(data));
+	gtk_text_buffer_set_text(buf, s, strlen(s));
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import data %s", s);
+
+	am = G_ACTION_MAP(gtk_window_get_application(GTK_WINDOW(o->win)));
+	act = g_action_map_lookup_action(am, "import_data_accept");
+	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+	g_action_activate(act, NULL);
 }
 
 static void kee_import_handle_import_data_accept(KeeImport *o, const char *data) {
-	GAction *act;
-	GActionMap *am;
-
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import accept");
-
-	am = G_ACTION_MAP(gtk_window_get_application(GTK_WINDOW(o->win)));
-
-	act = g_action_map_lookup_action(am, "import_data_accept");
-	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 }
 
 static void kee_import_handle_import_data_check(KeeImport *o, const char *data, GtkActionable *act) {
@@ -312,6 +316,7 @@ static gboolean kee_import_scan_code_handler(GstBus *bus, GstMessage *msg, gpoin
 	const gchar *src;
 	const gchar *code;
 	const GstStructure *strctr;
+	const GString *code_str;
 	KeeImport *import;
 
 	import = KEE_IMPORT(user_data);
@@ -339,9 +344,11 @@ static gboolean kee_import_scan_code_handler(GstBus *bus, GstMessage *msg, gpoin
 				break;
 			}
 			strctr = gst_message_get_structure(msg);
+			/// \todo remove newline in result
 			code = gst_structure_get_string(strctr, "symbol");
+			code_str = g_string_new(code);
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "message %s: %d (%s) - decoded: %s", src, msg->type, gst_message_type_get_name(msg->type), code);
-			g_signal_emit(import, kee_sigs[KEE_S_IMPORT_DATA], 0, code);
+			g_signal_emit(import, kee_sigs[KEE_S_IMPORT_DATA], 0, code_str);
 			return false;
 		default:
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "unhandled message (ext %d): %s", GST_MESSAGE_TYPE_IS_EXTENDED(msg), GST_MESSAGE_TYPE_NAME(msg));

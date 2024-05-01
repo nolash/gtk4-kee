@@ -86,6 +86,7 @@ KeeMenu* kee_menu_new(GtkApplication *gapp, struct kee_context *ctx) {
 	//gtk_widget_set_visible(butt, false);
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "win.back");
 	g_signal_connect(act, "activate", G_CALLBACK(kee_menu_act_back), o);
+	gtk_widget_set_tooltip_text(butt, "back");
 
 	act = g_simple_action_new("import", NULL);
 	g_action_map_add_action(G_ACTION_MAP(o), G_ACTION(act));
