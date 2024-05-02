@@ -86,6 +86,9 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 	g_signal_connect (widget, "unlock", G_CALLBACK(ui_handle_unlock), win);
 
 	widget = kee_entry_list_new(G_LIST_MODEL(ctx->entry_store), win);
+	act = g_simple_action_new("ledger", g_variant_type_new_array(G_VARIANT_TYPE_BYTE));
+	g_action_map_add_action(G_ACTION_MAP(win), G_ACTION(act));
+	g_signal_connect(act, "activate", G_CALLBACK(kee_entry_store_add), win);
 	kee_menu_add(win, "view", widget);
 	
 	kee_menu_next(win, "view");

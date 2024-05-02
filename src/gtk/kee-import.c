@@ -4,7 +4,8 @@
 
 #include "kee-import.h"
 #include "kee-menu.h"
-#include "kee-entry-list.h"
+//#include "kee-entry-list.h"
+#include "kee-entry-store.h"
 #include "camera.h"
 #include "scan.h"
 #include "err.h"
@@ -30,6 +31,7 @@ struct _KeeImport {
 	GtkStack *stack;
 	GtkBox *viewbox;
 	GtkWidget *toggler_text;
+	GtkTextBuffer *import_content;
 };
 
 G_DEFINE_TYPE(KeeImport, kee_import, GTK_TYPE_BOX);
@@ -99,6 +101,7 @@ static void kee_import_init(KeeImport *o) {
 	o->viewbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
 	/// \todo remember to reset this
 	o->cmd_accept = 0xff;
+	o->import_content = gtk_text_buffer_new(NULL);
 }
 
 static void kee_import_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, KeeImport *import) {
@@ -142,28 +145,38 @@ static int check_cmd(KeeImport *o, char cmd) {
 }
 
 
-static int import_ledger(KeeImport *o, const char *in, size_t in_len) {
-	int r;
-	struct kee_ledger_t ledger;
+//static int import_ledger(KeeImport *o, const char *in, size_t in_len) {
+//	int r;
+//	struct kee_ledger_t ledger;
+//
+//	r = kee_ledger_parse_open(&ledger, in, in_len);
+//	if (r) {
+//		return r;
+//	}
+//
+//	return ERR_OK;
+//}
 
-	r = kee_ledger_parse_open(&ledger, in, in_len);
-	if (r) {
-		return r;
-	}
-
-	return ERR_OK;
-}
-
-static void kee_import_handle_import_data_accept(KeeImport *o, GString *v, GtkStack *stack) {
+/// \todo too long, split up
+static void kee_import_handle_import_data_accept(GtkActionable *actn, void *null, KeeImport *o) {
 	int r;
 	char *s;
 	size_t c;
 	struct kee_transport_t trans;
+	GtkTextIter start;
+	GtkTextIter end;
 	char b[1024];
+	GVariant *v;
+	GAction *act;
 
-	s = (char*)v->str;
+	gtk_text_buffer_get_start_iter(o->import_content, &start);
+	gtk_text_buffer_get_end_iter(o->import_content, &end);
+	s = gtk_text_buffer_get_text(o->import_content, &start, &end, false);
 
-	c = strlen(s) + 1;
+	//s = (char*)v->str;
+
+	//c = strlen(s) + 1;
+	c = strlen(s);
 	//r = kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, c);
 	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_IMPORT, 0);
 	if (r) {
@@ -184,7 +197,9 @@ static void kee_import_handle_import_data_accept(KeeImport *o, GString *v, GtkSt
 
 	switch(*trans.cmd) {
 		case KEE_CMD_LEDGER:
-			r = import_ledger(o, b, c);
+			v = g_variant_new_fixed_array(G_VARIANT_TYPE_BYTE, b, c, 1);
+			act = g_action_map_lookup_action(G_ACTION_MAP(o->win), "ledger");
+			g_action_activate(act, v);
 			break;
 		default:
 			r = ERR_FAIL;
@@ -276,12 +291,14 @@ static GtkWidget* kee_import_build_import_text(KeeImport *o, GtkStack *stack) {
 	GtkWidget *butt;
 	GAction *act;
 	GtkApplication *gapp;
+	GtkTextBuffer *buf;
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	gapp = gtk_window_get_application(GTK_WINDOW(o->win));
 
-	txt = GTK_TEXT_VIEW(gtk_text_view_new());
+	//txt = GTK_TEXT_VIEW(gtk_text_view_new());
+	txt = GTK_TEXT_VIEW(gtk_text_view_new_with_buffer(o->import_content));
 	gtk_widget_set_vexpand(GTK_WIDGET(txt), true);
 	gtk_box_append(GTK_BOX(box), GTK_WIDGET(txt));
 
@@ -293,11 +310,13 @@ static GtkWidget* kee_import_build_import_text(KeeImport *o, GtkStack *stack) {
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "app.import_data_accept");
 	gtk_box_append(GTK_BOX(box), butt);
 
-	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_text), gtk_text_view_get_buffer(txt));
-	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_accept), stack);
+	buf = gtk_text_view_get_buffer(txt);
+	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_text), buf);
+	//g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_accept), stack);
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_focus), stack);
 	//g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_check), butt);
-	//g_signal_connect(butt, "clicked", G_CALLBACK(kee_import_handle_import_data_check), butt);
+	//g_signal_connect(butt, "clicked", G_CALLBACK(kee_import_handle_import_data_accept), o);
+	g_signal_connect(act, "activate", G_CALLBACK(kee_import_handle_import_data_accept), o);
 
 	return box;
 }
@@ -411,7 +430,7 @@ static gboolean kee_import_scan_code_handler(GstBus *bus, GstMessage *msg, gpoin
 				break;
 			}
 			strctr = gst_message_get_structure(msg);
-			/// \todo remove newline in result
+			/// \todo segfaults occasionally, find out how to persist the buffer across signal
 			code = gst_structure_get_string(strctr, "symbol");
 			code_str = g_string_new(code);
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "message %s: %d (%s) - decoded: %s", src, msg->type, gst_message_type_get_name(msg->type), code);

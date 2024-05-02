@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 #include "db.h"
+#include "ledger.h"
 
 G_BEGIN_DECLS
 
@@ -11,6 +12,8 @@ G_DECLARE_FINAL_TYPE(KeeEntryStore, kee_entry_store, KEE, ENTRY_STORE, GObject);
 
 KeeEntryStore* kee_entry_store_new(struct db_ctx *db);
 void kee_entry_store_set_resolve(KeeEntryStore *o, const char *locator);
+//int kee_entry_store_add(KeeEntryStore *o, struct kee_ledger_t *ledger);
+int kee_entry_store_add(KeeEntryStore *o, GVariant *v);
 
 G_END_DECLS
 

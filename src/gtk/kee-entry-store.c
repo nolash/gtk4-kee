@@ -140,3 +140,24 @@ void kee_entry_store_finalize(GObject *go) {
 	free(o->resolver.locator);
 	free(o->last);
 }
+
+int kee_entry_store_add(KeeEntryStore *o, GVariant *v) {
+	int r;
+	struct kee_ledger_t ledger;
+	const char *b;
+	size_t c;
+
+	c = (size_t)g_variant_n_children(v);
+	b = (const char*)g_variant_get_data(v);
+	r = kee_ledger_parse_open(&ledger, b, c);
+	if (r) {
+		return r;
+	}
+
+	r = kee_ledger_put(&ledger, o->db);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	return ERR_OK;
+}

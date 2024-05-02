@@ -944,6 +944,7 @@ static size_t db_key(enum DbKey pfx, struct timespec *ts, char *out, size_t offs
 	return offset + 1 + c;
  }
 
+/// \todo atomic put for ledger and items!!
 int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	int r;
 	size_t c;
