@@ -119,3 +119,8 @@ Here is some background if you need:
 * [PKG_CONFIG_PATH](https://man.archlinux.org/man/pkgconf.1.en#ENVIRONMENT)
 * [GST_PLUGIN_PATH](https://gstreamer.freedesktop.org/documentation/gstreamer/running.html?gi-language=c)
 * [cargo-c](https://github.com/lu-zero/cargo-c)
+
+
+## License
+
+[GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt)
