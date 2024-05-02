@@ -144,7 +144,9 @@ void kee_entry_store_finalize(GObject *go) {
 int kee_entry_store_add(KeeEntryStore *o, GVariant *v) {
 	int r;
 	struct kee_ledger_t ledger;
+	struct kee_ledger_item_t *item;
 	const char *b;
+	enum kee_ledger_state_e item_state;
 	size_t c;
 
 	c = (size_t)g_variant_n_children(v);
@@ -154,9 +156,25 @@ int kee_entry_store_add(KeeEntryStore *o, GVariant *v) {
 		return r;
 	}
 
-	r = kee_ledger_put(&ledger, o->db);
-	if (r) {
-		return ERR_FAIL;
+	item = ledger.last_item;
+	item_state = kee_ledger_item_state(item);
+
+	switch (item_state) {
+		case KEE_LEDGER_STATE_FINAL:
+			r = kee_ledger_put(&ledger, o->db);
+			if (r) {
+				return ERR_FAIL;
+			}
+			break;
+		case KEE_LEDGER_STATE_RESPONSE:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "detected response state");
+			break;
+		case KEE_LEDGER_STATE_REQUEST:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "detected request state, ignoring");
+			break;
+		default:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "invalid item state after parse");
+			return ERR_FAIL;
 	}
 
 	return ERR_OK;

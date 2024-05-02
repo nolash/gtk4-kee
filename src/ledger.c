@@ -18,7 +18,7 @@
 char zero_content[64];
 
 /// \todo consolidate with get_message_data
-static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *out_digest, char *out_data, size_t *out_len, enum kee_item_serialize_mode_e mode) {
+static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *out_digest, char *out_data, size_t *out_len, enum kee_ledger_state_e mode) {
 	int r;
 	size_t c;
 	asn1_node root;
@@ -77,7 +77,7 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 //		return NULL;
 //	}
 
-	if (mode == KEE_LEDGER_ITEM_SERIALIZE_FINAL) {
+	if (mode == KEE_LEDGER_STATE_FINAL) {
 		r = asn1_copy_node(root, "Kee.KeeEntry.signatureResponse", item, "signatureResponse");
 		if (r != ASN1_SUCCESS) {
 			printf("%d (%s) %s\n", r, err, asn1_strerror(r));
@@ -92,7 +92,7 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 		}
 	}
 
-	if (mode > KEE_LEDGER_ITEM_SERIALIZE_REQUEST) {
+	if (mode > KEE_LEDGER_STATE_REQUEST) {
 		r = asn1_copy_node(root, "Kee.KeeEntry.signatureRequest", item, "signatureRequest");
 		if (r != ASN1_SUCCESS) {
 			printf("%d (%s) %s\n", r, err, asn1_strerror(r));
@@ -153,7 +153,7 @@ static int verify_item_data(struct kee_ledger_t *ledger, const char* item_data, 
 	if (item_data_len) {
 		r = calculate_digest_algo(item_data, item_data_len, b, GCRY_MD_SHA512);
 		if (r) {
-			return NULL;
+			return 1;
 		}
 
 		r = gpg_store_verify(sig_data, b, pubkey_data);
@@ -237,7 +237,7 @@ static int verify_item_asn(struct kee_ledger_t *ledger, asn1_node item, const ch
 
 	if (c) {
 		c = 1024;
-		p = get_message_asn(ledger, item, p, p+64, &c, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
+		p = get_message_asn(ledger, item, p, p+64, &c, KEE_LEDGER_STATE_RESPONSE);
 		if (p == NULL) {
 			return 1;
 		}
@@ -248,7 +248,7 @@ static int verify_item_asn(struct kee_ledger_t *ledger, asn1_node item, const ch
 		}
 	}
 
-	return;
+	return 0;
 }
 
 static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
@@ -270,34 +270,34 @@ static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
 	return ERR_OK;
 }
 
-static int kee_ledger_item_digest(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, enum kee_item_serialize_mode_e mode, char *out) {
-	char *p;
-	int r;
-	char b[1024];
-	size_t c;
-
-	p = (char*)b;
-//	r = kee_ledger_digest(ledger, p);
+//static int kee_ledger_item_digest(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, enum kee_ledger_state_e mode, char *out) {
+//	char *p;
+//	int r;
+//	char b[1024];
+//	size_t c;
+//
+//	p = (char*)b;
+////	r = kee_ledger_digest(ledger, p);
+////	if (r) {
+////		return ERR_FAIL;
+////	}
+//	memcpy(p, ledger->digest, DIGEST_LENGTH);
+//	p += DIGEST_LENGTH;
+//
+//	c = 1024;
+//	r = kee_ledger_item_serialize(item, p, &c, mode);
 //	if (r) {
 //		return ERR_FAIL;
 //	}
-	memcpy(p, ledger->digest, DIGEST_LENGTH);
-	p += DIGEST_LENGTH;
-
-	c = 1024;
-	r = kee_ledger_item_serialize(item, p, &c, mode);
-	if (r) {
-		return ERR_FAIL;
-	}
-
-	r = calculate_digest_algo(b, c + DIGEST_LENGTH, out, GCRY_MD_SHA512);
-	if (r) {
-		return ERR_FAIL;
-	}
-
-	return ERR_OK;
-}
-
+//
+//	r = calculate_digest_algo(b, c + DIGEST_LENGTH, out, GCRY_MD_SHA512);
+//	if (r) {
+//		return ERR_FAIL;
+//	}
+//
+//	return ERR_OK;
+//}
+//
 
 
 void kee_ledger_item_apply_cache(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item) {
@@ -595,7 +595,7 @@ int kee_ledger_serialize(struct kee_ledger_t *ledger, char *out, size_t *out_len
 	return 0;
 }
 
-int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t *out_len, enum kee_item_serialize_mode_e mode) {
+int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t *out_len, enum kee_ledger_state_e mode) {
 	int r;
 	char err[1024];
 	asn1_node node;
@@ -681,7 +681,7 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 		return r;
 	}
 
-	if (mode == KEE_LEDGER_ITEM_SERIALIZE_REQUEST) {
+	if (mode == KEE_LEDGER_STATE_REQUEST) {
 		signature_request = zero_content;
 		c = 0;
 	} else {
@@ -704,7 +704,7 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 		return r;
 	}
 
-	if (mode < KEE_LEDGER_ITEM_SERIALIZE_FINAL) {
+	if (mode < KEE_LEDGER_STATE_FINAL) {
 		signature_response = zero_content;
 		c = 0;
 	} else {
@@ -730,16 +730,16 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 	char *p;
 	size_t c;
 	size_t l;
-	enum kee_item_serialize_mode_e mode;
+	enum kee_ledger_state_e mode;
 
 	p = out;
 	c = *out_len;
 	l = *out_len;
 	*out_len = 0;
 
-	mode = KEE_LEDGER_ITEM_SERIALIZE_REQUEST;
+	mode = KEE_LEDGER_STATE_REQUEST;
 	if (item->initiator == BOB) {
-		mode = KEE_LEDGER_ITEM_SERIALIZE_RESPONSE;
+		mode = KEE_LEDGER_STATE_RESPONSE;
 	}
 
 	if (memcmp(item->alice_signature, zero_content, SIGNATURE_LENGTH)) {
@@ -800,7 +800,7 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 	}
 
 	c = 1024;
-	r = kee_ledger_item_serialize(ledger->last_item, b, &c, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
+	r = kee_ledger_item_serialize(ledger->last_item, b, &c, KEE_LEDGER_STATE_RESPONSE);
 	if (r) {
 		return ERR_FAIL;	
 	}
@@ -1063,7 +1063,7 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 			}
 		} else {
 			c = 960;
-			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_ITEM_SERIALIZE_RESPONSE);
+			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_STATE_RESPONSE);
 			if (r) {
 				return ERR_FAIL;
 			}
@@ -1078,7 +1078,7 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 		}
 		if (sig_request != NULL) {
 			c = 960;
-			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_STATE_REQUEST);
 			if (r) {
 				return ERR_FAIL;
 			}
@@ -1131,7 +1131,7 @@ int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx)
 	}
 
 	c = 928;
-	r = kee_ledger_item_serialize(item, v, &c, KEE_LEDGER_ITEM_SERIALIZE_FINAL);
+	r = kee_ledger_item_serialize(item, v, &c, KEE_LEDGER_STATE_FINAL);
 	if (r) {
 		return ERR_FAIL;
 	}
@@ -1141,4 +1141,31 @@ int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx)
 	}
 
 	return ERR_OK;	
+}
+
+
+enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item) {
+	char *sig_request;
+	char *sig_response;
+
+	enum kee_ledger_state_e state;
+
+	if (item->initiator == BOB) {
+		sig_request = item->bob_signature;
+		sig_response = item->alice_signature;
+	} else {
+		sig_request = item->bob_signature;
+		sig_response = item->alice_signature;
+	}
+
+	state = KEE_LEDGER_STATE_REQUEST;
+	if (memcmp(sig_request, zero_content, SIGNATURE_LENGTH)) {
+		if (memcmp(sig_response, zero_content, SIGNATURE_LENGTH)) {
+			state = KEE_LEDGER_STATE_FINAL;	
+		} else {
+			state = KEE_LEDGER_STATE_RESPONSE;	
+		}
+	}
+
+	return state;
 }

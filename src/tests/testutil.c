@@ -226,7 +226,7 @@ size_t kee_test_get_ledger_item_data(struct kee_test_t *t, int idx, char **out) 
 	}
 
 	t->ledger_item_bytes_len = 1024;
-	r = kee_ledger_item_serialize(item, t->ledger_item_bytes, &t->ledger_item_bytes_len, KEE_LEDGER_ITEM_SERIALIZE_REQUEST);
+	r = kee_ledger_item_serialize(item, t->ledger_item_bytes, &t->ledger_item_bytes_len, KEE_LEDGER_STATE_REQUEST);
 	if (r) {
 		return 0;
 	}
