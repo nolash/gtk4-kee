@@ -47,19 +47,6 @@ There is no magic pathfinder implemented currently. Thus, you must configure the
 Here is what I use in my local setup.
 
 
-### varint
-
-```
-git clone https://github.com/tidwall/varint.c
-cd varint.c
-git checkout 7e1f7067eaf6ee114d865c99a8f5f01c813f3a61
-gcc -c varint.c
-gcc -shared -o libvarint.so varint.o
-``` 
-
-The repository root directory will be your include and ld path.
-
-
 ### libcmime
 
 I can't seem to set the cmake build prefix so that the `libcmime.pc` file is generated correctly. Unfortunately, `pkg-config` is thus off the table.
@@ -100,10 +87,10 @@ cargo cbuild -p gst-plugin-gtk4
 
 set -x
 export GST_PLUGIN_PATH=/home/lash/src/build/gst-plugins-rs/0.9.13/target/x86_64-unknown-linux-gnu/debug/
-export LIBRARY_PATH=$LIBRARY_PATH:/home/lash/src/build/varint.c/0.1.0:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lash/src/build/varint.c/0.1.0:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64
+export LIBRARY_PATH=$LIBRARY_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64/pkgconfig
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/home/lash/src/build/varint.c/0.1.0:/home/lash/src/build/libcmime/0.2.2/build/usr/local/include
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/include
 
 make run
 
