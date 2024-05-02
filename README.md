@@ -39,6 +39,7 @@ The code expects objects from these source trees to be available somehow:
 | libcmime | [https://github.com/spmfilter/libcmime.git](https://github.com/spmfilter/libcmime.git) `(dd21eb096d162656e30243f60fc4bc35ad39ae6e)` | `0.2.2` | `18a8d46ebec575a79212acc2dc6af7fd7bdeba3a9b85a70677ed0b7785c5c04e` |
 | gst-plugins-rs | [https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs) `(a84bbc66f30573b62871db163c48afef75adf6ec)` | `1.22.10 (gstreamer)` | `691d5d52f59ec6322a2f6ddc1039ef47c9ac5e6328e2df1ef920629b46c659df` |
 
+You can close `liblash` with `git clone git://holbrook.no/liblash`
 
 ## Building
 
@@ -86,11 +87,12 @@ cargo cbuild -p gst-plugin-gtk4
 #!/bin/bash
 
 set -x
-export GST_PLUGIN_PATH=/home/lash/src/build/gst-plugins-rs/0.9.13/target/x86_64-unknown-linux-gnu/debug/
-export LIBRARY_PATH=$LIBRARY_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64
+
+export GST_PLUGIN_PATH=/home/lash/src/build/gst-plugins-rs/target/x86_64-unknown-linux-gnu/debug/
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64/pkgconfig
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/include
+export LIBRARY_PATH=$LIBRARY_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64:/home/lash/src/home/liblash/src
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/lib64:/home/lash/src/home/liblash/src
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/home/lash/src/build/libcmime/0.2.2/build/usr/local/include:/home/lash/src/home/liblash/src
 
 make run
 
