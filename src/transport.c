@@ -267,7 +267,8 @@ int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len
 		/// \todo handle this crop better, should not require any of these copies
 		*trans->cmd = *out;
 		memcpy(trans->data, out+1, *out_len);
-		memcpy(out, trans->data, (*out_len)-1);
+		(*out_len)--;
+		memcpy(out, trans->data, *out_len);
 	}
 
 	return ERR_OK;
