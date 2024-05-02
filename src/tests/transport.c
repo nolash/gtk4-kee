@@ -128,6 +128,30 @@ int test_msg() {
 	return 0;
 }
 
+int test_obj() {
+	int r;
+	char *p;
+	char b[1024];
+	char out[1024];
+	size_t out_len;
+	size_t c;
+
+	p = (char*)b;
+	strcpy(p, "eNpjMmhiLDJonMTDUlqcwsDEwgykWBQYCAAWBR21LdkZ/4/1/5ztaiNr4Ggi7KRbkNK8f8HP");
+	p += strlen(b);
+	*p = 0x0a;
+	p++;
+	strcpy(p, "rriOpLTn61gcGCgEBo23KDeEiRHoJwF1IIMlBeRuig2k3ARGRgYWBgYA8BQXsQ==");
+	c = strlen(b);
+	
+	out_len = 1024;
+	r = unpack(b, c, out, &out_len);
+	if (r) {
+		return 1;
+	}
+	return 0;
+}
+
 int main() {
 	int r;
 
@@ -140,6 +164,10 @@ int main() {
 		return 1;
 	}
 	r = test_msg();
+	if (r) {
+		return 1;
+	}
+	r = test_obj();
 	if (r) {
 		return 1;
 	}

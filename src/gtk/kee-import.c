@@ -8,6 +8,8 @@
 #include "camera.h"
 #include "scan.h"
 #include "err.h"
+#include "transport.h"
+
 
 typedef struct {
 } KeeImportPrivate;
@@ -126,13 +128,32 @@ static void kee_import_handle_import_data_text(KeeImport *o, GString *v, GtkText
 	g_action_activate(act, NULL);
 }
 
-static void kee_import_handle_import_data_accept(KeeImport *o, const char *data) {
+static void kee_import_handle_import_data_accept(KeeImport *o, GString *v, GtkStack *stack) {
+	int r;
+	char *s;
+	size_t c;
+	struct kee_transport_t trans;
+	char b[1024];
+
+	s = (char*)v->str;
+
+	c = strlen(s) + 1;
+	r = kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, c);
+	if (r) {
+		return;
+	}
+
+	c = 1024;
+	r = kee_transport_read(&trans, b, &c);
+	if (r) {
+		return;
+	}
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import accept");
 }
 
-static void kee_import_handle_import_data_check(KeeImport *o, const char *data, GtkActionable *act) {
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "checking import data");
-}
+//static void kee_import_handle_import_data_check(KeeImport *o, const char *data, GtkActionable *act) {
+//	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "checking import data");
+//}
 
 static void kee_import_handle_scan_select(GActionGroup *act, char *action_name, gpointer user_data, GtkStack *stack) {
 	GVariant *v;
@@ -227,10 +248,10 @@ static GtkWidget* kee_import_build_import_text(KeeImport *o, GtkStack *stack) {
 	gtk_box_append(GTK_BOX(box), butt);
 
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_text), gtk_text_view_get_buffer(txt));
-	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_accept), NULL);
+	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_accept), stack);
 	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_focus), stack);
-	g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_check), butt);
-	g_signal_connect(butt, "clicked", G_CALLBACK(kee_import_handle_import_data_check), butt);
+	//g_signal_connect(o, "data_available", G_CALLBACK(kee_import_handle_import_data_check), butt);
+	//g_signal_connect(butt, "clicked", G_CALLBACK(kee_import_handle_import_data_check), butt);
 
 	return box;
 }

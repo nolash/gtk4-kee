@@ -128,16 +128,18 @@ int pack(char *in, size_t in_len, char *out, size_t *out_len) {
 int unpack(char *in, size_t in_len, char *out, size_t *out_len) {
 	int r;
 	char *buf;
+	size_t c;
 
 	buf = malloc(*out_len);
 
-	r = unpack_decode(in, in_len, buf, out_len);
+	c = *out_len;
+	r = unpack_decode(in, in_len, buf, &c);
 	if (r) {
 		free(buf);	
 		return ERR_FAIL;
 	}
 
-	r = unpack_decompress(buf, *out_len, out, out_len);
+	r = unpack_decompress(buf, c, out, out_len);
 	if (r) {
 		free(buf);	
 		return ERR_FAIL;
