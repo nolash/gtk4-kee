@@ -155,15 +155,34 @@ int kee_transport_single(struct kee_transport_t *trans, enum kee_transport_mode_
 	if (cmd >= KEE_N_CMD) {
 		return ERR_INVALID_CMD;	
 	}
-
-	trans->chunker.data_len = data_len + 1;
-	trans->cmd = (char*)trans->chunker.data;
+	if (data_len == 0) {
+		trans->chunker.data_len = KEE_TRANSPORT_CHUNK_MAX_SIZE;
+	} else {
+		trans->chunker.data_len = data_len + 1;
+	}
+	trans->data = trans->chunker.data;
+	trans->cmd = (char*)trans->data;
 	trans->mode = mode;
 	*(trans->cmd) = cmd;
 	trans->chunker.crsr = 1;
 
 	return ERR_OK;
 }
+
+//int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode, const char *data, size_t data_len) {
+//int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode) {
+//	memset(trans, 0, sizeof(struct kee_transport_t));
+//	//memcpy(trans->chunker.data, data, data_len);
+//	//if (*data & KEE_CMD_CHUNKED) {
+//	//	return ERR_UNSUPPORTED;
+//	//}
+//	trans->chunker.crsr = 1;
+//	trans->chunker.data_len = KEE_TRANSPORT_CHUNK_MAX_SIZE;
+//	trans->mode = mode;
+//	*trans->cmd = KEE_CMD_IMPORT;
+//
+//	return ERR_OK;
+//}
 
 void kee_transport_set_response(struct kee_transport_t *trans) {
 	if (trans->state == 0) {
@@ -175,7 +194,7 @@ int kee_transport_write(struct kee_transport_t *trans, const char *in, size_t in
 	if (trans->state) {
 		return ERR_FAIL;
 	}
-	memcpy(trans->chunker.data + trans->chunker.crsr, in, in_len);
+	memcpy(trans->data + trans->chunker.crsr, in, in_len);
 	trans->chunker.crsr += in_len;
 	return ERR_OK;
 }
@@ -222,34 +241,33 @@ int kee_transport_next(struct kee_transport_t *trans, char *out, size_t *out_len
 	return 0;	
 }
 
-int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode, const char *data, size_t data_len) {
-	memset(trans, 0, sizeof(struct kee_transport_t));
-	memcpy(trans->chunker.data, data, data_len);
-	if (*data & KEE_CMD_CHUNKED) {
-		return ERR_UNSUPPORTED;
-	}
-	trans->chunker.crsr = 1;
-	trans->chunker.data_len = data_len - 1;
-	trans->mode = mode;
-
-	return ERR_OK;
-}
 
 int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len) {
 	int r;
 
+	if (*trans->cmd == KEE_CMD_IMPORT) {
+		trans->data++;
+	}
+
 	switch (trans->mode) {
 		case KEE_TRANSPORT_BASE64:
-			r = unpack(trans->chunker.data, trans->chunker.data_len, out, out_len);
+			r = unpack(trans->data, trans->chunker.data_len, out, out_len);
 			if (r) {
 				return ERR_FAIL;
 			}
 			break;
 		case KEE_TRANSPORT_RAW:
-			memcpy(out, trans->chunker.data, trans->chunker.data_len);
+			memcpy(out, trans->data, trans->chunker.data_len);
 			break;
 		default:
 			return ERR_FAIL;
+	}
+
+	if (*trans->cmd == KEE_CMD_IMPORT) {
+		/// \todo handle this crop better, should not require any of these copies
+		*trans->cmd = *out;
+		memcpy(trans->data, out+1, *out_len);
+		memcpy(out, trans->data, (*out_len)-1);
 	}
 
 	return ERR_OK;

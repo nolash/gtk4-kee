@@ -9,6 +9,7 @@
 #include "scan.h"
 #include "err.h"
 #include "transport.h"
+#include "ledger.h"
 
 
 typedef struct {
@@ -20,6 +21,8 @@ struct _KeeImportClass {
 
 struct _KeeImport {
 	GtkWidget parent;
+	char cmd_accept;
+	char cmd_count;
 	KeeMenu *win;
 	GListModel *camera_list;
 	struct kee_camera_devices camera_device;
@@ -94,6 +97,8 @@ static void kee_import_init(KeeImport *o) {
 	memset(&o->scan, 0, sizeof(struct kee_scanner));
 	o->stack = GTK_STACK(gtk_stack_new());
 	o->viewbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_VERTICAL, 0));
+	/// \todo remember to reset this
+	o->cmd_accept = 0xff;
 }
 
 static void kee_import_handle_camera_change(GtkDropDown *chooser, GParamSpec *spec, KeeImport *import) {
@@ -128,6 +133,27 @@ static void kee_import_handle_import_data_text(KeeImport *o, GString *v, GtkText
 	g_action_activate(act, NULL);
 }
 
+static void accept_cmd(KeeImport *o, char cmd) {
+	o->cmd_accept = cmd;
+}
+
+static int check_cmd(KeeImport *o, char cmd) {
+	return 1;
+}
+
+
+static int import_ledger(KeeImport *o, const char *in, size_t in_len) {
+	int r;
+	struct kee_ledger_t ledger;
+
+	r = kee_ledger_parse_open(&ledger, in, in_len);
+	if (r) {
+		return r;
+	}
+
+	return ERR_OK;
+}
+
 static void kee_import_handle_import_data_accept(KeeImport *o, GString *v, GtkStack *stack) {
 	int r;
 	char *s;
@@ -138,7 +164,14 @@ static void kee_import_handle_import_data_accept(KeeImport *o, GString *v, GtkSt
 	s = (char*)v->str;
 
 	c = strlen(s) + 1;
-	r = kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, c);
+	//r = kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, c);
+	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_IMPORT, 0);
+	if (r) {
+		return;
+	}
+
+	//r = kee_transport_read(&trans, b, &c);
+	r = kee_transport_write(&trans, s, c);
 	if (r) {
 		return;
 	}
@@ -148,7 +181,20 @@ static void kee_import_handle_import_data_accept(KeeImport *o, GString *v, GtkSt
 	if (r) {
 		return;
 	}
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import accept");
+
+	switch(*trans.cmd) {
+		case KEE_CMD_LEDGER:
+			r = import_ledger(o, b, c);
+			break;
+		default:
+			r = ERR_FAIL;
+	}
+
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "failed import");
+	} else {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "accepted import");
+	}
 }
 
 //static void kee_import_handle_import_data_check(KeeImport *o, const char *data, GtkActionable *act) {

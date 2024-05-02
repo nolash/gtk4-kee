@@ -827,7 +827,7 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 	return ERR_OK;
 }
 
-int kee_ledger_parse_open(struct kee_ledger_t *ledger, char *in, size_t in_len) {
+int kee_ledger_parse_open(struct kee_ledger_t *ledger, const char *in, size_t in_len) {
 	int r;
 	char err[1024];
 	char b[1024];

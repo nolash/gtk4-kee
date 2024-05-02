@@ -57,11 +57,18 @@ int test_pack() {
 		return 1;
 	}
 
-	r = kee_transport_import(&hi, KEE_TRANSPORT_BASE64, out, c);
+	//r = kee_transport_import(&hi, KEE_TRANSPORT_BASE64, c);
+	r = kee_transport_single(&hi, KEE_TRANSPORT_BASE64, KEE_CMD_IMPORT, 0);
 	if (r) {
 		return 1;
 	}
 
+	r = kee_transport_write(&hi, out, c);
+	if (r) {
+		return 1;
+	}
+
+	c = 1024;
 	r = kee_transport_read(&hi, out, &c);
 	if (r) {
 		return 1;

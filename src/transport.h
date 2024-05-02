@@ -11,11 +11,12 @@ enum kee_transport_mode_e {
 };
 
 enum kee_cmd_e { // max number 31
-	KEE_CMD_PACKED = 0,
+	KEE_CMD_IMPORT = 0,
 	KEE_CMD_ID,
 	KEE_CMD_LEDGER,
 	KEE_CMD_DELTA,
 	KEE_CMD_CLEAR,
+	KEE_CMD_PACKED,
 	KEE_N_CMD,
 	KEE_INVALID_CMD,
 };
@@ -29,6 +30,7 @@ struct kee_transport_t {
 	struct kee_chunk_t chunker;
 	short checksum;
 	char state;
+	char *data;
 };
 
 /**
@@ -61,7 +63,7 @@ int kee_transport_single(struct kee_transport_t *trans, enum kee_transport_mode_
 int kee_transport_write(struct kee_transport_t *trans, const char *in, size_t in_len);
 int kee_transport_next(struct kee_transport_t *trans, char *out, size_t *out_len);
 void kee_transport_set_response(struct kee_transport_t *trans);
-int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode, const char *data, size_t data_len);
+//int kee_transport_import(struct kee_transport_t *trans, enum kee_transport_mode_e mode, size_t decoded_len);
 int kee_transport_read(struct kee_transport_t *trans, char *out, size_t *out_len);
 
 //int kee_transport_encode_ledger(struct kee_transport_t *trans_ledger, struct kee_transport_t *trans_item, struct kee_transport_t *trans_out, enum kee_transport_mode_e mode);

@@ -33,26 +33,26 @@ static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 	kee_menu_prev(menu);
 }
 
-static void ui_handle_import(KeeImport *import, GString *v, KeeMenu *menu) {
-	//GtkWidget *widget;
-	int r;
-	struct kee_transport_t trans;
-	char *s;
-
-	s = (char*)v->str;
-	r = kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, strlen(s) + 1);
-	if (r) {
-		debug_log(DEBUG_INFO, "invalid input for transport");
-		return;
-	}
-	//kee_transport_read(&trans);
-
-	//switch(kee_transport_cmd(&trans)) {
-	//	case KEE_CMD_DELTA:
-	//		widget = kee_menu_next("item");
-	//}
-
-}
+//static void ui_handle_import(KeeImport *import, GString *v, KeeMenu *menu) {
+//	//GtkWidget *widget;
+//	int r;
+//	struct kee_transport_t trans;
+//	char *s;
+//
+//	s = (char*)v->str;
+//	r = kee_transport_import(&trans, KEE_TRANSPORT_BASE64, s, strlen(s) + 1);
+//	if (r) {
+//		debug_log(DEBUG_INFO, "invalid input for transport");
+//		return;
+//	}
+//	//kee_transport_read(&trans);
+//
+//	//switch(kee_transport_cmd(&trans)) {
+//	//	case KEE_CMD_DELTA:
+//	//		widget = kee_menu_next("item");
+//	//}
+//
+//}
 
 //static GtkWidget* ui_build_view(KeeMenu *menu) {
 //	GtkListItemFactory *factory;
@@ -93,7 +93,7 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 
 	import = kee_import_new(win);
 	kee_menu_add(win, "import", GTK_WIDGET(import));
-	g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import), win);
+	//g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import), win);
 
 	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	kee_menu_add(win, "entry", widget);
