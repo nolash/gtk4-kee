@@ -200,12 +200,9 @@ static char *key_filename(struct gpg_store *gpg, char *path) {
 
 static int key_from_data(gcry_sexp_t *key, const char *indata, size_t indata_len) {
 	gcry_error_t e;
-	size_t c;
 
-	c = 0;
-	e = gcry_sexp_sscan(key, &c, indata, indata_len);
+	e = gcry_sexp_new(key, indata, indata_len, 0);
 	if (e != GPG_ERR_NO_ERROR) {
-		//debug_log(DEBUG_DEBUG, indata);
 		return ERR_KEYFAIL;
 	}
 	return ERR_OK;
@@ -502,6 +499,7 @@ void gpg_store_init(struct gpg_store *gpg, const char *path) {
 	}
 }
 
+/// \todo conceal passphrase hashing
 int gpg_store_check(struct gpg_store *gpg, const char *passphrase) { 
 	int r;
 	const char *v;
@@ -562,7 +560,7 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		char pp[4096];
 		//sprintf(pp, "found key %s in %s", (unsigned char*)m_fingerprint, p.c_str());
 		sprintf(pp, "found key %s in path: %s", fingerprint, p);
-		//debug_log(DEBUG_INFO, pp);
+		debug_log(DEBUG_INFO, pp);
 	}
 	//r = gpg_sign(&o, &k, sign_test);
 	//return r;

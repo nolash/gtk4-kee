@@ -86,6 +86,7 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	char *out;
 	size_t out_len;
 	size_t c;
+	char passphrase_hash[32];
 	GVariant *transport_data;
 
 	buf = gtk_entry_get_buffer(o->form->uoa);
@@ -130,7 +131,10 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 
 	buf = gtk_entry_get_buffer(o->form->passphrase);
 	b = (char*)gtk_entry_buffer_get_text(buf);
-	r = kee_ledger_sign(&o->ledger, o->ledger.last_item, o->gpg, b);
+	gpg_store_digest(o->gpg, passphrase_hash, b);
+
+	memcpy(o->ledger.pubkey_alice, o->gpg->public_key, PUBKEY_LENGTH);
+	r = kee_ledger_sign(&o->ledger, o->ledger.last_item, o->gpg, passphrase_hash);
 	if (r) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail entry sign");
 		return;

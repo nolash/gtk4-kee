@@ -7,6 +7,7 @@
 #include "cadiz.h"
 #include "gpg.h"
 #include "db.h"
+#include "digest.h"
 
 enum kee_initiator_e {
 	ALICE,
@@ -28,8 +29,8 @@ struct kee_ledger_item_t {
 	struct timespec time;
 	enum kee_initiator_e initiator;
 	char response;
-	char alice_signature[64];
-	char bob_signature[64];
+	char alice_signature[SIGNATURE_LENGTH];
+	char bob_signature[SIGNATURE_LENGTH];
 	struct kee_content_t content;
 };
 
@@ -42,10 +43,10 @@ struct kee_ledger_cache_t {
 };
 
 struct kee_ledger_t {
-	char digest[64];
+	char digest[DIGEST_LENGTH];
 	struct kee_ledger_item_t *last_item;
-	char pubkey_alice[32];
-	char pubkey_bob[32];
+	char pubkey_alice[PUBKEY_LENGTH];
+	char pubkey_bob[PUBKEY_LENGTH];
 	char uoa_decimals;
 	char uoa[64];
 	struct kee_content_t content;
