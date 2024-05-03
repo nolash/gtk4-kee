@@ -24,7 +24,7 @@ enum gpg_find_mode_e {
 };
 
 struct gpg_store {
-	gcry_sexp_t *k;
+	gcry_sexp_t k;
 	size_t passphrase_digest_len;
 	char fingerprint[FINGERPRINT_LENGTH];
 	char public_key[PUBKEY_LENGTH];

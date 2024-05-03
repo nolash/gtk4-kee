@@ -19,6 +19,8 @@ from faker.providers import lorem
 import varint
 from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.codec.der.decoder import decode as der_decode
+from pygcrypt.gctypes.sexpression import SExpression
+from pygcrypt.gctypes.key import Key as GKey
 
 from testdata_asn1schema import KeeEntryHead
 from testdata_asn1schema import KeeEntry
@@ -84,6 +86,7 @@ class LedgerEntryContent(LedgerContent):
     pass
 
 
+# TODO: do everything with pygcrypt, or calc keygrip with pycryptodome 8|
 class LedgerSigner:
 
     def __init__(self, crypto_dir):
@@ -105,9 +108,9 @@ class LedgerSigner:
     def __write_key(self, keyname, outdir, pin):
         (pk, pubk) = self.keypair[keyname]
         wt = io.BytesIO()
-        wt.write(b"(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(1:q32:")
+        wt.write(b"(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(5:flags5:eddsa)(1:q32:")
         wt.write(pubk)
-        wt.write(b")))(11:private-key(3:ecc(5:curve7:Ed25519)(1:q32:")
+        wt.write(b")))(11:private-key(3:ecc(5:curve7:Ed25519)(5:flags5:eddsa)(1:q32:")
         wt.write(pubk)
         wt.write(b")(1:d32:")
         wt.write(pk)
@@ -117,6 +120,9 @@ class LedgerSigner:
         w = open(fp, 'wb')
         w.write(b)
         w.close()
+
+        sexp = SExpression(b)
+        gk = GKey(sexp)
 
         l = len(b)
         bl = l.to_bytes(4, byteorder='little')
@@ -133,8 +139,12 @@ class LedgerSigner:
         w.write(nonce + r)
         w.close()
 
+        # symlink key to keygrip
+        lp = os.path.join(self.crypto_dir, gk.keygrip)
+        os.symlink(fp, lp)
+
         wt = io.BytesIO()
-        wt.write(b"(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(1:q32:")
+        wt.write(b"(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(5:flags5:eddsa)(1:q32:")
         wt.write(pubk)
         wt.write(b"))))")
         b = wt.getvalue()
@@ -150,7 +160,6 @@ class LedgerSigner:
         pk_der = Crypto.IO.PKCS8.unwrap(pk_pkcs8)
         pk = Crypto.Util.asn1.DerOctetString().decode(pk_der[1], strict=True).payload
         pubk = k.public_key().export_key(format='raw')
-
 
         self.signer[keyname] = eddsa.new(k, 'rfc8032')
         self.keypair[keyname] = (pk, pubk)
@@ -461,7 +470,10 @@ if __name__ == '__main__':
         os.unlink('kee.key')
     except FileNotFoundError:
         pass
-    os.symlink(alice_key, 'kee.key')
+    alice_key_sym = 'kee.key'
+    os.symlink(alice_key, alice_key_sym)
+    alice_key_sym = os.path.join(crypto_dir, alice_key_sym)
+    os.symlink(alice_key, alice_key_sym)
 
     count_ledgers = os.environ.get('COUNT', '1')
 

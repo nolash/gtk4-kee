@@ -61,7 +61,8 @@ void kee_ledger_free(struct kee_ledger_t *ledger);
 void kee_ledger_item_free(struct kee_ledger_item_t *item);
 void kee_ledger_resolve(struct kee_ledger_t *ledger, Cadiz *cadiz);
 void kee_ledger_reset_cache(struct kee_ledger_t *ledger);
-int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase);
+//int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase);
+int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, const char *passphrase);
 enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item);
 
 void kee_ledger_item_init(struct kee_ledger_item_t *item);

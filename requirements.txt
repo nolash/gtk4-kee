@@ -4,3 +4,4 @@ faker~=24.0.0
 pycryptodome==3.20.0
 asn1ate~=0.6
 pyasn1~=0.5.0
+pygcrypt~=1.0.1

@@ -200,8 +200,10 @@ static char *key_filename(struct gpg_store *gpg, char *path) {
 
 static int key_from_data(gcry_sexp_t *key, const char *indata, size_t indata_len) {
 	gcry_error_t e;
+	size_t c;
 
-	e = gcry_sexp_new(key, indata, indata_len, 1);
+	c = 0;
+	e = gcry_sexp_sscan(key, &c, indata, indata_len);
 	if (e != GPG_ERR_NO_ERROR) {
 		//debug_log(DEBUG_DEBUG, indata);
 		return ERR_KEYFAIL;
@@ -309,15 +311,15 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 	}
 
 	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, NULL, 0);
-	m = (size_t)kl;
+	m = (size_t)kl + 1;
 	p = (char*)v + sizeof(int);
 	c = 0;
-	while (m > 0) {
-		kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, p, BUFLEN-m);
-		m -= (size_t)(kl + 1);
-		p += kl;
-		c += kl;
-	}
+//	while (m > 0) {
+//		kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, p, BUFLEN-m);
+//		m -= (size_t)(kl + 1);
+//		p += kl;
+//		c += kl;
+//	}
 	memcpy(v, &c, sizeof(int));
 
 	m = c;
@@ -400,6 +402,7 @@ int gpg_key_create(struct gpg_store *gpg, const char *passphrase) {
 	return ERR_OK;
 }
 
+/// \todo add key unload to destroy memory
 int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, const void *criteria) {
 	int r;
 	size_t c;
@@ -411,7 +414,7 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 			strcpy(path, gpg->path);
 			p = path + strlen(path);
 			strcpy(p, "kee.key");
-			r = key_from_file(gpg->k, path, passphrase);
+			r = key_from_file(&gpg->k, path, passphrase);
 			if (r) {
 				return ERR_FAIL;
 			}
@@ -424,7 +427,7 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 			if (r) {
 				return ERR_FAIL;
 			}
-			r = key_from_file(gpg->k, path, passphrase);
+			r = key_from_file(&gpg->k, path, passphrase);
 			if (r) {
 				return ERR_FAIL;
 			}
@@ -433,12 +436,12 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 			return ERR_FAIL;
 	}
 
-	p = (char*)gcry_pk_get_keygrip(*gpg->k, (unsigned char*)gpg->fingerprint);
+	p = (char*)gcry_pk_get_keygrip(gpg->k, (unsigned char*)gpg->fingerprint);
 	if (p == NULL) {
 		return ERR_KEYFAIL;
 	}
 
-	r = key_apply_public(gpg, *gpg->k);
+	r = key_apply_public(gpg, gpg->k);
 	if (r) {
 		return ERR_FAIL;
 	}
@@ -505,7 +508,9 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 	char d[1024];
 	gcry_sexp_t k;
 	char *p;
-	unsigned char fingerprint[20] = { 0x00 };
+	//unsigned char fingerprint[20] = { 0x00 };
+	unsigned char fingerprint[41] = { 0x00 };
+	//size_t fingerprint_len = 41;
 	size_t fingerprint_len = 41;
 	//char passphrase_hash[m_passphrase_digest_len];
 	char passphrase_hash[gpg->passphrase_digest_len];
@@ -525,39 +530,39 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 	gpgVersion = v;
 	sprintf(d, "Using gpg version: %s", gpgVersion);
 	debug_log(DEBUG_INFO, d);
-	//r = key_from_file(&k, p.c_str(), passphrase_hash);
-	//r = key_from_file(&k, p, passphrase_hash);
-	r = key_from_file(&k, gpg->path, passphrase_hash);
+//	r = key_from_file(&k, gpg->path, passphrase_hash);
+	//r = gpg_key_load(gpg, passphrase_hash, KEE_GPG_FIND_MAIN, NULL);
+	r = gpg_key_load(gpg, passphrase_hash, KEE_GPG_FIND_MAIN, NULL);
 	if (r == ERR_KEYFAIL) {
 		char pp[2048];
-		//sprintf(pp, "could not decrypt key in %s/key.bin", p.c_str());
-		sprintf(pp, "could not decrypt key in %s/key.bin", p);
+		sprintf(pp, "could not decrypt key in %s/kee.key", p);
 		debug_log(DEBUG_INFO, pp);
 		return 1;
 	}
 	if (r != ERR_OK) {
 		char pp[2048];
-		//sprintf(pp, "%s/key.bin", p.c_str());
-		sprintf(pp, "%s/key.bin", p);
+		sprintf(pp, "%s/kee.key", p);
 		r = key_create_file(gpg, &k, passphrase_hash);
 		if (r != ERR_OK) {
 			return r;
 		}
-		gcry_pk_get_keygrip(k, fingerprint);
-		//bin_to_hex(fingerprint, 20, (unsigned char*)m_fingerprint, &fingerprint_len);
-		bin_to_hex(fingerprint, 20, (unsigned char*)gpg->fingerprint, &fingerprint_len);
+		//gcry_pk_get_keygrip(k, fingerprint);
+		gcry_pk_get_keygrip(k, (unsigned char*)gpg->fingerprint);
+		//bin_to_hex(fingerprint, 20, (unsigned char*)gpg->fingerprint, &fingerprint_len);
+		bin_to_hex((unsigned char*)gpg->fingerprint, 20, (unsigned char*)fingerprint, &fingerprint_len);
 		char ppp[4096];
 		//sprintf(ppp, "created key %s from %s", m_fingerprint, pp);
-		sprintf(ppp, "created key %s from %s", gpg->fingerprint, pp);
+		sprintf(ppp, "created key %s from %s", fingerprint, pp);
 		debug_log(DEBUG_INFO, ppp);
 	} else {
-		gcry_pk_get_keygrip(k, fingerprint);
-		//bin_to_hex(fingerprint, 20, (unsigned char*)m_fingerprint, &fingerprint_len);
-		bin_to_hex(fingerprint, 20, (unsigned char*)gpg->fingerprint, &fingerprint_len);
+		//gcry_pk_get_keygrip(k, fingerprint);
+		gcry_pk_get_keygrip(k, (unsigned char*)gpg->fingerprint);
+		//bin_to_hex(fingerprint, 20, (unsigned char*)gpg->fingerprint, &fingerprint_len);
+		bin_to_hex((unsigned char*)gpg->fingerprint, 20, (unsigned char*)fingerprint, &fingerprint_len);
 		char pp[4096];
 		//sprintf(pp, "found key %s in %s", (unsigned char*)m_fingerprint, p.c_str());
-		sprintf(pp, "found key %s in %s", (unsigned char*)gpg->fingerprint, p);
-		debug_log(DEBUG_INFO, pp);
+		sprintf(pp, "found key %s in path: %s", fingerprint, p);
+		//debug_log(DEBUG_INFO, pp);
 	}
 	//r = gpg_sign(&o, &k, sign_test);
 	//return r;
@@ -571,7 +576,6 @@ int gpg_store_sign(struct gpg_store *gpg, char *data, size_t data_len, const cha
 int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, const char *passphrase, const char *fingerprint) {
 	int r;
 	size_t c;
-	gcry_sexp_t key;
 	gcry_sexp_t pnt;
 	gcry_sexp_t msg;
 	gcry_sexp_t sig;
@@ -583,7 +587,6 @@ int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, cons
 		return 1;
 	}
 
-	gpg->k = &key;
 	if (fingerprint == NULL) {
 		r = gpg_key_load(gpg, passphrase, KEE_GPG_FIND_MAIN, NULL);
 	} else {
@@ -599,7 +602,7 @@ int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, cons
 		return 1;
 	}
 
-	e = gcry_pk_sign(&sig, msg, *gpg->k);
+	e = gcry_pk_sign(&sig, msg, gpg->k);
 	if (e != GPG_ERR_NO_ERROR) {
 		return 1;
 	}
@@ -630,8 +633,7 @@ int gpg_store_sign_with(struct gpg_store *gpg, char *data, size_t data_len, cons
 	}
 	memcpy(gpg->last_signature + POINT_LENGTH, p, c);
 
-	gcry_sexp_release(*gpg->k);
-	gpg->k = NULL;
+	gcry_sexp_release(gpg->k);
 
 	return 0;
 }

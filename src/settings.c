@@ -25,7 +25,7 @@ int settings_new_from_xdg(struct kee_settings *z) {
 
 	memset(z, 0, sizeof(struct kee_settings));
 
-	z->key = (unsigned char*)".";
+	z->key = (unsigned char*)"./testdata_crypt";
 
 	z->data = malloc(KEE_SETTINGS_CAP);
 	p = z->data;

@@ -110,13 +110,13 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	buf = gtk_entry_get_buffer(o->form->bob_pubkey);
 	b = (char*)gtk_entry_buffer_get_text(buf);
 	c = hex2bin(b, (unsigned char*)o->ledger.pubkey_bob);
-//	if (c == 0) {
+	if (c == 0) {
 //		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "invalid counterparty public key data");
 //		return;
 //	} else if (c != PUBKEY_LENGTH) {
 //		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "wrong size for counterparty public key");
 //		return;
-//	}
+	}
 
 	o->state |= ENTRYSTATE_LOAD;
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding ledger entry");
@@ -125,6 +125,14 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	out = malloc(out_len);
 	if (out == NULL) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "memory for item serialization buffer for qr transport fail");
+		return;
+	}
+
+	buf = gtk_entry_get_buffer(o->form->passphrase);
+	b = (char*)gtk_entry_buffer_get_text(buf);
+	r = kee_ledger_sign(&o->ledger, o->ledger.last_item, o->gpg, b);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail entry sign");
 		return;
 	}
 
@@ -151,6 +159,7 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "read from qr transport renderer failed");
 		return;
 	}
+	/// \todo verify that this frees the buffer
 	transport_data = g_variant_new_take_string(out);
 
 	widget = gtk_widget_get_ancestor(GTK_WIDGET(o), GTK_TYPE_WINDOW);

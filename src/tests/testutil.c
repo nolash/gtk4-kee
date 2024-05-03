@@ -35,7 +35,8 @@ int kee_test_sign_request(struct kee_test_t *t) {
 	size_t c;
 
 	c = 1024;
-	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
+	//r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
+	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, "1234");
 	if (r) {
 		return 1;
 	}
@@ -64,7 +65,8 @@ int kee_test_sign_response(struct kee_test_t *t) {
 	memcpy(t->ledger.last_item->bob_signature, t->ledger.last_item->alice_signature, SIGNATURE_LENGTH);
 	memset(t->ledger.last_item->alice_signature, 0, SIGNATURE_LENGTH);
 
-	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
+	//r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
+	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, "1234");
 	if (r) {
 		return 1;
 	}

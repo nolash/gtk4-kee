@@ -725,17 +725,21 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 
 
 /// \todo remove external buffer
-int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
+//int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
+int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, const char *passphrase) {
 	int r;
 	char *p;
 	size_t c;
 	size_t l;
+	char out[1024];
+	size_t out_len;
 	enum kee_ledger_state_e mode;
 
-	p = out;
-	c = *out_len;
-	l = *out_len;
-	*out_len = 0;
+	out_len = 1024;
+	p = (char*)out;
+	c = out_len;
+	l = out_len;
+	out_len = 0;
 
 	mode = KEE_LEDGER_STATE_REQUEST;
 	if (item->initiator == BOB) {
@@ -753,16 +757,16 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 	c = DIGEST_LENGTH;
 	p = out + c;
 	l -= c;
-	*out_len += c;
+	out_len += c;
 
 	c = l;
 	r = kee_ledger_item_serialize(item, p, &c, mode);
 	if (r) {
 		return ERR_FAIL;
 	}
-	*out_len += c;
+	out_len += c;
 
-	r = gpg_store_sign_with(gpg, out, *out_len, passphrase, gpg->fingerprint);
+	r = gpg_store_sign_with(gpg, (char*)out, out_len, passphrase, gpg->fingerprint);
 	if (r) {
 		return ERR_FAIL;
 	}

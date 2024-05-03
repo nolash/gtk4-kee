@@ -4,6 +4,7 @@
 #include "kee-key.h"
 #include "gpg.h"
 #include "err.h"
+#include "hex.h"
 
 typedef struct {
 } KeeKeyPrivate;
@@ -39,8 +40,8 @@ static void kee_key_class_init(KeeKeyClass *kls) {
 static void kee_key_init(KeeKey *o) {
 }
 
-static void kee_key_finalize(KeeKey *o) {
-}
+//static void kee_key_finalize(KeeKey *o) {
+//}
 
 static void kee_key_handle_unlock_click(GtkWidget *button, KeeKey *o) {
 	int r;
@@ -87,6 +88,10 @@ KeeKey* kee_key_new(struct gpg_store *gpg) {
 }
 
 const char *kee_key_get_fingerprint(KeeKey *o, char *fingerprint) {
-	strcpy(fingerprint, o->gpg->fingerprint);
+	size_t fingerprint_len;
+
+	fingerprint_len = 41;
+	bin_to_hex((unsigned char*)o->gpg->fingerprint, 20, (unsigned char*)fingerprint, &fingerprint_len);
+	//strcpy(fingerprint, o->gpg->fingerprint);
 	return fingerprint;
 }
