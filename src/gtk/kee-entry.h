@@ -7,6 +7,7 @@
 #include "db.h"
 #include "cadiz.h"
 #include "gpg.h"
+#include "ledger.h"
 
 G_BEGIN_DECLS
 
@@ -26,6 +27,7 @@ enum kee_entry_viewmode_e {
 	KEE_ENTRY_VIEWMODE_SHORT,
 	KEE_ENTRY_VIEWMODE_FULL,
 	KEE_ENTRY_VIEWMODE_EDIT,
+	KEE_ENTRY_VIEWMODE_SIGN,
 };
 
 #define KEE_TYPE_ENTRY kee_entry_get_type()
@@ -37,6 +39,7 @@ KeeEntry* kee_entry_new(struct db_ctx *db);
 void kee_entry_set_resolver(KeeEntry *o, struct Cadiz *resolver);
 void kee_entry_set_signer(KeeEntry *o, struct gpg_store *gpg);
 int kee_entry_modeswitch(KeeEntry *o, enum kee_entry_viewmode_e);
+int kee_entry_from_ledger(KeeEntry *o, struct kee_ledger_t *ledger);
 
 G_END_DECLS
 

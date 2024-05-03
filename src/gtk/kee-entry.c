@@ -56,6 +56,7 @@ struct _KeeEntry {
 	GtkWidget parent;
 	GtkWidget *display;
 	GtkWidget *edit;
+	GtkWidget *sign;
 	GtkWidget *entry_list;
 	GtkWidget *showing;
 	int state;
@@ -301,7 +302,7 @@ static void kee_entry_setup_edit_widget(KeeEntry *o) {
 	gtk_box_append(GTK_BOX(o->edit), widget);
 	g_signal_connect (widget, "clicked", G_CALLBACK(kee_entry_handle_add), o);
 }
-	
+
 static int kee_entry_apply_edit_widget(KeeEntry *o) {
 	kee_entry_setup_edit_widget(o);	
 	o->showing = o->edit;
@@ -322,6 +323,10 @@ int kee_entry_modeswitch(KeeEntry *o, enum kee_entry_viewmode_e mode) {
 		case KEE_ENTRY_VIEWMODE_EDIT:
 			r = kee_entry_apply_edit_widget(o);
 			break;
+		case KEE_ENTRY_VIEWMODE_SIGN:
+			r = kee_entry_apply_display_widget(o);
+			break;
+
 		default:
 			r = kee_entry_apply_display_widget(o);
 	}
@@ -363,7 +368,7 @@ static void kee_entry_init_list_widget(KeeEntry *o) {
 
 }
 
-int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
+static int process_entry_ledger(KeeEntry *o) {
 	int r;
 	size_t key_len;
 	size_t last_value_length;
@@ -375,10 +380,6 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 	key_len = 33;
 	last_value_length = 1024;
 
-	r = kee_ledger_parse(&o->ledger, data, data_len);
-	if (r) {
-		return ERR_FAIL;
-	}
 	kee_content_resolve(&o->ledger.content, o->resolver);
 
 	last_value_length = 2048;
@@ -407,15 +408,48 @@ int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
 			return ERR_FAIL;
 		}
 	}
+
+
+	o->state = ENTRYSTATE_LOAD;
+
+	kee_entry_init_list_widget(o);
+
+	return ERR_OK;
+}
+
+/// \todo rename "from" to indicate not return new entry but apply on existing
+int kee_entry_from_ledger(KeeEntry *o, struct kee_ledger_t *ledger) {
+	int r;
+
+	memcpy(&o->ledger, ledger, sizeof(struct kee_ledger_t));
+	r = process_entry_ledger(o);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	memcpy(o->current_id, ledger->digest, DIGEST_LENGTH); 
+
+	return ERR_OK;
+}
+
+int kee_entry_deserialize(KeeEntry *o, const char *data, size_t data_len) {
+	int r;
+	
+
+	r = kee_ledger_parse(&o->ledger, data, data_len);
+	if (r) {
+		return ERR_FAIL;
+	}
 	
 	r = calculate_digest_algo(data, data_len, o->current_id, GCRY_MD_SHA512);	
 	if (r) {
 		return ERR_DIGESTFAIL;
 	}
 
-	o->state = ENTRYSTATE_LOAD;
-
-	kee_entry_init_list_widget(o);
+	r = process_entry_ledger(o);
+	if (r) {
+		return ERR_FAIL;
+	}
 
 	return ERR_OK;
 }

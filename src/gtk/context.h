@@ -1,11 +1,11 @@
 #ifndef _KEE_CONTEXT
 #define _KEE_CONTEXT
 
+#include "kee-entry-store.h"
 #include "settings.h"
 #include "db.h"
 #include "camera.h"
 #include "gpg.h"
-#include "kee-entry-store.h"
 
 
 struct kee_context {

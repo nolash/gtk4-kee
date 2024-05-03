@@ -48,6 +48,64 @@ static void kee_menu_act_new_entry(GAction *act, GVariant *param, KeeMenu *menu)
 	kee_entry_modeswitch(o, KEE_ENTRY_VIEWMODE_EDIT);
 }
 
+static void kee_menu_act_import_entry(GAction *act, GVariant *param, KeeMenu *menu) {
+	int r;
+	struct kee_ledger_t ledger;
+	const char *b;
+	enum kee_ledger_state_e item_state;
+	size_t c;
+	KeeEntry *entry;
+
+	c = (size_t)g_variant_n_children(param);
+	b = (const char*)g_variant_get_data(param);
+	r = kee_ledger_parse_open(&ledger, b, c);
+	if (r) {
+		return;
+	}
+
+	item_state = kee_ledger_item_state(ledger.last_item);
+	
+	switch (item_state) {
+		case KEE_LEDGER_STATE_FINAL:
+			r = kee_ledger_put(&ledger, &menu->ctx->db);
+			if (r) {
+				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail put entry");
+				return;
+			}
+			break;
+		case KEE_LEDGER_STATE_RESPONSE:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "detected response state");
+			entry = kee_entry_new(&menu->ctx->db);
+			if (entry == NULL) {
+				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail create entry");
+				return;
+			}
+			r = kee_entry_from_ledger(entry, &ledger);
+			if (r) {
+				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail load entry from ledger");
+				return;
+			}
+			r = kee_entry_modeswitch(entry, KEE_ENTRY_VIEWMODE_SIGN);
+			if (r) {
+				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail set entry widget view mode");
+				return;
+			}
+			r = kee_menu_set(menu, GTK_WIDGET(entry));
+			if (r) {
+				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail replace menu entry content");
+				return;
+			}
+			kee_menu_next(menu, "entry");
+			break;
+		case KEE_LEDGER_STATE_REQUEST:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "detected request state, ignoring");
+			break;
+		default:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "invalid item state after parse");
+			return;
+	}
+}
+
 //static GParamSpec *kee_props[KEE_N_MENU_PROPS] = {NULL,};
 //static guint kee_sigs[KEE_N_MENU_SIGS] = {0,};
 
@@ -103,6 +161,10 @@ KeeMenu* kee_menu_new(GtkApplication *gapp, struct kee_context *ctx) {
 	gtk_header_bar_pack_start(GTK_HEADER_BAR(o->head), butt);
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(butt), "win.new_entry");
 	g_signal_connect(act, "activate", G_CALLBACK(kee_menu_act_new_entry), o);
+
+	act = g_simple_action_new("ledger", g_variant_type_new_array(G_VARIANT_TYPE_BYTE));
+	g_action_map_add_action(G_ACTION_MAP(o), G_ACTION(act));
+	g_signal_connect(act, "activate", G_CALLBACK(kee_menu_act_import_entry), o);
 
 	gtk_window_set_titlebar(GTK_WINDOW(o), GTK_WIDGET(o->head));
 

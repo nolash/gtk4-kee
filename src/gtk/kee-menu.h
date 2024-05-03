@@ -6,6 +6,8 @@
 
 #include "context.h"
 
+/// \todo rename to kee-win
+
 enum KEE_MENU_PROPS {
 	KEE_N_MENU_PROPS,
 };
