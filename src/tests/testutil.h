@@ -35,5 +35,6 @@ size_t kee_test_get_ledger_item_data(struct kee_test_t *t, int idx, char **out);
 int kee_test_db(struct kee_test_t *t);
 int kee_test_sign_request(struct kee_test_t *t);
 int kee_test_sign_response(struct kee_test_t *t);
+//void kee_test_swap_identities(struct kee_test_t *t);
 
 #endif

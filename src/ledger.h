@@ -10,7 +10,7 @@
 #include "digest.h"
 
 enum kee_initiator_e {
-	UNKNOWN,
+	NOONE,
 	ALICE,
 	BOB,
 };
@@ -54,26 +54,25 @@ struct kee_ledger_t {
 	struct kee_ledger_cache_t *cache;
 };
 
-struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len);
-struct kee_ledger_item_t *kee_ledger_add_item(struct kee_ledger_t *ledger);
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len);
 int kee_ledger_serialize(struct kee_ledger_t *ledger, char *out, size_t *out_len);
 void kee_ledger_init(struct kee_ledger_t *ledger);
 void kee_ledger_free(struct kee_ledger_t *ledger);
-void kee_ledger_item_free(struct kee_ledger_item_t *item);
 void kee_ledger_resolve(struct kee_ledger_t *ledger, Cadiz *cadiz);
 void kee_ledger_reset_cache(struct kee_ledger_t *ledger);
-//int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase);
 int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, const char *passphrase);
-enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item);
-
-void kee_ledger_item_init(struct kee_ledger_item_t *item);
-int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t *out_len, enum kee_ledger_state_e mode);
 int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *out_len);
 int kee_ledger_parse_open(struct kee_ledger_t *ledger, const char *in, size_t in_len);
 int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db);
 int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx);
 int kee_ledger_verify(struct kee_ledger_t *ledger, int *err_idx);
 
+struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len);
+struct kee_ledger_item_t *kee_ledger_add_item(struct kee_ledger_t *ledger);
+void kee_ledger_item_init(struct kee_ledger_item_t *item);
+int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t *out_len, enum kee_ledger_state_e mode);
+void kee_ledger_item_free(struct kee_ledger_item_t *item);
+enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item);
+enum kee_initiator_e kee_ledger_item_initiator(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg);
 
 #endif

@@ -70,13 +70,6 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 		return NULL;
 	}
 
-//	c = 64;
-//	r = asn1_read_value(item, "signatureResponse", sig, (int*)&c);
-//	if (r != ASN1_SUCCESS) {
-//		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
-//		return NULL;
-//	}
-
 	if (mode == KEE_LEDGER_STATE_FINAL) {
 		r = asn1_copy_node(root, "Kee.KeeEntry.signatureResponse", item, "signatureResponse");
 		if (r != ASN1_SUCCESS) {
@@ -693,7 +686,7 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 	}
 
 	c = 5;
-	if (item->response) {
+	if (item->response && mode > KEE_LEDGER_STATE_REQUEST) {
 		response_s = "TRUE";
 	} else {
 		response_s = "FALSE";
@@ -1022,7 +1015,13 @@ static struct kee_ledger_item_t* get_item_by_idx(struct kee_ledger_t *ledger, in
 	return item;
 }
 
-static void get_authentication_params(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, char **pubkey_request, char **sig_request, char **pubkey_response, char **sig_response) {
+static int get_authentication_params(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, char **pubkey_request, char **sig_request, char **pubkey_response, char **sig_response, enum kee_initiator_e initiator) {
+	if (item->initiator == NOONE) {
+		item->initiator = initiator;
+	}
+	if (item->initiator == NOONE) {
+		return ERR_FAIL;
+	}
 	if (item->initiator == BOB) {
 		*pubkey_request = ledger->pubkey_bob;
 		*pubkey_response = ledger->pubkey_alice;
@@ -1040,13 +1039,33 @@ static void get_authentication_params(struct kee_ledger_t *ledger, struct kee_le
 	if (!memcmp(*sig_response, zero_content, SIGNATURE_LENGTH)) {
 		*sig_response = NULL;
 	}
+	return ERR_OK;
+}
+
+static int verify_item(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, enum kee_ledger_state_e mode, const char *sig, const char *pubkey) {
+	int r;
+	char b[1024];
+	size_t c;
+	
+	c = 960;
+	r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, mode);
+	if (r) {
+		return ERR_FAIL;
+	}
+	r = kee_ledger_digest(ledger, b);
+	if (r) {
+		return ERR_FAIL;
+	}
+	r = verify_item_data(ledger, b, c + DIGEST_LENGTH, sig, pubkey);
+	if (r) {
+		return ERR_FAIL;
+	}
+	return ERR_OK;
 }
 
 // idx shows which item in ledger execution terminated
 int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 	int r;
-	char b[1024];
-	size_t c;
 	struct kee_ledger_item_t *item;
 	char *pubkey_request;
 	char *pubkey_response;
@@ -1059,41 +1078,38 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 		return ERR_FAIL;
 	}
 
+	r = 0;
 	while (1) {
-		get_authentication_params(ledger, item, &pubkey_request, &sig_request, &pubkey_response, &sig_response);
+		r = get_authentication_params(ledger, item, &pubkey_request, &sig_request, &pubkey_response, &sig_response, NOONE);
+		if (r) {
+			return ERR_FAIL;
+		}
 		if (sig_response == NULL) {
 			if (*idx > 0) {
 				return ERR_FAIL;
 			}
 		} else {
-			c = 960;
-			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_STATE_RESPONSE);
-			if (r) {
-				return ERR_FAIL;
-			}
-			r = kee_ledger_digest(ledger, b);
-			if (r) {
-				return ERR_FAIL;
-			}
-			r = verify_item_data(ledger, b, c + DIGEST_LENGTH, sig_response, pubkey_response);
-			if (r) {
-				return ERR_FAIL;
-			}
+			r = verify_item(ledger, item, KEE_LEDGER_STATE_RESPONSE, sig_response, pubkey_response);
 		}
+			
 		if (sig_request != NULL) {
-			c = 960;
-			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_STATE_REQUEST);
-			if (r) {
-				return ERR_FAIL;
-			}
-			r = kee_ledger_digest(ledger, b);
-			if (r) {
-				return ERR_FAIL;
-			}
-			r = verify_item_data(ledger, b, c + DIGEST_LENGTH, sig_request, pubkey_request);
-			if (r) {
-				return ERR_FAIL;
-			}
+			r = verify_item(ledger, item, KEE_LEDGER_STATE_REQUEST, sig_request, pubkey_request);
+//			c = 960;
+//			r = kee_ledger_item_serialize(item, ((char*)b)+DIGEST_LENGTH, &c, KEE_LEDGER_STATE_REQUEST);
+//			if (r) {
+//				return ERR_FAIL;
+//			}
+//			r = kee_ledger_digest(ledger, b);
+//			if (r) {
+//				return ERR_FAIL;
+//			}
+//			r = verify_item_data(ledger, b, c + DIGEST_LENGTH, sig_request, pubkey_request);
+//			if (r) {
+//				return ERR_FAIL;
+//			}
+		}
+		if (r) {
+			return ERR_FAIL;
 		}
 		item = item->prev_item;
 		if (item == NULL) {
@@ -1173,4 +1189,16 @@ enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item) {
 	}
 
 	return state;
+}
+
+/// \todo consider optional verify with item signature
+/// \todo don't get confused; ledger alice is ALWAYS the requester, but when SIGNING alice is always the current keystore private key holder - consider renaming the latter to carol/dave...
+enum kee_initiator_e kee_ledger_item_initiator(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg) {
+	item->initiator = NOONE;
+	if (!memcmp(ledger->pubkey_alice, gpg->public_key, PUBKEY_LENGTH)) {
+		item->initiator = ALICE;
+	} else if (memcmp(ledger->pubkey_bob, zero_content, PUBKEY_LENGTH)) {
+		item->initiator = BOB;
+	}
+	return item->initiator;
 }

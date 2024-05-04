@@ -284,8 +284,6 @@ static int key_create(struct gpg_store *gpg, gcry_sexp_t *key) {
 
 /**
  * \todo consistent endianness for key length in persistent storage (fwrite)
- et* \todo implement MAC
- * \todo test new data length location (part of ciphertext)
  * \todo doc must have enough in path for path + fingerprint hex
  *
  */
@@ -325,14 +323,6 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 
 	m = c;
 	c = get_padsize(m, ENCRYPT_BLOCKSIZE);
-	/// \todo malloc
-//
-//	l = c;
-//	c = fwrite(&kl, sizeof(int), 1, f);
-//	if (c != 1) {
-//		fclose(f);
-//		return ERR_KEYFAIL;
-//	}
 	gcry_create_nonce(nonce, CHACHA20_NONCE_LENGTH_BYTES);
 	r = encryptb(ciphertext, c, v, m+sizeof(int), passphrase, nonce);
 	if (r) {
@@ -349,11 +339,7 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 		return ERR_KEYFAIL;
 	}
 	l = c;
-//	c = fwrite(&kl, sizeof(int), 1, f);
-//	if (c != 1) {
-//		fclose(f);
-//		return ERR_KEYFAIL;
-//	}
+
 	c = fwrite(nonce, CHACHA20_NONCE_LENGTH_BYTES, 1, f);
 	if (c != 1) {
 		fclose(f);

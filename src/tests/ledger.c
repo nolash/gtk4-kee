@@ -188,6 +188,60 @@ int test_verify() {
 	return 0;
 }
 
+int test_initiator() {
+	int r;
+	struct kee_test_t t;
+	struct kee_ledger_item_t *item;
+	enum kee_initiator_e initiator;
+
+	r = kee_test_generate(&t);
+	if (r) {
+		return 1;
+	}
+
+	item = t.ledger.last_item;
+
+	r = kee_test_sign_request(&t);
+	if (r) {
+		return 1;
+	}
+	r = kee_test_sign_response(&t);
+	if (r) {
+		return 1;
+	}
+
+	item->initiator = NOONE;
+	initiator = kee_ledger_item_initiator(&t.ledger, item, &t.gpg);
+	if (initiator != ALICE) {
+		return 1;
+	}
+
+	kee_test_free(&t);
+	r = kee_test_generate(&t);
+	if (r) {
+		return 1;
+	}
+
+	kee_test_swap_identities(&t);
+	r = kee_test_sign_request(&t);
+	if (r) {
+		return 1;
+	}
+	r = kee_test_sign_response(&t);
+	if (r) {
+		return 1;
+	}
+
+	item = t.ledger.last_item;
+	item->initiator = NOONE;
+	initiator = kee_ledger_item_initiator(&t.ledger, item, &t.gpg);
+	if (initiator != BOB) {
+		return 1;
+	}
+
+	return 0;
+}
+
 int main() {
 	int i;
 	int r;
@@ -209,6 +263,11 @@ int main() {
 	}
 	i++;
 	r = test_verify();
+	if (r) {
+		return i;
+	}
+	i++;
+	r = test_initiator();
 	if (r) {
 		return i;
 	}

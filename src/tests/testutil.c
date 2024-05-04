@@ -33,6 +33,7 @@ int kee_test_db(struct kee_test_t *t) {
 int kee_test_sign_request(struct kee_test_t *t) {
 	int r;
 
+	t->ledger.last_item->initiator = ALICE;
 	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, "1234");
 	if (r) {
 		return 1;
@@ -41,10 +42,19 @@ int kee_test_sign_request(struct kee_test_t *t) {
 	return 0;
 }
 
+//int kee_test_swap_keys(struct kee_test_t *t) {
+//	if (t->gpg.k == t->alice) {
+//		t->gpg.k = t->bob;
+//	} else {
+//		t->gpg.k = t->alice;
+//	}
+//}
+//
 int kee_test_sign_response(struct kee_test_t *t) {
 	int r;
 	struct kee_ledger_item_t item_swap;
 
+	t->ledger.last_item->response = 1;
 	t->gpg.k = t->bob;
 	r = gpg_key_load(&t->gpg, "1234", KEE_GPG_FIND_FINGERPRINT, t->bob_fingerprint);
 	if (r) {
@@ -75,6 +85,29 @@ int kee_test_sign_response(struct kee_test_t *t) {
 	return 0;
 }
 
+void kee_test_swap_identities(struct kee_test_t *t) {
+	char swap[128];
+	struct kee_ledger_t *ledger;
+	struct kee_ledger_item_t *item;
+
+	ledger = &t->ledger;
+	item = ledger->last_item;
+
+	memcpy(swap, ledger->pubkey_alice, PUBKEY_LENGTH);
+	memcpy(ledger->pubkey_alice, ledger->pubkey_bob, PUBKEY_LENGTH);
+	memcpy(ledger->pubkey_bob, swap, PUBKEY_LENGTH);
+
+//	memcpy(swap, item->alice_signature, SIGNATURE_LENGTH);
+//	memcpy(item->alice_signature, item->bob_signature, SIGNATURE_LENGTH);
+//	memcpy(item->bob_signature, swap, SIGNATURE_LENGTH);
+
+	if (item->initiator == ALICE) {
+		item->initiator = BOB;
+	} else if (item->initiator == BOB) {
+		item->initiator = ALICE;
+	}
+
+}
 
 int kee_test_generate(struct kee_test_t *t) {
 	int r;
@@ -158,9 +191,7 @@ int kee_test_generate(struct kee_test_t *t) {
 	if (r) {
 		return 1;
 	}
-	item->initiator = ALICE;
-	item->response = 1;
-
+	
 	content_item = *t->content_item;
 	r = calculate_digest_algo(content_test_item, strlen(content_test_item), content_item->key, GCRY_MD_SHA512);
 	if (r) {
@@ -196,6 +227,7 @@ void kee_test_free(struct kee_test_t *t) {
 		free(*p);
 		p++;
 	}
+	kee_ledger_free(&t->ledger);
 }
 
 size_t kee_test_get_ledger_data(struct kee_test_t *t, char **out) {
