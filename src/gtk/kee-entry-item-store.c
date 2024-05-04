@@ -113,7 +113,7 @@ static int kee_entry_item_store_scan(KeeEntryItemStore *o) {
 		if (memcmp(entry_key, last_key, entry_ref_len)) {
 			break;
 		}
-		item = kee_ledger_parse_item(o->ledger, last_value, last_value_length);
+		item = kee_ledger_parse_item_db(o->ledger, last_value, last_value_length);
 		if (item == NULL) {
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "corrupt entry!");
 		} else {

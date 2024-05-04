@@ -46,13 +46,13 @@ int test_parse() {
 	}
 
 	c = hex2bin(test_item_data_a, (unsigned char*)data);
-	ledger_item_a = kee_ledger_parse_item(&ledger, data, c);
+	ledger_item_a = kee_ledger_parse_item_db(&ledger, data, c);
 	if (ledger_item_a == NULL) {
 		return 1;
 	}
 
 	c = hex2bin(test_item_data_b, (unsigned char*)data);
-	ledger_item_b = kee_ledger_parse_item(&ledger, data, c);
+	ledger_item_b = kee_ledger_parse_item_db(&ledger, data, c);
 	if (ledger_item_b == NULL) {
 		return 1;
 	}
@@ -94,7 +94,7 @@ int test_pair() {
 		return 1;
 	}
 
-	r = kee_ledger_parse_open(&ledger, out, out_len);
+	r = kee_ledger_parse_open(&ledger, &t.gpg, out, out_len);
 	if (r) {
 		return 1;
 	}
@@ -211,7 +211,7 @@ int test_initiator() {
 	}
 
 	item->initiator = NOONE;
-	initiator = kee_ledger_item_initiator(&t.ledger, item, &t.gpg);
+	initiator = kee_ledger_item_initiator(&t.ledger, &t.gpg, item);
 	if (initiator != ALICE) {
 		return 1;
 	}
@@ -234,7 +234,7 @@ int test_initiator() {
 
 	item = t.ledger.last_item;
 	item->initiator = NOONE;
-	initiator = kee_ledger_item_initiator(&t.ledger, item, &t.gpg);
+	initiator = kee_ledger_item_initiator(&t.ledger, &t.gpg, item);
 	if (initiator != BOB) {
 		return 1;
 	}

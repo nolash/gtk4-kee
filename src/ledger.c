@@ -325,7 +325,21 @@ struct kee_ledger_item_t *kee_ledger_add_item(struct kee_ledger_t *ledger) {
 	return ledger->last_item;
 }
 
-struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len) {
+struct kee_ledger_item_t *kee_ledger_parse_item_db(struct kee_ledger_t *ledger, const char *data, size_t data_len) {
+	size_t c;
+
+	enum kee_initiator_e initiator;
+
+	if (*(data+(data_len-1))) {
+		initiator = BOB;
+	} else {
+		initiator = ALICE;
+	}
+	c = data_len - 1;
+	return kee_ledger_parse_item(ledger, data, c, initiator);
+}
+
+struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, const char *data, size_t data_len, enum kee_initiator_e initiator) {
 	int r;
 	int c;
 	char err[1024];
@@ -339,8 +353,6 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	char tmp[64];
 	int v;
 
-	cur = kee_ledger_add_item(ledger);
-
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
 	r = asn1_array2tree(schema_entry_asn1_tab, &root, err);
@@ -353,21 +365,22 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		return NULL;
 	}
 
-	c = (int)data_len - 1;
-	if (*(data+c)) {
+	cur = kee_ledger_add_item(ledger);
+	if (initiator == BOB) {
 		cur->initiator = BOB;
 		credit_delta = &cur->bob_credit_delta;
 		collateral_delta = &cur->bob_collateral_delta;
 		pubkey_first = (const char*)ledger->pubkey_bob;
 		pubkey_last = (const char*)ledger->pubkey_alice; // alice countersigns bobs
 	} else {
+		cur->initiator = ALICE;
 		credit_delta = &cur->alice_credit_delta;
 		collateral_delta = &cur->alice_collateral_delta;
 		pubkey_first = (const char*)ledger->pubkey_alice;
 		pubkey_last = (const char*)ledger->pubkey_bob;
 	}
 
-	r = asn1_der_decoding(&item, data, c, err);
+	r = asn1_der_decoding(&item, data, data_len, err);
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
@@ -815,26 +828,25 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 		debug_log(DEBUG_ERROR, err);
 		return ERR_FAIL;	
 	}
-	*(out+*out_len) = 0;
-	if (ledger->last_item->initiator == BOB) {
-		*(out+*out_len) = 1;
-	}
-	*out_len += 1;
+//	*(out+*out_len) = 0;
+//	if (ledger->last_item->initiator == BOB) {
+//		*(out+*out_len) = 1;
+//	}
+//	*out_len += 1;
 
 	return ERR_OK;
 }
 
-int kee_ledger_parse_open(struct kee_ledger_t *ledger, const char *in, size_t in_len) {
+int kee_ledger_parse_open(struct kee_ledger_t *ledger, struct gpg_store *gpg, const char *in, size_t in_len) {
 	int r;
 	char err[1024];
 	char b[1024];
 	size_t c;
 	asn1_node root;
 	asn1_node pair;
-	//asn1_node item;
-	//asn1_node entry;
 	struct kee_ledger_item_t *item;
 	char is_bob;
+	enum kee_initiator_e initiator;
 
 	kee_ledger_init(ledger);
 
@@ -852,8 +864,6 @@ int kee_ledger_parse_open(struct kee_ledger_t *ledger, const char *in, size_t in
 		return ERR_FAIL;	
 	}
 
-	is_bob = (char)*(in+in_len-1);
-	in_len--;
 	r = asn1_der_decoding(&pair, in, in_len, err);
 	if (r != ASN1_SUCCESS) {
 		debug_log(DEBUG_ERROR, err);
@@ -893,9 +903,8 @@ int kee_ledger_parse_open(struct kee_ledger_t *ledger, const char *in, size_t in
 		return ERR_FAIL;	
 	}
 
-	*(b+c) = is_bob;
-	c++;
-	item = kee_ledger_parse_item(ledger, b, c);
+	initiator = kee_ledger_item_initiator(ledger, gpg, NULL);
+	item = kee_ledger_parse_item(ledger, b, c, initiator);
 	if (item == NULL) {
 		return ERR_FAIL;
 	}
@@ -1193,12 +1202,17 @@ enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item) {
 
 /// \todo consider optional verify with item signature
 /// \todo don't get confused; ledger alice is ALWAYS the requester, but when SIGNING alice is always the current keystore private key holder - consider renaming the latter to carol/dave...
-enum kee_initiator_e kee_ledger_item_initiator(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg) {
-	item->initiator = NOONE;
+enum kee_initiator_e kee_ledger_item_initiator(struct kee_ledger_t *ledger, struct gpg_store *gpg, struct kee_ledger_item_t *item) {
+	enum kee_initiator_e initiator;
+
+	initiator = NOONE;
 	if (!memcmp(ledger->pubkey_alice, gpg->public_key, PUBKEY_LENGTH)) {
-		item->initiator = ALICE;
+		initiator = ALICE;
 	} else if (memcmp(ledger->pubkey_bob, zero_content, PUBKEY_LENGTH)) {
-		item->initiator = BOB;
+		initiator = BOB;
 	}
-	return item->initiator;
+	if (item != NULL) {
+		item->initiator = initiator;
+	}
+	return initiator;
 }

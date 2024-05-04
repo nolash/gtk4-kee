@@ -145,18 +145,6 @@ static int check_cmd(KeeImport *o, char cmd) {
 }
 
 
-//static int import_ledger(KeeImport *o, const char *in, size_t in_len) {
-//	int r;
-//	struct kee_ledger_t ledger;
-//
-//	r = kee_ledger_parse_open(&ledger, in, in_len);
-//	if (r) {
-//		return r;
-//	}
-//
-//	return ERR_OK;
-//}
-
 /// \todo too long, split up
 static void kee_import_handle_import_data_accept(GtkActionable *actn, void *null, KeeImport *o) {
 	int r;

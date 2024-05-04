@@ -58,7 +58,7 @@ static void kee_menu_act_import_entry(GAction *act, GVariant *param, KeeMenu *me
 
 	c = (size_t)g_variant_n_children(param);
 	b = (const char*)g_variant_get_data(param);
-	r = kee_ledger_parse_open(&ledger, b, c);
+	r = kee_ledger_parse_open(&ledger, &menu->ctx->gpg, b, c);
 	if (r) {
 		return;
 	}
