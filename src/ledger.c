@@ -1148,6 +1148,7 @@ int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx)
 }
 
 
+/// \todo zero initiator need detect
 enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item) {
 	char *sig_request;
 	char *sig_response;

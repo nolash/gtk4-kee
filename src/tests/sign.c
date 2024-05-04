@@ -11,7 +11,6 @@ int test_create() {
 	int r;
 	struct gpg_store gpg;
 	char path[1024];
-	gcry_sexp_t key;
 
 	strcpy(path, "/tmp/keetest_key_XXXXXX");
 	p = mkdtemp(path);
@@ -27,7 +26,6 @@ int test_create() {
 
 	memset(&gpg, 0, sizeof(struct gpg_store));
 	gpg_store_init(&gpg, p);
-	gpg.k = &key;
 	r = gpg_key_load(&gpg, "1234", KEE_GPG_FIND_MAIN, NULL);
 	if (r) {
 		return 1;

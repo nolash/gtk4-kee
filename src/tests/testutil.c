@@ -29,13 +29,10 @@ int kee_test_db(struct kee_test_t *t) {
 	return 0;
 }
 
+/// \todo eliminate gpg->k swaps
 int kee_test_sign_request(struct kee_test_t *t) {
 	int r;
-	char b[1024];
-	size_t c;
 
-	c = 1024;
-	//r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
 	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, "1234");
 	if (r) {
 		return 1;
@@ -46,12 +43,9 @@ int kee_test_sign_request(struct kee_test_t *t) {
 
 int kee_test_sign_response(struct kee_test_t *t) {
 	int r;
-	char b[1024];
-	size_t c;
 	struct kee_ledger_item_t item_swap;
 
-	c = 1024;
-	t->gpg.k = &t->bob;
+	t->gpg.k = t->bob;
 	r = gpg_key_load(&t->gpg, "1234", KEE_GPG_FIND_FINGERPRINT, t->bob_fingerprint);
 	if (r) {
 		return 1;
@@ -65,7 +59,6 @@ int kee_test_sign_response(struct kee_test_t *t) {
 	memcpy(t->ledger.last_item->bob_signature, t->ledger.last_item->alice_signature, SIGNATURE_LENGTH);
 	memset(t->ledger.last_item->alice_signature, 0, SIGNATURE_LENGTH);
 
-	//r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, b, &c, "1234");
 	r = kee_ledger_sign(&t->ledger, t->ledger.last_item, &t->gpg, "1234");
 	if (r) {
 		return 1;
@@ -73,7 +66,7 @@ int kee_test_sign_response(struct kee_test_t *t) {
 	memcpy(item_swap.bob_signature, t->gpg.last_signature, SIGNATURE_LENGTH);
 	memcpy(t->ledger.last_item, &item_swap, sizeof(struct kee_ledger_item_t));
 
-	t->gpg.k = &t->alice;
+	t->gpg.k = t->alice;
 	r = gpg_key_load(&t->gpg, "1234", KEE_GPG_FIND_FINGERPRINT, t->alice_fingerprint);
 	if (r) {
 		return 1;
@@ -114,7 +107,7 @@ int kee_test_generate(struct kee_test_t *t) {
 	kee_ledger_init(&t->ledger);
 
 	gpg_store_init(&t->gpg, p);
-	t->gpg.k = &t->alice;
+	t->gpg.k = t->alice;
 	r = gpg_key_create(&t->gpg, "1234"); // alice
 	if (r) {
 		return 1;
@@ -123,7 +116,7 @@ int kee_test_generate(struct kee_test_t *t) {
 	memcpy(t->alice_fingerprint, t->gpg.fingerprint, FINGERPRINT_LENGTH);
 
 	gpg_store_init(&t->gpg, p);
-	t->gpg.k = &t->bob;
+	t->gpg.k = t->bob;
 	r = gpg_key_create(&t->gpg, "1234"); // bob
 	if (r) {
 		return 1;
@@ -179,7 +172,11 @@ int kee_test_generate(struct kee_test_t *t) {
 	}
 	memcpy(&item->content, content_item, sizeof(struct kee_content_t));
 
-	t->gpg.k = &t->alice;
+	t->gpg.k = t->alice;
+	//r = gpg_store_digest(&t->gpg, passphrase_hash, "1234"); //struct gpg_store *gpg, char *out, const char *in)
+	//if (r) {
+	//	return 1;
+	//}
 	r = gpg_key_load(&t->gpg, "1234", KEE_GPG_FIND_FINGERPRINT, t->alice_fingerprint);
 	if (r) {
 		return 1;

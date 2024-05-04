@@ -301,6 +301,7 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 	FILE *f;
 	char nonce[CHACHA20_NONCE_LENGTH_BYTES];
 	char path[1024];
+	char ciphertext[BUFLEN];
 
 	r = key_create(gpg, key);
 	if (r) {
@@ -311,6 +312,9 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 	m = (size_t)kl + 1;
 	p = (char*)v + sizeof(int);
 	c = 0;
+	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, p, BUFLEN-m);
+	m -= (size_t)(kl + 1);
+	c += kl;
 //	while (m > 0) {
 //		kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, p, BUFLEN-m);
 //		m -= (size_t)(kl + 1);
@@ -322,14 +326,18 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 	m = c;
 	c = get_padsize(m, ENCRYPT_BLOCKSIZE);
 	/// \todo malloc
-	char ciphertext[c];
-
+//
+//	l = c;
+//	c = fwrite(&kl, sizeof(int), 1, f);
+//	if (c != 1) {
+//		fclose(f);
+//		return ERR_KEYFAIL;
+//	}
 	gcry_create_nonce(nonce, CHACHA20_NONCE_LENGTH_BYTES);
 	r = encryptb(ciphertext, c, v, m+sizeof(int), passphrase, nonce);
 	if (r) {
 		return ERR_KEYFAIL;
 	}
-
 
 	p = key_filename(gpg, path);
 	if (p == NULL) {

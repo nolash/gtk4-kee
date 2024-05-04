@@ -10,6 +10,7 @@
 #include "digest.h"
 
 enum kee_initiator_e {
+	UNKNOWN,
 	ALICE,
 	BOB,
 };

@@ -23,9 +23,9 @@ obj_debug: util
 test_run:
 	./test_cadir
 	./test_content
+	./test_sign
 	./test_ledger
 	./test_dn
-	./test_sign
 	./test_transport
 
 test: all test_run
