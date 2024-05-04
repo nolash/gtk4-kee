@@ -350,6 +350,8 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	int *collateral_delta;
 	const char *pubkey_first;
 	const char *pubkey_last;
+	char *signature_request;
+	char *signature_response;
 	char tmp[64];
 	int v;
 
@@ -372,12 +374,16 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		collateral_delta = &cur->bob_collateral_delta;
 		pubkey_first = (const char*)ledger->pubkey_bob;
 		pubkey_last = (const char*)ledger->pubkey_alice; // alice countersigns bobs
+		signature_request = cur->bob_signature;
+		signature_response = cur->alice_signature;
 	} else {
 		cur->initiator = ALICE;
 		credit_delta = &cur->alice_credit_delta;
 		collateral_delta = &cur->alice_collateral_delta;
 		pubkey_first = (const char*)ledger->pubkey_alice;
 		pubkey_last = (const char*)ledger->pubkey_bob;
+		signature_request = cur->alice_signature;
+		signature_response = cur->bob_signature;
 	}
 
 	r = asn1_der_decoding(&item, data, data_len, err);
@@ -421,6 +427,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		cur->response = 1;	
 	}
 
+	/// \todo apply timestamp in structure
 	c = 8;
 	r = asn1_read_value(item, "timestamp", tmp, &c);
 	if (r != ASN1_SUCCESS) {
@@ -436,6 +443,24 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	r = kee_content_init(&(cur->content), tmp, 0);
 	if (r) {
 		return NULL;
+	}
+
+	c = SIGNATURE_LENGTH;
+	r = asn1_read_value(item, "signatureRequest", tmp, &c);
+	if (r != ASN1_SUCCESS) {
+		return NULL;
+	}
+	if (c > 0) {
+		memcpy(signature_request, tmp, c);
+	}
+
+	c = SIGNATURE_LENGTH;
+	r = asn1_read_value(item, "signatureResponse", tmp, &c);
+	if (r != ASN1_SUCCESS) {
+		return NULL;
+	}
+	if (c > 0) {
+		memcpy(signature_response, tmp, c);
 	}
 
 	kee_ledger_item_apply_cache(ledger, cur);
@@ -845,7 +870,6 @@ int kee_ledger_parse_open(struct kee_ledger_t *ledger, struct gpg_store *gpg, co
 	asn1_node root;
 	asn1_node pair;
 	struct kee_ledger_item_t *item;
-	char is_bob;
 	enum kee_initiator_e initiator;
 
 	kee_ledger_init(ledger);
@@ -1184,8 +1208,8 @@ enum kee_ledger_state_e kee_ledger_item_state(struct kee_ledger_item_t *item) {
 		sig_request = item->bob_signature;
 		sig_response = item->alice_signature;
 	} else {
-		sig_request = item->bob_signature;
-		sig_response = item->alice_signature;
+		sig_request = item->alice_signature;
+		sig_response = item->bob_signature;
 	}
 
 	state = KEE_LEDGER_STATE_REQUEST;
