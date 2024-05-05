@@ -17,10 +17,14 @@ clean:
 
 
 run: gtk all
-	G_DEBUG=3 G_MESSAGES_DEBUG=all ./src/gtk/a.out
+	G_DEBUG=3 G_MESSAGES_DEBUG=3 ./src/gtk/a.out
 
 debug: gtk all
+	G_DEBUG=all G_MESSAGES_DEBUG=all ./src/gtk/a.out
+
+gdb: gtk all
 	G_DEBUG=all G_MESSAGES_DEBUG=all gdb ./src/gtk/a.out
+
 
 #test: gtk all test_src test_gtk
 test: test_src test_gtk

@@ -6,6 +6,8 @@
 #include "kee-menu.h"
 #include "err.h"
 
+#define G_LOG_DOMAIN "Kee"
+
 typedef struct {
 } KeeEntryListPrivate;
 

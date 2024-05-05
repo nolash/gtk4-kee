@@ -9,6 +9,8 @@
 #include "err.h"
 #include "context.h"
 
+#define G_LOG_DOMAIN "Kee"
+
 typedef struct {
 } KeeMenuPrivate;
 
@@ -86,16 +88,16 @@ static void kee_menu_act_import_entry(GAction *act, GVariant *param, KeeMenu *me
 				return;
 			}
 			r = kee_entry_modeswitch(entry, KEE_ENTRY_VIEWMODE_SIGN);
-			if (r) {
+			if (!r) {
 				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail set entry widget view mode");
 				return;
 			}
+			kee_menu_next(menu, "entry");
 			r = kee_menu_set(menu, GTK_WIDGET(entry));
 			if (r) {
 				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail replace menu entry content");
 				return;
 			}
-			kee_menu_next(menu, "entry");
 			break;
 		case KEE_LEDGER_STATE_REQUEST:
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "detected request state, ignoring");

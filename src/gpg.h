@@ -4,6 +4,7 @@
 //#include <string>
 #include <stddef.h>
 #include <gcrypt.h>
+#include "digest.h"
 
 #define GPG_MIN_VERSION "1.10.2"
 #define CHACHA20_KEY_LENGTH_BYTES 32
@@ -11,7 +12,6 @@
 #define PUBKEY_LENGTH 32
 #define FINGERPRINT_LENGTH 20
 #define SIGNATURE_LENGTH 64
-#define DIGEST_LENGTH 64
 #define POINT_LENGTH 32
 
 #ifndef ENCRYPT_BLOCKSIZE

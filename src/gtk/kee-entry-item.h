@@ -36,6 +36,8 @@ void kee_entry_item_set_resolver(KeeEntryItem *o,  struct Cadiz *resolver);
 int kee_entry_item_deserialize(KeeEntryItem *o, const char *data, size_t data_len);
 void kee_entry_item_apply_list_item_widget(KeeEntryItem *o);
 void kee_entry_item_apply_edit_widget(GtkBox *box, struct kee_entry_item_form_t *form, int first);
+void kee_entry_item_apply_summary_widget(KeeEntryItem *o, GtkBox *box);
+void kee_entry_item_set(KeeEntryItem *o, struct kee_ledger_item_t *item);
 
 G_END_DECLS
 

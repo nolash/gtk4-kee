@@ -66,22 +66,28 @@ KeeEntryItem* kee_entry_item_new(struct db_ctx *db, struct kee_ledger_t *ledger,
 	return o;
 }
 
-void kee_entry_item_apply_list_item_widget(KeeEntryItem *o) {
+void kee_entry_item_set(KeeEntryItem *o, struct kee_ledger_item_t *item) {
+	o->item = item;
+}
+
+GtkWidget *list_item_widget(KeeEntryItem *o) {
+	char *subject;
 	GtkWidget *widget;
 
 	kee_content_resolve(&o->item->content, o->resolver);
-	sprintf(o->header, "%s\nalice: %i\nbob: %i\n", o->item->content.subject, o->item->alice_credit_delta, o->item->bob_credit_delta);
-
-	widget = gtk_widget_get_first_child(GTK_WIDGET(o));
-	if (widget) {
-		gtk_box_remove(GTK_BOX(o), widget);
+	subject = o->item->content.subject;
+	if (subject == NULL) {
+		subject = "(no description)";
 	}
+
+	sprintf(o->header, "%s\nalice: %i\nbob: %i\n", subject, o->item->alice_credit_delta, o->item->bob_credit_delta);
+
 	widget = gtk_label_new(o->header);
-	gtk_box_append(GTK_BOX(o), widget);
+
+	return widget;
 }
 
-void kee_entry_item_apply_sign_widget(KeeEntryItem *o) {
-	GtkBox *box;
+void kee_entry_item_apply_list_item_widget(KeeEntryItem *o) {
 	GtkWidget *widget;
 
 	widget = gtk_widget_get_first_child(GTK_WIDGET(o));
@@ -89,18 +95,12 @@ void kee_entry_item_apply_sign_widget(KeeEntryItem *o) {
 		gtk_box_remove(GTK_BOX(o), widget);
 	}
 
-	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	widget = list_item_widget(o);
+
 	gtk_box_append(GTK_BOX(o), widget);
-	box = GTK_BOX(widget);
-
-	widget = gtk_label_new(o->header);
-	gtk_box_append(box, widget);
-
-	widget = gtk_entry_new();
-	gtk_entry_set_placeholder_text(GTK_ENTRY(widget), "passphrase");
-	gtk_box_append(box, widget);
 }
 
+/// \todo make interface and function name more intuitive to reflect that this is not operating on the KeeEntryItem object.
 void kee_entry_item_apply_edit_widget(GtkBox *box, struct kee_entry_item_form_t *form, int first) {
 	GtkWidget *widget;
 
@@ -126,6 +126,12 @@ void kee_entry_item_apply_edit_widget(GtkBox *box, struct kee_entry_item_form_t 
 	gtk_entry_set_input_purpose(form->alice_collateral_delta, GTK_INPUT_PURPOSE_NAME);
 	gtk_box_append(box, widget);
 
+}
+
+void kee_entry_item_apply_summary_widget(KeeEntryItem *o, GtkBox *box) {
+	GtkWidget *widget;
+	widget = list_item_widget(o);
+	gtk_box_append(box, widget);
 }
 
 //KeeEntryItem* kee_entry_item_import(const char *data, size_t data_len) {

@@ -204,6 +204,7 @@ static void kee_import_handle_import_data_accept(GtkActionable *actn, void *null
 //	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "checking import data");
 //}
 
+	/// \todo this fires when unfocusing the import page and creates a warning because stack is not valid.
 static void kee_import_handle_scan_select(GActionGroup *act, char *action_name, gpointer user_data, GtkStack *stack) {
 	GVariant *v;
 	const char *s;

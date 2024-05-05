@@ -7,6 +7,8 @@
 #include "gpg.h"
 #include "db.h"
 
+#define G_LOG_DOMAIN "Kee"
+
 
 int kee_context_init(struct kee_context *ctx, struct kee_settings *settings) {
 	unsigned char *v;

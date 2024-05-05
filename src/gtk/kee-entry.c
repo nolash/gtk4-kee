@@ -28,6 +28,8 @@
 #include "transport.h"
 #include "qr.h"
 
+#define G_LOG_DOMAIN "Kee"
+
 typedef struct {
 } KeeEntryPrivate;
 
@@ -38,6 +40,7 @@ struct _KeeEntryClass {
 #define	ENTRYSTATE_LOAD 0x01
 #define ENTRYSTATE_SHORT 0x02
 #define ENTRYSTATE_EDIT 0x04
+#define ENTRYSTATE_CONFIRM 0x08
 
 extern const asn1_static_node schema_entry_asn1_tab[];
 
@@ -245,11 +248,36 @@ static int kee_entry_apply_list_item_widget(KeeEntry *o) {
 	return 1;
 }
 
+static int kee_entry_apply_summary_widget(KeeEntry *o) {
+	char b[1024];
+	GtkWidget *widget;
+	KeeEntryItem *item;
+	GtkWidget *passphrase;
+
+	sprintf(b, "Ledger with %s", o->bob_dn.cn);
+	widget = gtk_label_new(b);
+	gtk_box_append(GTK_BOX(o->display), widget);
+
+	item = kee_entry_item_new(o->db, &o->ledger, 0);
+	kee_entry_item_set(item, o->ledger.last_item);
+	kee_entry_item_apply_summary_widget(item, o);
+
+	/// \todo DRY - kee-key.c
+	widget = gtk_label_new("private key passphrase");
+	gtk_box_append(GTK_BOX(o->edit), widget);
+	widget = gtk_entry_new();
+	passphrase = GTK_ENTRY(widget);
+	gtk_entry_set_input_purpose(passphrase, GTK_INPUT_PURPOSE_PASSWORD);
+	gtk_box_append(GTK_BOX(o->edit), widget);
+
+	return 1;
+}
+
 
 static int kee_entry_apply_display_widget(KeeEntry *o) {
 	char mask;
 
-	mask = ENTRYSTATE_SHORT | ENTRYSTATE_EDIT;
+	mask = ENTRYSTATE_SHORT | ENTRYSTATE_EDIT | ENTRYSTATE_CONFIRM;
 	if ((o->state & mask) == 0) {
 		return 0;
 	}
@@ -322,48 +350,6 @@ static int kee_entry_apply_edit_widget(KeeEntry *o) {
 	return 1;
 }
 
-int kee_entry_modeswitch(KeeEntry *o, enum kee_entry_viewmode_e mode) {
-	int r;
-
-	if (o->showing != NULL) {	
-		gtk_widget_set_visible(o->showing, false);
-		gtk_box_remove(GTK_BOX(o), o->showing);
-	}
-	switch(mode) {
-		case KEE_ENTRY_VIEWMODE_SHORT:
-			r = kee_entry_apply_list_item_widget(o);
-			break;
-		case KEE_ENTRY_VIEWMODE_EDIT:
-			r = kee_entry_apply_edit_widget(o);
-			break;
-		case KEE_ENTRY_VIEWMODE_SIGN:
-			r = kee_entry_apply_display_widget(o);
-			break;
-
-		default:
-			r = kee_entry_apply_display_widget(o);
-	}
-	gtk_box_append(GTK_BOX(o), o->showing);
-	gtk_widget_set_visible(o->showing, true);
-	return r;
-}
-
-KeeEntry* kee_entry_new(struct db_ctx *db) {
-	KeeEntry *o;
-	o = KEE_ENTRY(g_object_new(KEE_TYPE_ENTRY, "orientation", GTK_ORIENTATION_VERTICAL, NULL));
-	o->db = db;
-	kee_dn_init(&o->bob_dn, 0);
-	return o;
-}
-
-void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
-	o->resolver = resolver;	
-}
-
-void kee_entry_set_signer(KeeEntry *o, struct gpg_store *gpg) {
-	o->gpg = gpg;
-}
-
 static void kee_entry_init_list_widget(KeeEntry *o) {
 	GtkSingleSelection *sel;
 	GtkListItemFactory *factory;
@@ -380,7 +366,6 @@ static void kee_entry_init_list_widget(KeeEntry *o) {
 	gtk_box_append(GTK_BOX(o->display), GTK_WIDGET(view));
 
 }
-
 static int process_entry_ledger(KeeEntry *o) {
 	int r;
 	size_t key_len;
@@ -429,6 +414,54 @@ static int process_entry_ledger(KeeEntry *o) {
 
 	return ERR_OK;
 }
+/// \todo returns 1 on success, investigate why and change if possible!
+int kee_entry_modeswitch(KeeEntry *o, enum kee_entry_viewmode_e mode) {
+	int r;
+
+	if (o->showing != NULL) {	
+		gtk_widget_set_visible(o->showing, false);
+		gtk_box_remove(GTK_BOX(o), o->showing);
+	}
+	switch(mode) {
+		case KEE_ENTRY_VIEWMODE_SHORT:
+			r = kee_entry_apply_list_item_widget(o);
+			break;
+		case KEE_ENTRY_VIEWMODE_EDIT:
+			r = kee_entry_apply_edit_widget(o);
+			break;
+		case KEE_ENTRY_VIEWMODE_SIGN:
+			o->state |= ENTRYSTATE_CONFIRM;
+			r = kee_entry_apply_display_widget(o);
+			if (!r) {
+				return r;
+			}
+			r = kee_entry_apply_summary_widget(o);
+			break;
+		default:
+			r = kee_entry_apply_display_widget(o);
+	}
+	gtk_box_append(GTK_BOX(o), o->showing);
+	gtk_widget_set_visible(o->showing, true);
+	return r;
+}
+
+KeeEntry* kee_entry_new(struct db_ctx *db) {
+	KeeEntry *o;
+	o = KEE_ENTRY(g_object_new(KEE_TYPE_ENTRY, "orientation", GTK_ORIENTATION_VERTICAL, NULL));
+	o->db = db;
+	kee_dn_init(&o->bob_dn, 0);
+	return o;
+}
+
+void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
+	o->resolver = resolver;	
+}
+
+void kee_entry_set_signer(KeeEntry *o, struct gpg_store *gpg) {
+	o->gpg = gpg;
+}
+
+
 
 /// \todo rename "from" to indicate not return new entry but apply on existing
 int kee_entry_from_ledger(KeeEntry *o, struct kee_ledger_t *ledger) {

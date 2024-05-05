@@ -7,6 +7,7 @@
 #include "state.h"
 #include "menu.h"
 
+#define G_LOG_DOMAIN "Kee"
 
 static void act_quit(GAction *act, GVariant *param, GApplication *gapp) {
 	g_application_quit(gapp);

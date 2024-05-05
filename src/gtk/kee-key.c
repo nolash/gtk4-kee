@@ -6,6 +6,8 @@
 #include "err.h"
 #include "hex.h"
 
+#define G_LOG_DOMAIN "Kee"
+
 typedef struct {
 } KeeKeyPrivate;
 

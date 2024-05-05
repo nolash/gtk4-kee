@@ -8,6 +8,8 @@
 #include "db.h"
 #include "err.h"
 
+#define G_LOG_DOMAIN "Kee"
+
 const size_t entry_ref_len = 65;
 const size_t entry_key_len = 73;
 

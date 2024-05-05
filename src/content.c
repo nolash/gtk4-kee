@@ -5,6 +5,8 @@
 
 #include "content.h"
 #include "err.h"
+#include "defs.h"
+#include "digest.h"
 
 
 int kee_content_init(struct kee_content_t *content, const char *key, size_t size_hint) {
@@ -32,6 +34,10 @@ int kee_content_resolve(struct kee_content_t *content, Cadiz *cadiz) {
 	char *subject;
 	size_t subject_len;
 	size_t c;
+
+	if (!memcmp(content->key, zero_content, DIGEST_LENGTH)) {
+		return ERR_OK;
+	}
 
 	content->flags = 0;
 	c = content->mem_size - 1;
