@@ -694,6 +694,15 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 		signature_request = item->alice_signature;
 		signature_response = item->bob_signature;
 	}
+	r = to_endian(TO_ENDIAN_BIG, sizeof(int), &credit_delta);
+	if (r) {
+		return ERR_FAIL;
+	}
+	r = to_endian(TO_ENDIAN_BIG, sizeof(int), &collateral_delta);
+	if (r) {
+		return ERR_FAIL;
+	}
+
 	c = 4;
 	r = asn1_write_value(node, "Kee.KeeEntry.creditDelta", &credit_delta, c);
 	if (r != ASN1_SUCCESS) {

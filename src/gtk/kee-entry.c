@@ -273,7 +273,6 @@ static int kee_entry_apply_summary_widget(KeeEntry *o) {
 	return 1;
 }
 
-
 static int kee_entry_apply_display_widget(KeeEntry *o) {
 	char mask;
 
