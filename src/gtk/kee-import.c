@@ -127,6 +127,7 @@ static void kee_import_handle_import_data_text(KeeImport *o, GString *v, GtkText
 
 	s = (char*)v->str;
 	//gtk_text_buffer_set_text(buf, data, strlen(data));
+	/// \todo s is invalid on first run after compile - segfaults - probably string not taken
 	gtk_text_buffer_set_text(buf, s, strlen(s));
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "import data %s", s);
 

@@ -657,18 +657,6 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 		return r;
 	}
 
-//	memcpy(timedata, item->time, 4);
-//	r = to_endian(TO_ENDIAN_BIG, 4, timedata);
-//	if (r) {
-//		return 1;
-//	}
-//
-//	memcpy(timedata+4, item->time+4, 4);
-//	r = to_endian(TO_ENDIAN_BIG, 4, timedata+4);
-//	if (r) {
-//		return 1;
-//	}
-
 	nanotime = item->time.tv_sec * 1000000000;
 	nanotime += item->time.tv_nsec;
 	r = to_endian(TO_ENDIAN_BIG, 8, &nanotime);
@@ -764,8 +752,6 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 }
 
 
-/// \todo remove external buffer
-//int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, char *out, size_t *out_len, const char *passphrase) {
 int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, const char *passphrase) {
 	int r;
 	char *p;

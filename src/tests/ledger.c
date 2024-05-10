@@ -103,7 +103,7 @@ int test_pair() {
 		return 1;
 	}
 
-	if (ledger.last_item->alice_credit_delta == 666) {
+	if (ledger.last_item->alice_credit_delta != 666) {
 		return 1;
 	}
 

@@ -101,10 +101,15 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 	trans = g_object_new(KEE_TYPE_TRANSPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
 	kee_menu_add(win, "transport", GTK_WIDGET(trans));
 
-	/// \todo make kee-entry action map/group
+	/// \todo make kee-entry action map/group?
 	act = g_simple_action_new("qr", G_VARIANT_TYPE_STRING);
 	g_action_map_add_action(G_ACTION_MAP(gapp), G_ACTION(act));
 	g_signal_connect(act, "activate", G_CALLBACK(kee_transport_handle_qr), trans);
+
+	act = g_simple_action_new("commit", G_VARIANT_TYPE_STRING);
+	g_action_map_add_action(G_ACTION_MAP(gapp), G_ACTION(act));
+	g_signal_connect(act, "activate", G_CALLBACK(kee_transport_handle_qr), trans);
+
 
 	gtk_window_present(GTK_WINDOW (win));
 }

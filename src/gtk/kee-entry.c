@@ -76,6 +76,72 @@ struct _KeeEntry {
 
 G_DEFINE_TYPE(KeeEntry, kee_entry, GTK_TYPE_BOX);
 
+static void kee_entry_handle_confirm(GtkButton *butt, KeeEntry *o) {
+	int r;
+	GtkApplication *gapp;
+	GtkWindow *win;
+	GtkWidget *widget;
+	GAction *act;
+	GtkEntryBuffer *buf;
+	char *b;
+	char out[1024];
+	char passphrase_hash[DIGEST_LENGTH];
+	size_t out_len;
+	struct kee_ledger_t *ledger;
+	struct kee_transport_t trans;
+	GVariant *transport_data;
+
+	ledger = &o->ledger;
+
+	out_len = 1024;
+	kee_ledger_serialize_open(ledger, out, &out_len);
+
+	buf = gtk_entry_get_buffer(o->form->passphrase);
+	b = (char*)gtk_entry_buffer_get_text(buf);
+	gpg_store_digest(o->gpg, passphrase_hash, b);
+
+	memcpy(o->ledger.pubkey_alice, o->gpg->public_key, PUBKEY_LENGTH);
+	r = kee_ledger_sign(&o->ledger, o->ledger.last_item, o->gpg, passphrase_hash);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail entry sign");
+		return;
+	}
+
+	r = kee_ledger_serialize_open(&o->ledger, out, &out_len);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "qr transport renderer failed");
+		return;
+	}
+
+	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_LEDGER, out_len);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "qr transport renderer failed");
+		return;
+	}
+
+	r = kee_transport_write(&trans, out, out_len);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "write to qr transport renderer failed");
+		return;
+	}
+
+	r = kee_transport_next(&trans, out, &out_len);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "read from qr transport renderer failed");
+		return;
+	}
+	/// \todo verify that this frees the buffer
+	transport_data = g_variant_new_take_string(out);
+
+	widget = gtk_widget_get_ancestor(GTK_WIDGET(o), GTK_TYPE_WINDOW);
+	win = GTK_WINDOW(widget);
+	gapp = gtk_window_get_application(win);
+	act = g_action_map_lookup_action(G_ACTION_MAP(gapp), "commit");
+	g_action_activate(act, transport_data);
+}
+
+
+/// \todo analyze is travering ancestor better that including context in object?
 static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	int r;
 	GtkWindow *win;
@@ -89,7 +155,7 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	char *out;
 	size_t out_len;
 	size_t c;
-	char passphrase_hash[32];
+	char passphrase_hash[DIGEST_LENGTH];
 	GVariant *transport_data;
 
 	buf = gtk_entry_get_buffer(o->form->uoa);
@@ -206,6 +272,10 @@ static void kee_entry_finalize(GObject *o) {
 
 	kee_dn_free(&entry->bob_dn);
 
+	if (entry->form != NULL) {
+		free(entry->form);
+	}
+
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "tearing down entry");
 	//G_OBJECT_CLASS(kee_entry_parent_class)->finalize(o);
 }
@@ -220,6 +290,7 @@ static void kee_entry_init(KeeEntry *o) {
 	o->state = 0;
 	o->resolver = NULL;
 	o->showing = NULL;
+	o->form = NULL;
 	o->display = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);;
 	o->edit = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	kee_ledger_init(&o->ledger);
@@ -248,11 +319,11 @@ static int kee_entry_apply_list_item_widget(KeeEntry *o) {
 	return 1;
 }
 
+/// \todo DRY with add entry
 static int kee_entry_apply_summary_widget(KeeEntry *o) {
 	char b[1024];
 	GtkWidget *widget;
 	KeeEntryItem *item;
-	GtkWidget *passphrase;
 
 	sprintf(b, "Ledger with %s", o->bob_dn.cn);
 	widget = gtk_label_new(b);
@@ -260,15 +331,20 @@ static int kee_entry_apply_summary_widget(KeeEntry *o) {
 
 	item = kee_entry_item_new(o->db, &o->ledger, 0);
 	kee_entry_item_set(item, o->ledger.last_item);
-	kee_entry_item_apply_summary_widget(item, o);
+	kee_entry_item_apply_summary_widget(item, GTK_BOX(o->display));
 
+	o->form = calloc(sizeof(struct kee_entry_form_t), 1);
 	/// \todo DRY - kee-key.c
 	widget = gtk_label_new("private key passphrase");
-	gtk_box_append(GTK_BOX(o->edit), widget);
+	gtk_box_append(GTK_BOX(o->display), widget);
 	widget = gtk_entry_new();
-	passphrase = GTK_ENTRY(widget);
-	gtk_entry_set_input_purpose(passphrase, GTK_INPUT_PURPOSE_PASSWORD);
-	gtk_box_append(GTK_BOX(o->edit), widget);
+	o->form->passphrase = GTK_ENTRY(widget);
+	gtk_entry_set_input_purpose(o->form->passphrase, GTK_INPUT_PURPOSE_PASSWORD);
+	gtk_box_append(GTK_BOX(o->display), widget);
+
+	widget = gtk_button_new_with_label("confirm");
+	gtk_box_append(GTK_BOX(o->display), widget);
+	g_signal_connect (widget, "clicked", G_CALLBACK(kee_entry_handle_confirm), o);
 
 	return 1;
 }
@@ -285,6 +361,7 @@ static int kee_entry_apply_display_widget(KeeEntry *o) {
 	return 1;
 }
 
+/// \todo free form - why does it have to be heap?
 static void kee_entry_setup_edit_widget(KeeEntry *o) {
 	GtkWidget *widget;
 
@@ -459,8 +536,6 @@ void kee_entry_set_resolver(KeeEntry *o,  struct Cadiz *resolver) {
 void kee_entry_set_signer(KeeEntry *o, struct gpg_store *gpg) {
 	o->gpg = gpg;
 }
-
-
 
 /// \todo rename "from" to indicate not return new entry but apply on existing
 int kee_entry_from_ledger(KeeEntry *o, struct kee_ledger_t *ledger) {
