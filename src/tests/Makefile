@@ -20,7 +20,11 @@ obj_debug: util
 
 #test_run: $(wildcard test_*)
 #	./$<
-test_run:
+
+testdata:
+	ln -sf ../../testdata testdata
+
+test_run: testdata
 	./test_cadir
 	./test_content
 	./test_sign

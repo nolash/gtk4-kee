@@ -42,6 +42,7 @@ testdata: testdata_schema
 	rm -vrf testdata_mdb
 	#python testdata.py
 	python testdata_asn1.py
+	make -C src/tests testdata
 
 doc:
 	pandoc -fgfm -tplain README.md > README

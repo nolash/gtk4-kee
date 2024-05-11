@@ -50,7 +50,7 @@ def padbytes(b, padsize=4096):
 
 
 def db_init(d):
-    d = os.path.join(d, 'testdata_mdb')
+    d = os.path.join(d, 'testdata', 'mdb')
     logg.info('using d for db' + d)
 
     try:
@@ -61,13 +61,24 @@ def db_init(d):
     return d 
 
 
+def data_add(data_dir, k, v):
+        fp = os.path.join(data_dir, k.hex())
+        f = open(fp, 'wb')
+        f.write(v)
+        f.close()
+
+
 class LedgerContent(email.message.EmailMessage):
 
-    def __init__(self):
+    def __init__(self, subject=None, body=None):
         super(LedgerContent, self).__init__()
         self.set_default_type("text/plain")
-        self.add_header("Subject", fake.sentence())
-        self.set_content(fake.paragraph())
+        if subject == None:
+            subject = fake.sentence()
+        self.add_header("Subject", subject)
+        if body == None:
+            body = fake.paragraph()
+        self.set_content(body)
 
 
     def kv(self):
@@ -439,15 +450,21 @@ def generate_ledger(dbi, data_dir, signer, bob_name, entry_count=3, alice=None, 
 
 if __name__ == '__main__':
     d = os.path.dirname(__file__)
-    data_dir = os.path.join(d, 'testdata_resource')
+    data_dir = os.path.join(d, 'testdata', 'resource')
     try:
         shutil.rmtree(data_dir)
     except FileNotFoundError:
         pass
     os.makedirs(data_dir)
+    
+    v = b'foo'
+    h = hashlib.sha512()
+    h.update(v)
+    k = h.digest()
+    data_add(data_dir, k, v)
 
     d = os.path.dirname(__file__)
-    crypto_dir = os.path.join(d, 'testdata_crypt')
+    crypto_dir = os.path.join(d, 'testdata', 'crypt')
     try:
         shutil.rmtree(crypto_dir)
     except FileNotFoundError:

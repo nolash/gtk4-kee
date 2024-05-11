@@ -11,7 +11,16 @@
 
 #define KEE_SETTINGS_NAME "kee"
 #define KEE_SETTINGS_CAP 4096
-#define KEE_SETTINGS_ITEM_CAP 1024
+#define KEE_SETTINGS_ITEM_CAP 512
+
+static void settings_get_path(struct kee_settings *z) {
+	char *p;
+
+	p = getenv("KEE_PATH");
+	if (p != NULL) {
+		memcpy(z->data, p, strlen(p));
+	}
+}
 
 /**
  * \todo make xdg optional
@@ -25,25 +34,32 @@ int settings_new_from_xdg(struct kee_settings *z) {
 
 	memset(z, 0, sizeof(struct kee_settings));
 
-	z->key = (unsigned char*)"./testdata_crypt";
+	//z->key = (unsigned char*)"./testdata_crypt";
 
-	z->data = malloc(KEE_SETTINGS_CAP);
+	z->data = calloc(KEE_SETTINGS_CAP, 1);
 	p = z->data;
 	p += KEE_SETTINGS_ITEM_CAP;
 	z->run = p;
+	p += KEE_SETTINGS_ITEM_CAP;
+	z->key = p;
 	p += KEE_SETTINGS_ITEM_CAP;
 	z->locktime = p;
 	p += KEE_SETTINGS_ITEM_CAP;
 	z->video_device = p;
 
-	s = xdgDataHome(&xdg);
-	sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_NAME);
+	settings_get_path(z);
+	if (z->data == NULL) {
+		s = xdgDataHome(&xdg);
+		sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_NAME);
+	}
+	sprintf((char*)z->key, "%s/crypt", z->data);
 
 	s = xdgRuntimeDirectory(&xdg);
 	sprintf((char*)z->run, "%s/%s", s, KEE_SETTINGS_NAME);
 
 	return ERR_OK;
 }
+
 
 /***
  * \todo verify default video exists

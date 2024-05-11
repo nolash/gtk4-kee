@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
 	calculate_digest_algo(data, 3, digest, GCRY_MD_SHA512);
 
 	l = 256;
-	cadiz.locator = "./testdata_resource";
+	cadiz.locator = "./testdata/resource";
 	r = cadiz_resolve(&cadiz, digest, result, &l);
 	if (r) {
 		return 1;

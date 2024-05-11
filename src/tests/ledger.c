@@ -34,7 +34,7 @@ int test_parse() {
 	Cadiz cadiz;
 	char data[1024];
 	
-	cadiz.locator = "./testdata_resource";
+	cadiz.locator = "./testdata/resource";
 
 	kee_ledger_init(&ledger);
 	kee_ledger_reset_cache(&ledger);
