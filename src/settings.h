@@ -8,6 +8,8 @@
  */
 struct kee_settings {
 	unsigned char *data;
+	unsigned char *db;
+	unsigned char *resource;
 	unsigned char *run;
 	unsigned char *key;
 	unsigned char *locktime;

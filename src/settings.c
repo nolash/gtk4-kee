@@ -39,6 +39,10 @@ int settings_new_from_xdg(struct kee_settings *z) {
 	z->data = calloc(KEE_SETTINGS_CAP, 1);
 	p = z->data;
 	p += KEE_SETTINGS_ITEM_CAP;
+	z->db = p;
+	p += KEE_SETTINGS_ITEM_CAP;
+	z->resource = p;
+	p += KEE_SETTINGS_ITEM_CAP;
 	z->run = p;
 	p += KEE_SETTINGS_ITEM_CAP;
 	z->key = p;
@@ -48,11 +52,13 @@ int settings_new_from_xdg(struct kee_settings *z) {
 	z->video_device = p;
 
 	settings_get_path(z);
-	if (z->data == NULL) {
+	if (*z->data == 0x0) {
 		s = xdgDataHome(&xdg);
 		sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_NAME);
 	}
 	sprintf((char*)z->key, "%s/crypt", z->data);
+	sprintf((char*)z->db, "%s/mdb", z->data);
+	sprintf((char*)z->resource, "%s/resource", z->data);
 
 	s = xdgRuntimeDirectory(&xdg);
 	sprintf((char*)z->run, "%s/%s", s, KEE_SETTINGS_NAME);
