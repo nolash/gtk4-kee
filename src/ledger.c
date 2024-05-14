@@ -967,24 +967,87 @@ static size_t db_key(enum DbKey pfx, struct timespec *ts, char *out, size_t offs
 	c = timespec_to_keypart(ts, p+offset);
 
 	return offset + 1 + c;
- }
+}
 
-/// \todo atomic put for ledger and items!!
-int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
+// idx is reverse chronological order
+static struct kee_ledger_item_t* get_item_by_idx(struct kee_ledger_t *ledger, int idx) {
+	int i;
+	struct kee_ledger_item_t *item;
+	
+	item = ledger->last_item;
+
+	for (i = 0; i < idx; i++) {
+		if (item == NULL) {
+			return NULL;
+		}
+		item = item->prev_item;
+	}
+	return item;
+}
+
+int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx) {
 	int r;
 	size_t c;
 	size_t l;
-	char mem[2048];
+	char mem[4096];
+	char *k;
+	char *v;
+	struct kee_ledger_item_t *item;
+
+	k = (char*)mem;
+	v = k + 2048;
+
+	item = get_item_by_idx(ledger, idx);
+	if (item == NULL) {
+		return ERR_FAIL;
+	}
+
+	memcpy(k, ledger->digest, DIGEST_LENGTH);
+
+	l = db_key(DbKeyLedgerEntry, &item->time, k, DIGEST_LENGTH);
+	if (l == 0) {
+		return ERR_FAIL;
+	}
+
+//	db_rewind(db);
+//	r = db_next(db, DbKeyLedgerEntry, &k, &l, &v, &c);
+//	if (!r) {
+//		return ERR_DB_EXISTS;
+//	}
+
+	c = 928;
+	r = kee_ledger_item_serialize(item, v, &c, KEE_LEDGER_STATE_FINAL);
+	if (r) {
+		return ERR_FAIL;
+	}
+	//r = db_put(db, k, l, v, c);
+	r = db_add(db, k, l, v, c);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	return ERR_OK;	
+}
+
+/// \todo atomic put for ledger and items!!
+/// \todo guard local k/v buffer overflow
+int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
+	int r;
+	int i;
+	size_t c;
+	size_t l;
+	char mem[4096];
 	char *k;
 	char *v;
 
 	k = (char*)mem;
-	v = ((char*)mem)+1024;
+	v = k + 2048;
 
 	k[0] = DbKeyReverse;
 	memcpy(((char*)k)+1, ledger->digest, DIGEST_LENGTH); 
 	l = DIGEST_LENGTH + 1;
-	c = 928; // 1024 - 96
+	//c = 928; // 1024 - 96
+	c = 2048;
 	db_rewind(db);
 	r = db_next(db, DbKeyReverse, &k, &l, &v, &c);
 	if (!r) {
@@ -1005,7 +1068,8 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 		return ERR_FAIL;
 	}
 
-	c = 928;
+	//c = 928;
+	c = 2048;
 	r = kee_ledger_serialize(ledger, v, &c);
 	if (r) {
 		return ERR_DB_FAIL;
@@ -1033,6 +1097,12 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 		return ERR_DB_FAIL;
 	}
 
+	i = 0;
+	r = 0;
+	while (r == 0) {
+		r = kee_ledger_item_put(ledger, db, i);
+	}
+
 	r = db_finish(db);
 	if (r) {
 		return ERR_DB_FAIL;
@@ -1041,21 +1111,6 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	return ERR_OK;
 }
 
-// idx is reverse chronological order
-static struct kee_ledger_item_t* get_item_by_idx(struct kee_ledger_t *ledger, int idx) {
-	int i;
-	struct kee_ledger_item_t *item;
-	
-	item = ledger->last_item;
-
-	for (i = 0; i < idx; i++) {
-		if (item == NULL) {
-			return NULL;
-		}
-		item = item->prev_item;
-	}
-	return item;
-}
 
 static int get_authentication_params(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, char **pubkey_request, char **sig_request, char **pubkey_response, char **sig_response, enum kee_initiator_e initiator) {
 	if (item->initiator == NOONE) {
@@ -1162,48 +1217,6 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 	return ERR_OK;
 }
 
-int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx) {
-	int r;
-	size_t c;
-	size_t l;
-	char mem[1024];
-	char *k;
-	char *v;
-	struct kee_ledger_item_t *item;
-
-	item = get_item_by_idx(ledger, idx);
-	if (item == NULL) {
-		return ERR_FAIL;
-	}
-
-	k = (char*)mem;
-	v = ((char*)mem)+96;
-
-	memcpy(k, ledger->digest, DIGEST_LENGTH);
-
-	l = db_key(DbKeyLedgerEntry, &item->time, k, DIGEST_LENGTH);
-	if (l == 0) {
-		return ERR_FAIL;
-	}
-
-	db_rewind(db);
-	r = db_next(db, DbKeyLedgerEntry, &k, &l, &v, &c);
-	if (!r) {
-		return ERR_DB_EXISTS;
-	}
-
-	c = 928;
-	r = kee_ledger_item_serialize(item, v, &c, KEE_LEDGER_STATE_FINAL);
-	if (r) {
-		return ERR_FAIL;
-	}
-	r = db_put(db, k, l, v, c);
-	if (r) {
-		return ERR_FAIL;
-	}
-
-	return ERR_OK;	
-}
 
 
 /// \todo zero initiator need detect
