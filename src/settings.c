@@ -13,12 +13,17 @@
 #define KEE_SETTINGS_CAP 4096
 #define KEE_SETTINGS_ITEM_CAP 512
 
-static void settings_get_path(struct kee_settings *z) {
+static void settings_get_paths(struct kee_settings *z) {
 	char *p;
 
 	p = getenv("KEE_PATH");
 	if (p != NULL) {
 		memcpy(z->data, p, strlen(p));
+	}
+
+	p = getenv("KEE_KEY_PATH");
+	if (p != NULL) {
+		memcpy(z->key, p, strlen(p));
 	}
 }
 
@@ -51,12 +56,14 @@ int settings_new_from_xdg(struct kee_settings *z) {
 	p += KEE_SETTINGS_ITEM_CAP;
 	z->video_device = p;
 
-	settings_get_path(z);
+	settings_get_paths(z);
 	if (*z->data == 0x0) {
 		s = xdgDataHome(&xdg);
 		sprintf((char*)z->data, "%s/%s", s, KEE_SETTINGS_NAME);
 	}
-	sprintf((char*)z->key, "%s/crypt", z->data);
+	if (*z->key == 0x0) {
+		sprintf((char*)z->key, "%s/crypt", z->data);
+	}
 	sprintf((char*)z->db, "%s/mdb", z->data);
 	sprintf((char*)z->resource, "%s/resource", z->data);
 

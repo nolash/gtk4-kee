@@ -1,6 +1,9 @@
+import enum
 import os
 import sys
 import io
+import zlib
+import base64
 import logging
 import hashlib
 from Crypto.Cipher import ChaCha20_Poly1305
@@ -19,11 +22,13 @@ from faker.providers import lorem
 import varint
 from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.codec.der.decoder import decode as der_decode
+from pyasn1.type.univ import Any
 from pygcrypt.gctypes.sexpression import SExpression
 from pygcrypt.gctypes.key import Key as GKey
 
 from testdata_asn1schema import KeeEntryHead
 from testdata_asn1schema import KeeEntry
+from testdata_asn1schema import KeeTransport
 
 logging.basicConfig(level=logging.DEBUG)
 logg = logging.getLogger()
@@ -32,6 +37,23 @@ fake = Faker()
 fake.add_provider(lorem)
 
 FLAGS_SIGNER_IS_BOB = 1 << 0
+
+class LedgerMode(enum.IntEnum):
+    REQUEST = 0
+    RESPONSE = 1
+    FINAL = 2
+
+
+class LedgerRole(enum.Enum):
+    ALICE = 'alice'
+    BOB = 'bob'
+
+
+class TransportCmd(enum.Enum):
+    IMPORT = b'\x00'
+    ID = b'\x01'
+    LEDGER = b'\x02'
+
 
 NOBODY = b'\x00' * 64
 NOSIG = b''
@@ -93,7 +115,7 @@ class LedgerHeadContent(LedgerContent):
     pass
 
 
-class LedgerEntryContent(LedgerContent):
+class LedgerItemContent(LedgerContent):
     pass
 
 
@@ -200,6 +222,36 @@ class LedgerSigner:
         return b
 
 
+
+class LedgerBundle:
+
+    def __init__(self, data_dir, ledger):
+        self.data_dir = data_dir
+        self.o = KeeTransport()
+        self.o.setComponentByPosition(0, ledger.to_asn1(data_dir))
+
+
+    def to_asn1(self, ledger_item, mode):
+        self.o.setComponentByPosition(1, ledger_item.to_asn1(data_dir, mode))
+        return self.o
+
+
+    def serialize(self, ledger_item, mode, w=sys.stdout.buffer):
+        o = self.to_asn1(ledger_item, mode)
+        b = der_encode(o)
+        b = TransportCmd.LEDGER.value + b
+        if w == None:
+            return b
+        w.write(b)
+
+
+    def encode(self, ledger_item, mode, w=sys.stdout.buffer):
+        b = self.serialize(ledger_item, mode, w=None)
+        b = zlib.compress(b, level=9)
+        b = base64.b64encode(b)
+        w.write(b) 
+
+
 class Ledger:
 
     @classmethod
@@ -226,25 +278,43 @@ class LedgerGenerator:
         logg.debug('new generator with credit alice {} bob {}'.format(self.credit_alice, self.credit_bob))
 
 
-    def delta(self, collateral=False, credit=True):
+    def delta(self, collateral=False, credit=True, signer_role=None):
         delta_credit = 0
         delta_collateral = 0
-   
+  
         single_is_bob = False
-        if self.count == 0:
-            delta_credit = self.credit_alice
-            delta_collateral = self.collateral_alice
-        elif self.count == 1:
-            delta_credit = self.credit_bob
-            delta_collateral = self.collateral_bob
-            single_is_bob = True
+
+        initial_credit_role = None
+        if self.count < 2:
+            if signer_role == None:
+                if self.count == 0:
+                    initial_credit_role = LedgerRole.ALICE
+                else:
+                    initial_credit_role = LedgerRole.BOB
+            else: 
+                initial_credit_role = signer_role
+
+        if initial_credit_role != None:
+            if initial_credit_role == LedgerRole.ALICE:
+                delta_credit = self.credit_alice
+                delta_collateral = self.collateral_alice
+            else:
+                delta_credit = self.credit_bob
+                delta_collateral = self.collateral_bob
+                single_is_bob = True
         else:
             if self.credit_bob == 0 and self.credit_alice == 0:
-                raise OverflowError()
+                raise OverflowError("Both alice and bob are broke :'(")
 
         if delta_credit == 0:
-            single_is_bob = bool(random.randint(0, 1))
+            if signer_role == None:
+                single_is_bob = bool(random.randint(0, 1))
+            elif signer_role == LedgerRole.ALICE:
+                single_is_bob = True
+
             if self.credit_bob == 0:
+                if signer_role == LedgerRole.BOB:
+                    raise OverflowError("bob is broke")
                 single_is_bob = False
             elif self.credit_alice == 0:
                     single_is_bob = True
@@ -301,7 +371,7 @@ class LedgerHead(Ledger):
         self.body = LedgerHeadContent()
 
 
-    def serialize(self, data_dir, w=sys.stdout.buffer):
+    def to_asn1(self, data_dir):
         o = KeeEntryHead()
         o['uoa'] = self.uoa
         o['uoaDecimals'] = self.uoa_decimals
@@ -310,6 +380,11 @@ class LedgerHead(Ledger):
         (k, v) = self.body.kv()
         self.data_add(data_dir, k, v)
         o['body'] = k
+        return o
+
+
+    def serialize(self, data_dir, w=sys.stdout.buffer):
+        o = self.to_asn1(data_dir)
         b = der_encode(o)
         w.write(b)
 
@@ -325,7 +400,7 @@ class LedgerHead(Ledger):
         return r
 
 
-class LedgerEntry(Ledger):
+class LedgerItem(Ledger):
 
     credit_alice = 0
     credit_bob = 0
@@ -333,16 +408,19 @@ class LedgerEntry(Ledger):
     collateral_bob = 0
     ms = 0
 
-    def __init__(self, head, signer, generator, parent=None, body=NOBODY, bob_name='bob'):
+    def __init__(self, head, signer, generator, signer_name=None, parent=None, body=NOBODY, bob_name='bob'):
         self.head = head
         self.parent = parent
         if self.parent == None:
             self.parent = b'\x00' * 64
         self.timestamp = time.time_ns()
 
-        self.body = LedgerEntryContent()
+        self.body = LedgerItemContent()
 
-        delta = generator.delta()
+        signer_role = None
+        if signer_name != None:
+            signer_role=LedgerRole(signer_name)
+        delta = generator.delta(signer_role=signer_role)
         self.signer_sequence = []
         if delta[2]:
             self.signer_sequence = [bob_name, 'alice']
@@ -356,42 +434,53 @@ class LedgerEntry(Ledger):
         self.signer = signer
 
 
-    def serialize(self, data_dir, w=sys.stdout.buffer):
+    def to_asn1(self, data_dir, mode=LedgerMode.FINAL):
         o = KeeEntry()
         o['parent'] = self.parent
         o['timestamp'] = self.timestamp
         o['creditDelta'] = self.credit_delta
         o['collateralDelta'] = self.collateral_delta
 
-
         (k, v) = self.body.kv()
         self.data_add(data_dir, k, v)
         o['body'] = k
 
-        o['signatureRequest'] = self.request_signature
         o['response'] = False
-        o['signatureResponse'] = self.response_signature
+        o['signatureRequest'] = NOSIG
+        o['signatureResponse'] = NOSIG
 
-        logg.debug('encoding new entry for request signature: {}'.format(o))
+        if mode == LedgerMode.REQUEST:
+            return o
 
+        logg.debug('encoding new ledger_item for request signature: {}'.format(o))
         b = der_encode(o)
         self.request_signature = self.signer.sign(self.signer_sequence[0], self.head + b)
         o['signatureRequest'] = self.request_signature
-        o['response'] = True
 
+        if mode == LedgerMode.RESPONSE:
+            return o 
+
+        if mode != LedgerMode.FINAL:
+            raise ValueError("invalid ledger mode: {}".format(mode))
+
+        o['response'] = True
         b = der_encode(o)
         self.response_signature = self.signer.sign(self.signer_sequence[1], self.head + b)
         o['signatureResponse'] = self.response_signature
+        return o
 
+
+    def serialize(self, data_dir, mode=LedgerMode.FINAL, w=sys.stdout.buffer):
+        o = self.to_asn1(data_dir, mode=mode)
         b = der_encode(o)
         flag = b'\x00'
         if self.signer_sequence[0] != 'alice':
             flag = b'\x01'
         w.write(b + flag)
 
-        LedgerEntry.ms += 1
-        if LedgerEntry.ms > 999:
-            LedgerEntry.ms = 0
+        LedgerItem.ms += 1
+        if LedgerItem.ms > 999:
+            LedgerItem.ms = 0
 
 
     @staticmethod
@@ -408,18 +497,18 @@ class LedgerEntry(Ledger):
         return r
   
 
-def generate_entry(data_dir, signer, generator, head, bob_name, parent):
-    o = LedgerEntry(head, signer, generator, parent=parent, bob_name=bob_name)
+def generate_ledger_item(data_dir, signer, generator, head, bob_name, parent):
+    o = LedgerItem(head, signer, generator, parent=parent, bob_name=bob_name)
     w = io.BytesIO()
     r = o.serialize(data_dir, w=w)
     h = hashlib.new('sha512')
     b = w.getvalue()
     h.update(b)
     z = h.digest()
-    return (z, b,)
+    return (z, b, o,)
 
 
-def generate_ledger(dbi, data_dir, signer, bob_name, entry_count=3, alice=None, bob=None):
+def generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=3, alice=None, bob=None):
     r = []
     o = LedgerHead(alice_key=alice, bob_key=bob)
     w = io.BytesIO()
@@ -428,17 +517,17 @@ def generate_ledger(dbi, data_dir, signer, bob_name, entry_count=3, alice=None, 
     b = w.getvalue()
     h.update(b)
     z = h.digest()
-    r.append((z, b,))
+    r.append((z, b, o,))
 
     k = z
     parent = None
-    LedgerEntry.credit_alice = random.randint(100, 1000)
-    LedgerEntry.credit_bob = random.randint(100, 1000)
+    LedgerItem.credit_alice = random.randint(100, 1000)
+    LedgerItem.credit_bob = random.randint(100, 1000)
 
     generator = LedgerGenerator()
-    for i in range(entry_count):
+    for i in range(ledger_item_count):
         try:
-            v = generate_entry(data_dir, signer, generator, k, bob_name, parent)
+            v = generate_ledger_item(data_dir, signer, generator, k, bob_name, parent)
         except OverflowError:
             break
         # \todo generate  key value already here
@@ -471,6 +560,14 @@ if __name__ == '__main__':
         pass
     os.makedirs(crypto_dir)
 
+    d = os.path.dirname(__file__)
+    crypto_dir_r = os.path.join(d, 'testdata', 'crypt_reverse')
+    try:
+        shutil.rmtree(crypto_dir_r)
+    except FileNotFoundError:
+        pass
+    os.makedirs(crypto_dir_r)
+
     d = db_init(d)
 
     env = lmdb.open(d)
@@ -493,17 +590,28 @@ if __name__ == '__main__':
     os.symlink(alice_key, alice_key_sym)
 
     count_ledgers = os.environ.get('COUNT', '1')
+    items_min_in = os.environ.get('ITEM_MIN', '1')
+    items_max_in = os.environ.get('ITEM_MAX', '20')
 
     with env.begin(write=True) as tx:
         for i in range(int(count_ledgers)):
             bob_name = 'Bob ' + fake.last_name()
             keys.append(bob_name)
             bob = signer.create_key(bob_name, outdir=data_dir)
+#            bob_key = os.path.join(crypto_dir, 'bob.key.bin')
+#            bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
+#            try:
+#                os.unlink('kee.key')
+#            except FileNotFoundError:
+#                pass
+#            os.symlink(bob_key, bob_key_sym)
             
-            c = random.randint(2, 20)
-            r = generate_ledger(dbi, data_dir, signer, bob_name, entry_count=c, alice=alice, bob=bob)
+            c = 2 + random.randint(int(items_min_in), int(items_max_in))
+            r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=c, alice=alice, bob=bob)
 
             v = r.pop(0)
+
+            ledger_object = v[2]
 
             z = v[0]
             k = LedgerHead.to_key(v[0])
@@ -513,10 +621,50 @@ if __name__ == '__main__':
             tx.put(kr, k[1:])
 
             for v in r:
-                k = LedgerEntry.to_key(v[1], z)
+                k = LedgerItem.to_key(v[1], z)
                 tx.put(k, v[1])
-        
+
         for k in keys:
             pubk = signer.get_pubkey(k)
             name = signer.get_name(k).encode('utf-8')
             tx.put(PFX_LEDGER_PUBKEY + pubk, b'CN=' + name)
+
+    # generate ledger import
+    bob_name = 'Bob ' + fake.last_name()
+    keys.append(bob_name)
+    bob = signer.create_key(bob_name, outdir=data_dir)
+    bob_key = os.path.join(crypto_dir, 'bob.key.bin')
+    bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
+    try:
+        os.unlink('kee.key')
+    except FileNotFoundError:
+        pass
+    os.symlink(bob_key, bob_key_sym)
+
+    r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=1, alice=alice, bob=bob)
+    d = os.path.dirname(__file__)
+    importer = LedgerBundle(data_dir, ledger_object)
+    import_dir = os.path.join(d, 'testdata', 'import')
+    try:
+        shutil.rmtree(import_dir)
+    except FileNotFoundError:
+        pass
+    os.makedirs(import_dir)
+
+    w = io.BytesIO()
+    fp = os.path.join(import_dir, 'request')
+    f = open(fp, 'wb')
+    importer.encode(v[2], LedgerMode.REQUEST, w=f)
+    f.close()
+
+    w = io.BytesIO()
+    fp = os.path.join(import_dir, 'response')
+    f = open(fp, 'wb')
+    importer.encode(v[2], LedgerMode.RESPONSE, w=f)
+    f.close()
+
+    w = io.BytesIO()
+    fp = os.path.join(import_dir, 'final')
+    f = open(fp, 'wb')
+    importer.encode(v[2], LedgerMode.FINAL, w=f)
+    f.close()

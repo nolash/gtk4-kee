@@ -84,17 +84,18 @@ static void kee_entry_handle_confirm(GtkButton *butt, KeeEntry *o) {
 	GAction *act;
 	GtkEntryBuffer *buf;
 	char *b;
-	char out[1024];
+	char *out;
 	char passphrase_hash[DIGEST_LENGTH];
 	size_t out_len;
-	struct kee_ledger_t *ledger;
+	//struct kee_ledger_t *ledger;
 	struct kee_transport_t trans;
 	GVariant *transport_data;
 
-	ledger = &o->ledger;
+	//ledger = &o->ledger;
 
 	out_len = 1024;
-	kee_ledger_serialize_open(ledger, out, &out_len);
+	out = malloc(out_len);
+//	kee_ledger_serialize_open(ledger, out, &out_len);
 
 	buf = gtk_entry_get_buffer(o->form->passphrase);
 	b = (char*)gtk_entry_buffer_get_text(buf);

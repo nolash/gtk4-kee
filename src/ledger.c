@@ -39,7 +39,7 @@ static char *get_message_asn(struct kee_ledger_t *ledger, asn1_node item, char *
 		return NULL;
 	}
 
-		r = asn1_copy_node(root, "Kee.KeeEntry.response", item, "response");
+	r = asn1_copy_node(root, "Kee.KeeEntry.response", item, "response");
 	if (r != ASN1_SUCCESS) {
 		printf("%d (%s) %s\n", r, err, asn1_strerror(r));
 		return NULL;

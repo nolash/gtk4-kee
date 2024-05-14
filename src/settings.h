@@ -27,10 +27,14 @@ enum SettingsType {
 	SETTINGS_RUN = 0x02,
 	/// GPG keys directory
 	SETTINGS_KEY = 0x04,
+	/// db key
+	SETTINGS_DB = 0x08,
+	/// resource
+	SETTINGS_RESOURCE = 0x10,
 	/// Milliseconds a key will stay unlocked since last application use.
-	SETTINGS_LOCKTIME = 0x10,
+	SETTINGS_LOCKTIME = 0x100,
 	/// Default video device to use
-	SETTINGS_VIDEO = 0x20,
+	SETTINGS_VIDEO = 0x200,
 
 };
 

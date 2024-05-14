@@ -11,6 +11,8 @@
 #include "err.h"
 #include "transport.h"
 #include "ledger.h"
+#include "defs.h"
+#include "debug.h"
 
 
 typedef struct {
@@ -422,7 +424,7 @@ static gboolean kee_import_scan_code_handler(GstBus *bus, GstMessage *msg, gpoin
 			strctr = gst_message_get_structure(msg);
 			/// \todo segfaults occasionally, find out how to persist the buffer across signal
 			code = gst_structure_get_string(strctr, "symbol");
-			code_str = g_string_new(code);
+			code_str = g_string_new((char*)code);
 			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "message %s: %d (%s) - decoded: %s", src, msg->type, gst_message_type_get_name(msg->type), code);
 			g_signal_emit(import, kee_sigs[KEE_S_IMPORT_DATA], 0, code_str);
 			return false;

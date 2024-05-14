@@ -8,6 +8,7 @@
 #include "nav.h"
 #include "err.h"
 #include "context.h"
+#include "debug.h"
 
 #define G_LOG_DOMAIN "Kee"
 
@@ -33,6 +34,7 @@ static void kee_menu_act_back(GAction *act, GVariant *param, KeeMenu *menu) {
 }
 
 static void kee_menu_act_import(GAction *act, GVariant *param, KeeMenu *menu) {
+	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "act import");
 	//gtk_stack_set_visible_child_name(stack, "import");
 	kee_menu_next(menu, "import");
 }
@@ -62,6 +64,7 @@ static void kee_menu_act_import_entry(GAction *act, GVariant *param, KeeMenu *me
 	b = (const char*)g_variant_get_data(param);
 	r = kee_ledger_parse_open(&ledger, &menu->ctx->gpg, b, c);
 	if (r) {
+		debug_log(DEBUG_WARNING, "failed ledger import");
 		return;
 	}
 
@@ -69,6 +72,7 @@ static void kee_menu_act_import_entry(GAction *act, GVariant *param, KeeMenu *me
 	
 	switch (item_state) {
 		case KEE_LEDGER_STATE_FINAL:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "detected final state");
 			r = kee_ledger_put(&ledger, &menu->ctx->db);
 			if (r) {
 				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail put entry");
