@@ -58,9 +58,10 @@ static gpointer kee_entry_item_store_get_item(GListModel *list, guint index) {
 
 	store = KEE_ENTRY_ITEM_STORE(list);
 	o = kee_entry_item_new(store->db, store->ledger, (int)index);
-	kee_entry_item_set_resolver(o, store->resolver);
-
-	kee_entry_item_apply_list_item_widget(o);
+	if (o != NULL) {
+		kee_entry_item_set_resolver(o, store->resolver);
+		kee_entry_item_apply_list_item_widget(o);
+	}
 
 	return o;
 }

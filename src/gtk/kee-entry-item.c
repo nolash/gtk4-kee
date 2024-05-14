@@ -60,6 +60,9 @@ KeeEntryItem* kee_entry_item_new(struct db_ctx *db, struct kee_ledger_t *ledger,
 	o = KEE_ENTRY_ITEM(g_object_new(KEE_TYPE_ENTRY_ITEM, "orientation", GTK_ORIENTATION_VERTICAL, NULL));
 	o->db = db;
 	o->item = ledger->last_item;
+	if (o->item == NULL) {
+		return NULL;
+	}
 	for (i = 0; i < idx; i++) {
 		o->item = o->item->prev_item;
 	}

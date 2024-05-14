@@ -1002,9 +1002,9 @@ int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx)
 		return ERR_FAIL;
 	}
 
-	memcpy(k, ledger->digest, DIGEST_LENGTH);
+	memcpy(k+1, ledger->digest, DIGEST_LENGTH);
 
-	l = db_key(DbKeyLedgerEntry, &item->time, k, DIGEST_LENGTH);
+	l = db_key(DbKeyLedgerEntry, &item->time, k, DIGEST_LENGTH+1);
 	if (l == 0) {
 		return ERR_FAIL;
 	}
@@ -1015,7 +1015,8 @@ int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx)
 //		return ERR_DB_EXISTS;
 //	}
 
-	c = 928;
+	//c = 928;
+	c = 2048;
 	r = kee_ledger_item_serialize(item, v, &c, KEE_LEDGER_STATE_FINAL);
 	if (r) {
 		return ERR_FAIL;
@@ -1044,7 +1045,7 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	v = k + 2048;
 
 	k[0] = DbKeyReverse;
-	memcpy(((char*)k)+1, ledger->digest, DIGEST_LENGTH); 
+	memcpy(k+1, ledger->digest, DIGEST_LENGTH); 
 	l = DIGEST_LENGTH + 1;
 	//c = 928; // 1024 - 96
 	c = 2048;
@@ -1101,6 +1102,7 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	r = 0;
 	while (r == 0) {
 		r = kee_ledger_item_put(ledger, db, i);
+		i++;
 	}
 
 	r = db_finish(db);

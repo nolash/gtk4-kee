@@ -84,7 +84,6 @@ static gpointer kee_entry_store_get_item(GListModel *list, guint index) {
 	return o;
 }
 
-
 static void kee_entry_store_iface_init(GListModelInterface *ifc) {
 	ifc->get_item_type = kee_entry_store_get_item_type;
 	ifc->get_n_items = kee_entry_store_get_n_items;

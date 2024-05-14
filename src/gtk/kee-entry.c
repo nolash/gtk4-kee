@@ -462,7 +462,10 @@ static int process_entry_ledger(KeeEntry *o) {
 	memcpy(last_key+1, o->ledger.pubkey_bob, 32);
 	key_len = 32;
 	r = db_next(o->db, DbKeyDN, &last_key, &key_len, &last_value, &last_value_length);
-	if (r) {
+	if (r == ERR_DB_NOMATCH) {
+		strcpy(last_value, "cn=johndoe");
+		last_value_length = strlen(last_value);
+	} else if (r) {
 		return ERR_FAIL;
 	}
 	r = kee_dn_from_str(&o->bob_dn, last_value, last_value_length);
@@ -484,13 +487,13 @@ static int process_entry_ledger(KeeEntry *o) {
 		}
 	}
 
-
 	o->state = ENTRYSTATE_LOAD;
 
 	kee_entry_init_list_widget(o);
 
 	return ERR_OK;
 }
+
 /// \todo returns 1 on success, investigate why and change if possible!
 int kee_entry_modeswitch(KeeEntry *o, enum kee_entry_viewmode_e mode) {
 	int r;
