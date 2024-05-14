@@ -30,6 +30,49 @@ int db_connect(struct db_ctx *ctx, char *conn) {
 }
 
 
+int db_start(struct db_ctx *ctx) {
+	int r;
+
+	r = mdb_txn_begin(ctx->env, NULL, 0, &ctx->tx);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	r = mdb_dbi_open(ctx->tx, NULL, MDB_CREATE, &ctx->dbi);
+	if (r) {
+		return ERR_FAIL;
+	}
+	return ERR_OK;
+}
+
+int db_add(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len) {
+	int r;
+
+	ctx->k.mv_data = key;
+	ctx->k.mv_size = key_len;
+	ctx->v.mv_data = data;
+	ctx->v.mv_size = data_len;
+
+	r = mdb_put(ctx->tx, ctx->dbi, &ctx->k, &ctx->v, MDB_NODUPDATA | MDB_NOOVERWRITE);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	return ERR_OK;
+}
+
+int db_finish(struct db_ctx *ctx) {
+	int r;
+
+	r = mdb_txn_commit(ctx->tx);
+	if (r) {
+		return ERR_FAIL;
+	}
+	ctx->tx = NULL;
+
+	return ERR_OK;
+}
+
 /// \todo atomic tx put
 int db_put(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len) {
 	int r;
@@ -205,6 +248,10 @@ int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, cha
 
 /// \todo find better name
 void db_rewind(struct db_ctx *ctx) {
+	if (ctx->tx != NULL) {
+		mdb_txn_abort(ctx->tx);
+	}
+	ctx->tx = NULL;
 	ctx->browsing = 0;
 }
 

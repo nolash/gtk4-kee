@@ -49,6 +49,10 @@ struct db_ctx {
 	MDB_cursor *crsr;
 	MDB_val k;
 	MDB_val v;
+	MDB_val *add_k;
+	MDB_val *add_v;
+	size_t add_cap;
+	size_t add_count;
 	enum DbKey current_key;
 	int started;
 	int browsing;
@@ -60,5 +64,8 @@ int db_put(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t dat
 int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, char **value, size_t *value_len);
 void db_rewind(struct db_ctx *ctx);
 void db_reset(struct db_ctx *ctx);
+int db_start(struct db_ctx *ctx);
+int db_add(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len);
+int db_finish(struct db_ctx *ctx);
 
 #endif // _DB_H

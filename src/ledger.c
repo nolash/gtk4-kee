@@ -974,12 +974,12 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	int r;
 	size_t c;
 	size_t l;
-	char mem[1024];
+	char mem[2048];
 	char *k;
 	char *v;
 
 	k = (char*)mem;
-	v = ((char*)mem)+96;
+	v = ((char*)mem)+1024;
 
 	k[0] = DbKeyReverse;
 	memcpy(((char*)k)+1, ledger->digest, DIGEST_LENGTH); 
@@ -998,6 +998,8 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 		}
 	}
 
+	db_rewind(db);
+
 	l = db_key(DbKeyLedgerHead, NULL, k, 0);
 	if (l == 0) {
 		return ERR_FAIL;
@@ -1009,7 +1011,13 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 		return ERR_DB_FAIL;
 	}
 
-	r = db_put(db, k, l, v, c);
+	r = db_start(db);
+	if (r) {
+		return ERR_DB_FAIL;
+	}
+
+	//r = db_put(db, k, l, v, c);
+	r = db_add(db, k, l, v, c);
 	if (r) {
 		return ERR_DB_FAIL;
 	}
@@ -1019,7 +1027,13 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	l = DIGEST_LENGTH + 1;
 	*k = DbKeyReverse;
 	memcpy(k+1, ledger->digest, DIGEST_LENGTH);
-	r = db_put(db, k, l, v, c);
+	//r = db_put(db, k, l, v+1, c-1);
+	r = db_add(db, k, l, v+1, c-1);
+	if (r) {
+		return ERR_DB_FAIL;
+	}
+
+	r = db_finish(db);
 	if (r) {
 		return ERR_DB_FAIL;
 	}

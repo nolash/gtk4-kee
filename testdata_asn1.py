@@ -393,8 +393,11 @@ class LedgerHead(Ledger):
     def to_key(b):
         r = b''
         r += PFX_LEDGER_HEAD
-        v = time.time_ns()
-        b = v.to_bytes(8, byteorder='big')
+        t = time.time_ns()
+        v = int(t / 1000000000)
+        b = v.to_bytes(4, byteorder='big')
+        v = t - (v * 1000000000)
+        b += v.to_bytes(4, byteorder='big')
         r += b
 
         return r
@@ -643,7 +646,6 @@ if __name__ == '__main__':
 
     r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=1, alice=alice, bob=bob)
     d = os.path.dirname(__file__)
-    importer = LedgerBundle(data_dir, ledger_object)
     import_dir = os.path.join(d, 'testdata', 'import')
     try:
         shutil.rmtree(import_dir)
@@ -651,20 +653,23 @@ if __name__ == '__main__':
         pass
     os.makedirs(import_dir)
 
+    ledger_object = r[0][2]
+    ledger_item_object = r[1][2]
+    importer = LedgerBundle(data_dir, ledger_object)
     w = io.BytesIO()
     fp = os.path.join(import_dir, 'request')
     f = open(fp, 'wb')
-    importer.encode(v[2], LedgerMode.REQUEST, w=f)
+    importer.encode(ledger_item_object, LedgerMode.REQUEST, w=f)
     f.close()
 
     w = io.BytesIO()
     fp = os.path.join(import_dir, 'response')
     f = open(fp, 'wb')
-    importer.encode(v[2], LedgerMode.RESPONSE, w=f)
+    importer.encode(ledger_item_object, LedgerMode.RESPONSE, w=f)
     f.close()
 
     w = io.BytesIO()
     fp = os.path.join(import_dir, 'final')
     f = open(fp, 'wb')
-    importer.encode(v[2], LedgerMode.FINAL, w=f)
+    importer.encode(ledger_item_object, LedgerMode.FINAL, w=f)
     f.close()
