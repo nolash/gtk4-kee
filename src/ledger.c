@@ -985,17 +985,18 @@ static struct kee_ledger_item_t* get_item_by_idx(struct kee_ledger_t *ledger, in
 	return item;
 }
 
-int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx) {
+static int kee_ledger_item_put_buf(struct kee_ledger_t *ledger, struct db_ctx *db, int idx, char *k, char *v) {
 	int r;
 	size_t c;
 	size_t l;
-	char mem[4096];
-	char *k;
-	char *v;
+	//char mem[4096];
+	//char *k;
+	//char *v;
 	struct kee_ledger_item_t *item;
 
-	k = (char*)mem;
-	v = k + 2048;
+	//k = (char*)mem;
+	//k = mem;
+	//v = k + 2048;
 
 	item = get_item_by_idx(ledger, idx);
 	if (item == NULL) {
@@ -1030,6 +1031,13 @@ int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx)
 	return ERR_OK;	
 }
 
+int kee_ledger_item_put(struct kee_ledger_t *ledger, struct db_ctx *db, int idx) {
+	char k[2048];
+	char v[2048];
+
+	return kee_ledger_item_put_buf(ledger, db, idx, (char*)k, (char*)v);
+}
+
 /// \todo atomic put for ledger and items!!
 /// \todo guard local k/v buffer overflow
 int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
@@ -1037,12 +1045,18 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	int i;
 	size_t c;
 	size_t l;
-	char mem[4096];
+	//char *mem;
+	//char mem[4096];
 	char *k;
 	char *v;
 
-	k = (char*)mem;
-	v = k + 2048;
+	//mem = malloc(4096);
+	//k = (char*)mem;
+	//v = k + 2048;
+	//k = mem;
+	//v = k + 2048;	
+	k = malloc(2048);
+	v = malloc(2048);
 
 	k[0] = DbKeyReverse;
 	memcpy(k+1, ledger->digest, DIGEST_LENGTH); 
@@ -1058,6 +1072,8 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 		db_rewind(db);
 		r = db_next(db, DbKeyLedgerHead, &k, &l, &v, &c);
 		if (!r) {
+			free(k);
+			free(v);
 			return ERR_DB_EXISTS;
 		}
 	}
@@ -1066,6 +1082,8 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 
 	l = db_key(DbKeyLedgerHead, NULL, k, 0);
 	if (l == 0) {
+		free(k);
+		free(v);
 		return ERR_FAIL;
 	}
 
@@ -1073,17 +1091,23 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	c = 2048;
 	r = kee_ledger_serialize(ledger, v, &c);
 	if (r) {
+		free(k);
+		free(v);
 		return ERR_DB_FAIL;
 	}
 
 	r = db_start(db);
 	if (r) {
+		free(k);
+		free(v);
 		return ERR_DB_FAIL;
 	}
 
 	//r = db_put(db, k, l, v, c);
 	r = db_add(db, k, l, v, c);
 	if (r) {
+		free(k);
+		free(v);
 		return ERR_DB_FAIL;
 	}
 
@@ -1095,20 +1119,27 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	//r = db_put(db, k, l, v+1, c-1);
 	r = db_add(db, k, l, v+1, c-1);
 	if (r) {
+		free(k);
+		free(v);
 		return ERR_DB_FAIL;
 	}
 
 	i = 0;
 	r = 0;
 	while (r == 0) {
-		r = kee_ledger_item_put(ledger, db, i);
+		r = kee_ledger_item_put_buf(ledger, db, i, k, v);
 		i++;
 	}
 
 	r = db_finish(db);
 	if (r) {
+		free(k);
+		free(v);
 		return ERR_DB_FAIL;
 	}
+
+	free(k);
+	free(v);
 
 	return ERR_OK;
 }

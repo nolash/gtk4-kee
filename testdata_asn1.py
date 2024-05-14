@@ -555,6 +555,10 @@ if __name__ == '__main__':
     k = h.digest()
     data_add(data_dir, k, v)
 
+    o = LedgerContent(subject='foo', body='bar')
+    (k, v) = o.kv()
+    data_add(data_dir, k, v)
+
     d = os.path.dirname(__file__)
     crypto_dir = os.path.join(d, 'testdata', 'crypt')
     try:

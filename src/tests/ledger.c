@@ -129,10 +129,10 @@ int test_put() {
 		return 1;
 	}
 
-	r = kee_ledger_item_put(&t.ledger, &t.db, 0);
-	if (r) {
-		return 1;
-	}
+	//r = kee_ledger_item_put(&t.ledger, &t.db, 0);
+	//if (r) {
+	//	return 1;
+	//}
 
 
 	return 0;

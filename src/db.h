@@ -49,10 +49,10 @@ struct db_ctx {
 	MDB_cursor *crsr;
 	MDB_val k;
 	MDB_val v;
-	MDB_val *add_k;
-	MDB_val *add_v;
-	size_t add_cap;
-	size_t add_count;
+//	MDB_val *add_k;
+//	MDB_val *add_v;
+//	size_t add_cap;
+//	size_t add_count;
 	enum DbKey current_key;
 	int started;
 	int browsing;
