@@ -9,17 +9,20 @@
 #include "err.h"
 #include "endian.h"
 #include "debug.h"
+#include "hex.h"
+
+#define DB_DEFAULT_TX_CAP 10
 
 int db_connect(struct db_ctx *ctx, char *conn) {
 	int r;
 
-	db_reset(ctx);
 	ctx->connstr = conn;
+	db_reset(ctx);
 	r = mdb_env_create(&ctx->env);
 	if (r) {
 		return ERR_FAIL;
 	}
-	r = mdb_env_open(ctx->env, ctx->connstr, MDB_NOLOCK, S_IRWXU);
+	r = mdb_env_open(ctx->env, ctx->connstr, MDB_WRITEMAP, S_IRWXU);
 	if (r) {
 		return ERR_FAIL;
 	}
@@ -29,6 +32,9 @@ int db_connect(struct db_ctx *ctx, char *conn) {
 	return ERR_OK;
 }
 
+void db_disconnect(struct db_ctx *ctx) {
+	mdb_env_close(ctx->env);
+}
 
 int db_start(struct db_ctx *ctx) {
 	int r;
@@ -47,6 +53,8 @@ int db_start(struct db_ctx *ctx) {
 
 int db_add(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len) {
 	int r;
+	char s[1024];
+	size_t c;
 
 	ctx->k.mv_data = key;
 	ctx->k.mv_size = key_len;
@@ -57,6 +65,11 @@ int db_add(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t dat
 	if (r) {
 		return ERR_FAIL;
 	}
+
+	sprintf(s, "wrote key ");
+	c = 1000;
+	bin_to_hex(key, key_len, s+10, &c);
+	debug_log(DEBUG_DEBUG, s);
 
 	return ERR_OK;
 }
@@ -257,8 +270,12 @@ void db_rewind(struct db_ctx *ctx) {
 
 
 void db_reset(struct db_ctx *ctx) {
+	char *s;
+
+	db_rewind(ctx);
 	mdb_cursor_close(ctx->crsr);
 	mdb_dbi_close(ctx->env, ctx->dbi);
-	mdb_txn_abort(ctx->tx);
+	s = ctx->connstr;
 	memset(ctx, 0, sizeof(struct db_ctx));
+	ctx->connstr = s;
 }

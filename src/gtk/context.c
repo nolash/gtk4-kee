@@ -11,12 +11,16 @@
 
 
 int kee_context_init(struct kee_context *ctx, struct kee_settings *settings) {
+	int r;
 	unsigned char *v;
 
 	memset(ctx, 0, sizeof(struct kee_context));
 	ctx->state = 1;
 	ctx->settings = settings;
-	db_connect(&ctx->db, (char*)settings->db);
+	r = db_connect(&ctx->db, (char*)settings->db);
+	if (r) {
+		return ERR_FAIL;
+	}
 	v = settings_get(ctx->settings, SETTINGS_KEY);
 	gpg_store_init(&ctx->gpg, (char*)v);
 	ctx->entry_store = kee_entry_store_new(&ctx->db);

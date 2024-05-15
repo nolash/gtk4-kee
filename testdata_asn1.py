@@ -84,10 +84,12 @@ def db_init(d):
 
 
 def data_add(data_dir, k, v):
-        fp = os.path.join(data_dir, k.hex())
-        f = open(fp, 'wb')
-        f.write(v)
-        f.close()
+    if data_dir == None:
+        return
+    fp = os.path.join(data_dir, k.hex())
+    f = open(fp, 'wb')
+    f.write(v)
+    f.close()
 
 
 class LedgerContent(email.message.EmailMessage):
@@ -253,13 +255,14 @@ class LedgerBundle:
 
 
 class Ledger:
+    pass
 
-    @classmethod
-    def data_add(self, data_dir, k, v):
-        fp = os.path.join(data_dir, k.hex())
-        f = open(fp, 'wb')
-        f.write(v)
-        f.close()
+#    @classmethod
+#    def data_add(self, data_dir, k, v):
+#        fp = os.path.join(data_dir, k.hex())
+#        f = open(fp, 'wb')
+#        f.write(v)
+#        f.close()
 
 
 class LedgerGenerator:
@@ -367,8 +370,10 @@ class LedgerHead(Ledger):
         if bob_key == None:
             bob_key = os.urandom(65)
         self.bob_pubkey_ref = bob_key
-        logg.info('new ledger header with alice {} bob {}'.format(self.alice_pubkey_ref.hex(), self.bob_pubkey_ref.hex()))
         self.body = LedgerHeadContent()
+        (k, v) = self.body.kv()
+
+        logg.info('new ledger header with alice {} bob {} body {}'.format(self.alice_pubkey_ref.hex(), self.bob_pubkey_ref.hex(), k.hex()))
 
 
     def to_asn1(self, data_dir):
@@ -378,7 +383,8 @@ class LedgerHead(Ledger):
         o['alicePubKey'] = self.alice_pubkey_ref
         o['bobPubKey'] = self.bob_pubkey_ref
         (k, v) = self.body.kv()
-        self.data_add(data_dir, k, v)
+        #self.data_add(data_dir, k, v)
+        data_add(data_dir, k, v)
         o['body'] = k
         return o
 
@@ -386,6 +392,7 @@ class LedgerHead(Ledger):
     def serialize(self, data_dir, w=sys.stdout.buffer):
         o = self.to_asn1(data_dir)
         b = der_encode(o)
+        logg.debug('ledger header serialize ({}): {}'.format(len(b), b.hex()))
         w.write(b)
 
 
@@ -445,7 +452,8 @@ class LedgerItem(Ledger):
         o['collateralDelta'] = self.collateral_delta
 
         (k, v) = self.body.kv()
-        self.data_add(data_dir, k, v)
+        #self.data_add(data_dir, k, v)
+        data_add(data_dir, k, v)
         o['body'] = k
 
         o['response'] = False
@@ -455,7 +463,7 @@ class LedgerItem(Ledger):
         if mode == LedgerMode.REQUEST:
             return o
 
-        logg.debug('encoding new ledger_item for request signature: {}'.format(o))
+        logg.debug('encoding new ledger_item for request signature {}: {}'.format(self.head.hex(), o))
         b = der_encode(o)
         self.request_signature = self.signer.sign(self.signer_sequence[0], self.head + b)
         o['signatureRequest'] = self.request_signature

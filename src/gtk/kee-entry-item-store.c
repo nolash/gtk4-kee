@@ -124,6 +124,7 @@ static int kee_entry_item_store_scan(KeeEntryItemStore *o) {
 			i++;
 		}
 	}
+	
 	db_rewind(o->db);
 	return i;
 }

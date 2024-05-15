@@ -96,7 +96,7 @@ static int kee_entry_store_seek(KeeEntryStore *o, int idx) {
 	int r;
 	int i;
 	size_t key_len;
-	
+
 	key_len = 9;
 	o->last_key = o->last;
 	memset(o->last_key, 0, key_len);
@@ -117,7 +117,7 @@ static int kee_entry_store_seek(KeeEntryStore *o, int idx) {
 		o->last_state = 1;
 		i++;
 	}
-	db_rewind(o->db);
+
 	return i;
 }
 

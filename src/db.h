@@ -58,7 +58,19 @@ struct db_ctx {
 	int browsing;
 };
 
+struct db_ctx_w {
+	char *connstr;
+	MDB_env *env;
+	MDB_dbi dbi;
+	MDB_txn *tx;
+	MDB_val *add_k;
+	MDB_val *add_v;
+	size_t add_cap;
+	size_t add_count;
+};
+
 int db_connect(struct db_ctx *ctx, char *conn);
+void db_disconnect(struct db_ctx *ctx);
 //int db_put(struct db_ctx *ctx, enum DbKey pfx, char *data, size_t data_len);
 int db_put(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len);
 int db_next(struct db_ctx *ctx, enum DbKey pfx, char **key, size_t *key_len, char **value, size_t *value_len);

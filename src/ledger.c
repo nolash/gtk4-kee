@@ -246,10 +246,10 @@ static int verify_item_asn(struct kee_ledger_t *ledger, asn1_node item, const ch
 
 static int kee_ledger_digest(struct kee_ledger_t *ledger, char *out) {
 	int r;
-	char out_data[1024];
+	char out_data[4096];
 	size_t c;
 
-	c = 1024;
+	c = 4096;
 	r = kee_ledger_serialize(ledger, out_data, &c);
 	if (r) {
 		return r;
@@ -555,7 +555,8 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 		return 1;
 	}
 
-	r = calculate_digest_algo(data, data_len, (char*)ledger->digest, GCRY_MD_SHA512);
+	r = kee_ledger_digest(ledger, (char*)ledger->digest);
+	//r = calculate_digest_algo(data, data_len, (char*)ledger->digest, GCRY_MD_SHA512);
 	if (r) {
 		return 1;
 	}
@@ -588,31 +589,32 @@ int kee_ledger_serialize(struct kee_ledger_t *ledger, char *out, size_t *out_len
 		return ERR_FAIL;
 	}
 
-	c = strlen(ledger->uoa) + 1;
+	//c = strlen(ledger->uoa) + 1;
+	c = strlen(ledger->uoa);
 	r = asn1_write_value(node, "Kee.KeeEntryHead.uoa", ledger->uoa, c);
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
 
-	c = 4;
+	c = 1;
 	r = asn1_write_value(node, "Kee.KeeEntryHead.uoaDecimals", &ledger->uoa_decimals, c);
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
 
-	c = 32;
+	c = PUBKEY_LENGTH;
 	r = asn1_write_value(node, "Kee.KeeEntryHead.alicePubKey", ledger->pubkey_alice, c);
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
 
-	c = 32;
+	c = PUBKEY_LENGTH;
 	r = asn1_write_value(node, "Kee.KeeEntryHead.bobPubKey", ledger->pubkey_bob, c);
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
 
-	c = 64;
+	c = DIGEST_LENGTH;
 	r = asn1_write_value(node, "Kee.KeeEntryHead.body", ledger->content.key, c);
 	if (r != ASN1_SUCCESS) {
 		return r;
@@ -1046,29 +1048,29 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	size_t c;
 	size_t l;
 	//char *mem;
-	//char mem[4096];
+	char mem[4096];
 	char *k;
 	char *v;
 
 	//mem = malloc(4096);
-	//k = (char*)mem;
-	//v = k + 2048;
+	k = (char*)mem;
+	v = k + 2048;
 	//k = mem;
 	//v = k + 2048;	
-	k = malloc(2048);
-	v = malloc(2048);
 
-	k[0] = DbKeyReverse;
+	*k = DbKeyReverse;
 	memcpy(k+1, ledger->digest, DIGEST_LENGTH); 
 	l = DIGEST_LENGTH + 1;
 	//c = 928; // 1024 - 96
 	c = 2048;
-	db_rewind(db);
+	//db_rewind(db);
+
+	
 	r = db_next(db, DbKeyReverse, &k, &l, &v, &c);
 	if (!r) {
-		k = v;
+		memcpy(k, v, c);
 		l = c;
-		c = 928;
+		c = 2048;
 		db_rewind(db);
 		r = db_next(db, DbKeyLedgerHead, &k, &l, &v, &c);
 		if (!r) {
@@ -1082,8 +1084,6 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 
 	l = db_key(DbKeyLedgerHead, NULL, k, 0);
 	if (l == 0) {
-		free(k);
-		free(v);
 		return ERR_FAIL;
 	}
 
@@ -1091,23 +1091,17 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	c = 2048;
 	r = kee_ledger_serialize(ledger, v, &c);
 	if (r) {
-		free(k);
-		free(v);
 		return ERR_DB_FAIL;
 	}
 
 	r = db_start(db);
 	if (r) {
-		free(k);
-		free(v);
 		return ERR_DB_FAIL;
 	}
 
 	//r = db_put(db, k, l, v, c);
 	r = db_add(db, k, l, v, c);
 	if (r) {
-		free(k);
-		free(v);
 		return ERR_DB_FAIL;
 	}
 
@@ -1119,8 +1113,6 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 	//r = db_put(db, k, l, v+1, c-1);
 	r = db_add(db, k, l, v+1, c-1);
 	if (r) {
-		free(k);
-		free(v);
 		return ERR_DB_FAIL;
 	}
 
@@ -1133,13 +1125,8 @@ int kee_ledger_put(struct kee_ledger_t *ledger, struct db_ctx *db) {
 
 	r = db_finish(db);
 	if (r) {
-		free(k);
-		free(v);
 		return ERR_DB_FAIL;
 	}
-
-	free(k);
-	free(v);
 
 	return ERR_OK;
 }

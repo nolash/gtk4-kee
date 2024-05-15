@@ -472,8 +472,7 @@ static int process_entry_ledger(KeeEntry *o) {
 	if (r) {
 		return ERR_FAIL;
 	}
-	db_rewind(o->db);
-
+	
 	last_value_length = 129;
 	strcpy(last_value, "uid=");
 	if (o->bob_dn.uid == NULL) {

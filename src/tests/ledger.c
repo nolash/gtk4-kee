@@ -107,6 +107,10 @@ int test_pair() {
 		return 1;
 	}
 
+	if (memcmp(t.ledger.digest, ledger.digest, DIGEST_LENGTH)) {
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -128,12 +132,6 @@ int test_put() {
 	if (r) {
 		return 1;
 	}
-
-	//r = kee_ledger_item_put(&t.ledger, &t.db, 0);
-	//if (r) {
-	//	return 1;
-	//}
-
 
 	return 0;
 }
