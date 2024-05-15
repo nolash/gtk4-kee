@@ -461,6 +461,7 @@ static int process_entry_ledger(KeeEntry *o) {
 	*last_key = DbKeyDN;
 	memcpy(last_key+1, o->ledger.pubkey_bob, 32);
 	key_len = 32;
+	db_rewind(o->db);
 	r = db_next(o->db, DbKeyDN, &last_key, &key_len, &last_value, &last_value_length);
 	if (r == ERR_DB_NOMATCH) {
 		strcpy(last_value, "cn=johndoe");
@@ -472,6 +473,7 @@ static int process_entry_ledger(KeeEntry *o) {
 	if (r) {
 		return ERR_FAIL;
 	}
+	db_rewind(o->db);
 	
 	last_value_length = 129;
 	strcpy(last_value, "uid=");

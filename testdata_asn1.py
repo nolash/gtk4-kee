@@ -219,6 +219,7 @@ class LedgerSigner:
     
         b = self.signer[keyname].sign(z)
 
+        logg.debug('signature material\t{}\n\t{}'.format(msg[:64].hex(), msg[64:].hex()))
         logg.debug('signature for {}: {}'.format(z.hex(), b.hex()))
 
         return b

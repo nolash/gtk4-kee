@@ -428,6 +428,7 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	}
 
 	/// \todo apply timestamp in structure
+	/// \todo document timestamp size
 	c = 8;
 	r = asn1_read_value(item, "timestamp", tmp, &c);
 	if (r != ASN1_SUCCESS) {
@@ -439,6 +440,18 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
+	if (is_le()) {
+		r = to_endian(TO_ENDIAN_LITTLE, 4, tmp);
+		if (r) {
+			return NULL;
+		}
+		r = to_endian(TO_ENDIAN_LITTLE, 4, tmp+4);
+		if (r) {
+			return NULL;
+		}
+	}
+	memcpy(&cur->time.tv_sec, tmp, 4);
+	memcpy(&cur->time.tv_nsec, tmp+4, 4);
 
 	r = kee_content_init(&(cur->content), tmp, 0);
 	if (r) {
@@ -500,7 +513,7 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 	asn1_node item;
 	int c;
 	char content_key[64];
-	int decimals;
+	//char decimals;
 
 	memset(&root, 0, sizeof(root));
 	memset(&item, 0, sizeof(item));
@@ -526,12 +539,12 @@ int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_
 		return r;
 	}
 	
-	c = 8;
-	r = asn1_read_value(item, "uoaDecimals", &decimals, &c);
+	c = 1;
+	r = asn1_read_value(item, "uoaDecimals", &ledger->uoa_decimals, &c);
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
-	ledger->uoa_decimals = (char)decimals;
+	//ledger->uoa_decimals = (char)decimals;
 
 	c = 32;
 	r = asn1_read_value(item, "alicePubKey", ledger->pubkey_alice, &c);
@@ -753,6 +766,24 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 	return 0;
 }
 
+/// \todo verify final state
+int kee_ledger_item_serialize_db(struct kee_ledger_item_t *item, char *out, size_t *out_len) {
+	int r;
+
+	r = kee_ledger_item_serialize(item, out, out_len, KEE_LEDGER_STATE_FINAL);
+	if (r) {
+		return ERR_FAIL;
+	}
+
+	if (item->initiator == BOB) {
+		*(out+*out_len) = 1;
+	} else {
+		*(out+*out_len) = 0;
+	}
+	*out_len += 1;
+
+	return ERR_OK;	
+}
 
 int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item, struct gpg_store *gpg, const char *passphrase) {
 	int r;
@@ -1020,7 +1051,7 @@ static int kee_ledger_item_put_buf(struct kee_ledger_t *ledger, struct db_ctx *d
 
 	//c = 928;
 	c = 2048;
-	r = kee_ledger_item_serialize(item, v, &c, KEE_LEDGER_STATE_FINAL);
+	r = kee_ledger_item_serialize_db(item, v, &c);
 	if (r) {
 		return ERR_FAIL;
 	}
