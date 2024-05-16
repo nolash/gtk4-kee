@@ -22,6 +22,7 @@ from faker.providers import lorem
 import varint
 from pyasn1.codec.der.encoder import encode as der_encode
 from pyasn1.codec.der.decoder import decode as der_decode
+from pyasn1.codec.native.decoder import decode
 from pyasn1.type.univ import Any
 from pygcrypt.gctypes.sexpression import SExpression
 from pygcrypt.gctypes.key import Key as GKey
@@ -424,7 +425,13 @@ class LedgerItem(Ledger):
         self.parent = parent
         if self.parent == None:
             self.parent = b'\x00' * 64
-        self.timestamp = time.time_ns()
+        #self.timestamp = time.time_ns()
+        self.timestamp = b''
+        t = time.time_ns()
+        v = int(t / 1000000000)
+        self.timestamp += v.to_bytes(4, byteorder='big')
+        v = t - (v * 1000000000)
+        self.timestamp += v.to_bytes(4, byteorder='big')
 
         self.body = LedgerItemContent()
 
@@ -502,8 +509,9 @@ class LedgerItem(Ledger):
         r += k
        
         o = der_decode(v, asn1Spec=KeeEntry())
-        ts = o[0]['timestamp']
-        tsb = int(ts).to_bytes(8, byteorder='big')
+        #ts = o[0]['timestamp']
+        #tsb = int(ts).to_bytes(8, byteorder='big')
+        tsb = o[0]['timestamp'].asOctets()
         #logg.debug('ts {} ({}): of {}'.format(ts, tsb, v.hex()))
         r += tsb
         return r

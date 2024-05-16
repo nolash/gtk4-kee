@@ -427,31 +427,25 @@ struct kee_ledger_item_t *kee_ledger_parse_item(struct kee_ledger_t *ledger, con
 		cur->response = 1;	
 	}
 
-	/// \todo apply timestamp in structure
 	/// \todo document timestamp size
 	c = 8;
 	r = asn1_read_value(item, "timestamp", tmp, &c);
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
+	if (is_le()) {
+		flip_endian(4, (char*)tmp);
+		flip_endian(4, ((char*)tmp)+4);
+	}
+	memcpy(&cur->time.tv_sec, tmp, 4);
+	memcpy(&cur->time.tv_nsec, ((char*)tmp)+4, 4);
 
 	c = 64;
 	r = asn1_read_value(item, "body", tmp, &c);
 	if (r != ASN1_SUCCESS) {
 		return NULL;
 	}
-	if (is_le()) {
-		r = to_endian(TO_ENDIAN_LITTLE, 4, tmp);
-		if (r) {
-			return NULL;
-		}
-		r = to_endian(TO_ENDIAN_LITTLE, 4, tmp+4);
-		if (r) {
-			return NULL;
-		}
-	}
-	memcpy(&cur->time.tv_sec, tmp, 4);
-	memcpy(&cur->time.tv_nsec, tmp+4, 4);
+
 
 	r = kee_content_init(&(cur->content), tmp, 0);
 	if (r) {
@@ -645,8 +639,8 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 	int r;
 	char err[1024];
 	asn1_node node;
-//	char timedata[8];
-	long long nanotime;
+	char timedata[8];
+//	long long nanotime;
 	int c;
 	int credit_delta;
 	int collateral_delta;
@@ -672,15 +666,26 @@ int kee_ledger_item_serialize(struct kee_ledger_item_t *item, char *out, size_t 
 		return r;
 	}
 
-	nanotime = item->time.tv_sec * 1000000000;
-	nanotime += item->time.tv_nsec;
-	r = to_endian(TO_ENDIAN_BIG, 8, &nanotime);
+	//nanotime = item->time.tv_sec * 1000000000;
+	//nanotime += item->time.tv_nsec;
+	//r = to_endian(TO_ENDIAN_BIG, 8, &nanotime);
+	//if (r) {
+	//	return 1;
+	//}
+	memcpy(timedata, &item->time.tv_sec, 4);
+	memcpy(((char*)timedata)+4, &item->time.tv_nsec, 4);
+	r = to_endian(TO_ENDIAN_BIG, 4, timedata);
 	if (r) {
-		return 1;
+		return ERR_FAIL;
+	}
+	r = to_endian(TO_ENDIAN_BIG, 4, ((char*)timedata)+4);
+	if (r) {
+		return ERR_FAIL;
 	}
 
 	c = 8;
-	r = asn1_write_value(node, "Kee.KeeEntry.timestamp", &nanotime, c);
+	//r = asn1_write_value(node, "Kee.KeeEntry.timestamp", &nanotime, c);
+	r = asn1_write_value(node, "Kee.KeeEntry.timestamp", timedata, c);
 	if (r != ASN1_SUCCESS) {
 		return r;
 	}
