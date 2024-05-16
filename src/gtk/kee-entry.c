@@ -332,6 +332,7 @@ static int kee_entry_apply_summary_widget(KeeEntry *o) {
 
 	item = kee_entry_item_new(o->db, &o->ledger, 0);
 	kee_entry_item_set(item, o->ledger.last_item);
+	kee_entry_item_set_resolver(item, o->resolver);
 	kee_entry_item_apply_summary_widget(item, GTK_BOX(o->display));
 
 	o->form = calloc(sizeof(struct kee_entry_form_t), 1);

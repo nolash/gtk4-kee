@@ -87,6 +87,7 @@ static void kee_menu_act_import_entry(GAction *act, GVariant *param, KeeMenu *me
 				return;
 			}
 			kee_entry_set_signer(entry, &menu->ctx->gpg);
+			kee_entry_set_resolver(entry, &menu->ctx->resolver);
 			r = kee_entry_from_ledger(entry, &ledger);
 			if (r) {
 				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail load entry from ledger");

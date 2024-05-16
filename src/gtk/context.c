@@ -6,6 +6,8 @@
 #include "err.h"
 #include "gpg.h"
 #include "db.h"
+#include "cadiz.h"
+#include "cadir.h"
 
 #define G_LOG_DOMAIN "Kee"
 
@@ -25,6 +27,9 @@ int kee_context_init(struct kee_context *ctx, struct kee_settings *settings) {
 	gpg_store_init(&ctx->gpg, (char*)v);
 	ctx->entry_store = kee_entry_store_new(&ctx->db);
 	kee_entry_store_set_resolve(ctx->entry_store, (char*)settings->resource);
+
+	//ctx->resolver.locator = malloc(KEE_LOCATOR_LENGTH);
+	ctx->resolver.locator = settings->resource;
 	return ERR_OK;
 }
 
@@ -33,4 +38,5 @@ int kee_context_state(struct kee_context *ctx) {
 }
 
 void kee_context_free(struct kee_context *ctx) {
+	//free(ctx->resolver.locator);
 }

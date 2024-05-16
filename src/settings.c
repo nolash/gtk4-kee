@@ -131,6 +131,9 @@ int settings_set(struct kee_settings *z, enum SettingsType typ, unsigned char* v
 		case SETTINGS_RUN:
 			z->run = v;
 			break;
+		case SETTINGS_RESOURCE:
+			z->resource = v;
+			break;
 		case SETTINGS_LOCKTIME:
 			z->locktime = v;
 			break;

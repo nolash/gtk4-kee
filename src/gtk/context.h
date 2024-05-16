@@ -6,6 +6,7 @@
 #include "db.h"
 #include "camera.h"
 #include "gpg.h"
+#include "cadiz.h"
 
 
 struct kee_context {
@@ -15,6 +16,7 @@ struct kee_context {
 	struct db_ctx db;
 	struct gpg_store gpg;
 	KeeEntryStore *entry_store;
+	struct Cadiz resolver;
 	int state;
 };
 
