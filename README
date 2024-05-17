@@ -111,6 +111,178 @@ Here is some background if you need:
 -   GST_PLUGIN_PATH
 -   cargo-c
 
+Running
+
+In order to run the GTK application in its current condition, generated
+test data should be used as data path.
+
+Take care to install python dependencies in requirements.txt before the
+first command. Using a virtual environment is recommended. The author is
+using python 3.12.x.
+
+    make testdata
+    export KEE_PATH=$(realpath ./testdata)
+    make run
+
+The testdata contains private keys for both Alice and Bob in the
+generated entries. To start as Bob, add before running:
+
+    export KEE_KEY_PATH=$(realpath ./testdata/crypt_reverse)
+
+Protocol
+
+TODO: The terms need to be tightened up; don't use different terms for
+same thing.
+
+The serialization format of the credit issuance is defined in
+src/asb1/schema_entry.txt. The serialization method is der-encoding.
+
+More about asn1 here: https://luca.ntop.org/Teaching/Appunti/asn1.html.
+
+The protocol uses Elliptic Curve signatures. The curve used is Ed25519.
+
+Concepts
+
+The protocol consists of a series of ledgers, each with two
+participants, Alice and Bob.
+
+Alice and Bob are identified by their public keys.
+
+The protocol tracks an amount of credit issued by one party to another.
+
+The ledger may also define an amount of collateral that has been pledged
+against the credit.
+
+Credit and collateral are defined by a unit of account, which is defined
+for the entire ledger.
+
+Each credit issuance consists of one or more deltas (KeeEntry) changing
+the balance of the credit, and some identical metadata (KeeEntryHead)
+embedded in each one, together called an entry item.
+
+Creating a new entry
+
+We call the creator of the entry Alice.
+
+The default values of signatureRequest and signatureResponse is an empty
+octet string (length 0).
+
+The default value for response is False.
+
+If the entry is the first in the ledger, the value of parent is 64
+0-bytes. If not, it is the sha512 sum of the preceding entry item.
+
+Alice generates the entry item and signs it:
+
+    head = der(KeeEntryHead)
+    headsum = sha512(head)
+    entry = der(KeeEntry)
+    msg = sha512(concat(head, entry)
+    sig = sign(msg) # TODO verify whether an additional sha512 on the message is performed by the internals
+    copy(KeeEntry.signatureRequest, sig)
+
+Counter-signing an entry
+
+Alice shares KeeEntryHead and KeeEntry with Bob.
+
+Bob verifies Alice's signature.
+
+If Bob accepts the contents of the entry item, he sets response to True.
+
+Bob proceeds to sign the entry item:
+
+    set(KeeEntry.response, bobs_decision)
+    head = der(KeeEntryHead)
+    headsum = sha512(head)
+    entry = der(KeeEntry)
+    msg = sha512(concat(head, entry)
+    sig = sign(msg)
+    copy(KeeEntry.signatureResponse, sig)
+
+Bob then adds the counter-signed entry item to his persistent storage.
+
+Sharing the result
+
+Bob shares KeeEntryHead and KeeEntry with Alice.
+
+Alice verifies both signatures.
+
+Alice adds the counter-signed entry_item to her persistent storage.
+
+Alice and Bob now have the same ledger state, adjusted by the deltas in
+the entry item.
+
+Sanity checks
+
+Checking that the delta in an entry item makes sense is the
+responsibility of both parties, e.g. that the delta does not incur a
+negative credit value.
+
+Descriptive content
+
+Both the KeeEntryHead and KeeEntry structures include an optional body
+value, which is a sha512 hash of some content offering some description
+of what the ledger and individual changes consist of. If no description
+is provided, 64 0-bytes are used for the data field.
+
+This implementation uses, as previously mentioned, MIME-structures for
+this purpose.
+
+Data carriers
+
+A final implementation should define several ways of sharing content,
+including:
+
+-   Copy and paste
+-   File sharing
+-   Network retrieval
+-   QR codes This implementation uses QR codes to exchange signature
+    requests and signatures.
+
+QR exchange
+
+A separate transport container, KeeTransport, is used for this exchange,
+aswell as some additional encoding.
+
+    container = KeeTransport(KeeEntryHead, KeeEntry)
+    raw = der(container)
+    compressed = zlib_compress(raw)
+    payload = base64(compressed)
+    transport = concat(0x02, readable) # 0x02 = KEE_CMD_LEDGER, defined in src/transport.h
+    qrencode(transport)
+
+Sharing descriptive content
+
+Descriptive content is currently not shared as part of the signature
+exchange.
+
+Since decriptive content can potentially be of some size, a transport
+protocol should be considered which can span multiple sequential QR
+codes, and allow of the same kind of offline exchange as the signature
+exchange itself.
+
+Examples
+
+The make testdata script creates several useful data examples:
+
+-   testdata/mdb which is the persistent storage of a ledger and
+    required indicies. Can be easily viewed using the mdb_dump command.
+    Key prefixes are defined in src/db.h:enum DbKey
+-   testdata/crypt contains alice and bob's private and public keys in
+    sexp format, aswell as an encrypted version of the private keys. The
+    encryption used is CHACHA20-POLY1305, and password for both keys is
+    1234. The kee.key symlink points to the private key (Alice) used by
+    the GTK application.
+-   testdata/crypt_reverse contains a symlink kee.key to Bob's encrypted
+    private key, enabling use of the GTK application as Bob.
+-   testdata/import Three files respresenting all phases of the entry
+    item format:
+    -   request - without signatures.
+    -   response - with Alice's signature.
+    -   final - with both signatures.
+-   testdata/resource All descriptive content for the generated ledgers
+    and entry items.
+
 License
 
 GPLv3
