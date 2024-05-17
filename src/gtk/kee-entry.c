@@ -108,6 +108,12 @@ static void kee_entry_handle_confirm(GtkButton *butt, KeeEntry *o) {
 		return;
 	}
 
+	r = kee_ledger_put(&o->ledger, o->db);
+	if (r) {
+		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail entry db commit");
+		return;
+	}
+
 	r = kee_ledger_serialize_open(&o->ledger, out, &out_len);
 	if (r) {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "qr transport renderer failed");

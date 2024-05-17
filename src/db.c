@@ -66,10 +66,10 @@ int db_add(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t dat
 		return ERR_FAIL;
 	}
 
-	sprintf(s, "wrote key ");
-	c = 1000;
-	bin_to_hex(key, key_len, s+10, &c);
-	debug_log(DEBUG_DEBUG, s);
+	//sprintf(s, "wrote key ");
+	//c = 1000;
+	//bin_to_hex((unsigned char*)key, key_len, (unsigned char*)(s+10), &c);
+	//debug_log(DEBUG_DEBUG, s);
 
 	return ERR_OK;
 }
