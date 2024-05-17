@@ -1,5 +1,7 @@
 # kee
 
+**This repository is a mirror. The upstream respository is [git://holbrook.no/kee-gtk4.git](git://holbrook.no/kee-gtk4.git)**
+
 I am building a cryptographically counter-signed IOU application with linux phones ([GTK4](https://www.gtk.org/), [phosh](https://phosh.mobi/)) as the primary targets.
 
 It will maintain bi-lateral mutual channels of credit and collateral. Each change is linked as a chain, and documentation for each change in embedded as [email-link MIME structures](https://datatracker.ietf.org/doc/html/rfc2049)
