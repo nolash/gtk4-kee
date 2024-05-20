@@ -5,6 +5,9 @@
 
 #include "chunk.h"
 
+#define ERRR_PFX_TRANSPORT 0x300
+#define ERR_INVALID_CMD 0x301
+
 enum kee_transport_mode_e {
 	KEE_TRANSPORT_RAW,
 	KEE_TRANSPORT_BASE64,

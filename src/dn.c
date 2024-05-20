@@ -2,8 +2,8 @@
 #include <string.h>
 
 #include <ldap.h>
+#include <rerr.h>
 
-#include "err.h"
 #include "dn.h"
 
 struct kee_dn_t* kee_dn_init(struct kee_dn_t *dn, size_t cap) {

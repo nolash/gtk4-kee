@@ -20,3 +20,5 @@ void debug_log(enum debugLevel level, const char *s) {
 	}
 	g_log(G_LOG_DOMAIN, loglevel, s);
 }
+
+extern void debug_logerr(enum lloglvl_e lvl, char *msg, int err);

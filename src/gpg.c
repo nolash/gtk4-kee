@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "err.h"
+#include <rerr.h>
+
 #include "debug.h"
 #include "gpg.h"
 #include "hex.h"
@@ -14,10 +15,18 @@
 
 #define BUFLEN 1024 * 1024
 
+#ifdef RERR
+char *_rerr[5] = {
+	"Crypto backend",
+	"Auth fail",
+	"Unlock fail",
+	"Sign reject",
+	"Resource fail",
+};
+#endif
 
 const char *gpgVersion = NULL;
 const char sign_test[64];
-
 
 size_t get_padsize(size_t insize, size_t blocksize) {
 	size_t c;
@@ -479,6 +488,10 @@ int gpg_store_digest(struct gpg_store *gpg, char *out, const char *in) {
 
 /// \todo handle path length limit
 void gpg_store_init(struct gpg_store *gpg, const char *path) {
+#ifdef RERR
+	rerr_register(RERR_PFX_GPG, "gpg", _rerr);
+#endif
+
 	char *p;
 	size_t c;
 	memset(gpg, 0, sizeof(struct gpg_store));

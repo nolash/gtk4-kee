@@ -1,5 +1,9 @@
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#ifndef DEBUG_H_
+#define DEBUG_H_
+
+// provides:
+#include <llog.h>
+#include <rerr.h>
 
 /**
  * \brief Debug levels for simple log output.
@@ -19,10 +23,6 @@ enum debugLevel {
 	DEBUG_TRACE,
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  *
  * \brief Implementer logs constant string according to given log level.
@@ -30,10 +30,8 @@ extern "C" {
  * \param level Debug level
  * \param s String to log
  */
+//void debug_log(enum debugLevel level, const char *s);
 void debug_log(enum debugLevel level, const char *s);
-
-#ifdef __cplusplus
-}
-#endif
+void debug_logerr(enum lloglvl_e, char *s, int err);
 
 #endif

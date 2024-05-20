@@ -3,8 +3,8 @@
 #include <gtk/gtk.h>
 #include <gst/gst.h>
 
+#include "debug.h"
 #include "scan.h"
-#include "err.h"
 
 
 void scan_init(struct kee_scanner *scan, const char *device) {

@@ -5,7 +5,7 @@ LDFLAGS += $(LIBS)
 all: compile
 
 src:
-	$(CC) $(CFLAGS) generate.c -o generate $(LDFLAGS)
+	$(CC) $(CFLAGS) generate.c -o generate_asn1 $(LDFLAGS)
 
 %.o: %_asn1_tab.c
 	$(CC) $< -o $* $(LDFLAGS)
@@ -13,11 +13,11 @@ src:
 compile: generate schema_entry_asn1_tab.o
 
 generate: src
-	./generate
+	./generate_asn1
 
 clean:
 	rm -vf *.o
 	rm -vf *_asn1_tab.c
-	rm -vf generate
+	rm -vf generate_asn1
 
 .PHONY: clean

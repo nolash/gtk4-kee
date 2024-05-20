@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "debug.h"
 #include "context.h"
 #include "settings.h"
 #include "camera.h"
@@ -8,8 +9,6 @@
 #include "db.h"
 #include "cadiz.h"
 #include "cadir.h"
-
-#define G_LOG_DOMAIN "Kee"
 
 
 int kee_context_init(struct kee_context *ctx, struct kee_settings *settings) {

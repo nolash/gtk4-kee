@@ -5,3 +5,6 @@ testdata_*
 **/test_*
 **/*.out
 src/aux/include
+testdata
+src/asn1/schema_*.c
+src/asn1/generate_asn1

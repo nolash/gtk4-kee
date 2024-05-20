@@ -1,38 +1,21 @@
-#ifndef _KEE_ERR_H
-#define _KEE_ERR_H
-
-/**
- * 
- * Error codes within context of the kee application and backend.
- *
- */
-enum keeError {
-	/// No error so far within current context
-	ERR_OK,
-	/// General failure code
-	ERR_FAIL,
-	/// Last attempt to unlock key failed
-	ERR_KEY_UNLOCK,
-	/// Usage of key for signature has been rejected (by user)
-	ERR_KEY_REJECT,
-	/// Last input matches entry that already exists in storage
-	ERR_INPUT_CORRUPT,
-	/// Last input changes entry that already exists in storage, but was not allowed
-	ERR_INPUT_DUP,
-	/// Last input changes entry that already exists in storage, but was not allowed
-	ERR_INPUT_PROTECT,
-	/// Crypto backend unavailable
-	ERR_NOCRYPTO,
-	/// Crypto resource fail
-	ERR_NOKEY,
-	/// Crypto authentication fail
-	ERR_KEYFAIL,
-	ERR_ALREADY_SIGNED,
-	ERR_INVALID_CMD,
-	ERR_QR_MISSING,
-	ERR_QR_INVALID,
-	ERR_SPACE,
-	ERR_UNSUPPORTED,
-};
-
-#endif // _KEE_ERR_H
+//#ifndef KEE_ERR_H_
+//#define KEE_ERR_H_
+//
+///**
+// * 
+// * Error codes within context of the kee application and backend.
+// *
+// */
+//
+//#define ERR_OK 0x0
+//#define ERR_FAIL 0x1
+//#define ERR_UNSUPPORTED 0x2
+//
+//#ifndef RERR_N_PFX 
+//#define RERR_N_PFX 0
+//#endif
+//
+//void rerr_register(int pfx, char *label, void *start);
+//char* rerrstr(int code, char *buf);
+//
+//#endif // _KEE_ERR_H

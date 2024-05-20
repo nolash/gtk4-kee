@@ -1,6 +1,7 @@
 #include <gcrypt.h>
 
-#include "err.h"
+#include <rerr.h>
+
 #include "digest.h"
 
 

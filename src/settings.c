@@ -5,7 +5,8 @@
 #include <basedir.h>
 #include <sys/stat.h>
 
-#include "err.h"
+#include <rerr.h>
+
 #include "debug.h"
 #include "settings.h"
 

@@ -18,6 +18,19 @@
 #define ENCRYPT_BLOCKSIZE 4096
 #endif
 
+#define RERR_PFX_GPG 0x100
+/// Crypto backend unavailable
+#define ERR_NOCRYPTO 0x101
+/// Crypto authentication fail
+#define ERR_KEYFAIL 0x102
+/// Last attempt to unlock key failed
+#define ERR_KEY_UNLOCK 0x103
+/// Usage of key for signature has been rejected (by user)
+#define ERR_KEY_REJECT 0x104
+/// Crypto resource fail
+#define ERR_NOKEY 0x105
+
+
 enum gpg_find_mode_e {
 	KEE_GPG_FIND_MAIN,
 	KEE_GPG_FIND_FINGERPRINT,	

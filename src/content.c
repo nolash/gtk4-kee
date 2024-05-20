@@ -1,10 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
-
-#include "cmime.h"
+#include <rerr.h>
+#include <cmime.h>
 
 #include "content.h"
-#include "err.h"
 #include "defs.h"
 #include "digest.h"
 

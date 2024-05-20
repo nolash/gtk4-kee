@@ -7,7 +7,6 @@
 #include <dirent.h>
 #include <sys/types.h>
 
-#include "err.h"
 #include "debug.h"
 #include "camera.h"
 

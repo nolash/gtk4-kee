@@ -5,10 +5,17 @@
 
 #include "testutil.h"
 #include "ledger.h"
-#include "err.h"
 #include "content.h"
 #include "digest.h"
 #include "db.h"
+#include "debug.h"
+
+void debug_log(enum debugLevel level, const char *s) {
+	fprintf(stderr, "%s\n", s);
+}
+
+extern void debug_logerr(enum lloglvl_e lvl, char *msg, int err);
+
 
 int kee_test_db(struct kee_test_t *t) {
 	int r;

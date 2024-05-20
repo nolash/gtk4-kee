@@ -1,20 +1,9 @@
-# TODO: unify destinations
+all: lash
 
+lash: llog rerr
 
-all: varint cmime
+llog:
+	make -C llog
 
-varint:
-	make -C varint
-
-cmime:
-	mkdir -p libcmime/build
-	cd libcmime/build && cmake ..
-	make -C libcmime/build
-	mkdir -vp include
-	cd include && ln -vsf ../libcmime/src cmime
-
-clean:
-	make -C varint clean
-	make -C libcmime/build clean
-
-.PHOBY: clean
+rerr:
+	make -C rerr

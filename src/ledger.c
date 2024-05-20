@@ -3,9 +3,10 @@
 #include <libtasn1.h>
 #include <gcrypt.h>
 
+#include <rerr.h>
+
 #include "ledger.h"
 #include "cadiz.h"
-#include "err.h"
 #include "debug.h"
 #include "digest.h"
 #include "strip.h"

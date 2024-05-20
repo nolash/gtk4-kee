@@ -1,12 +1,14 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <b64/cencode.h>
 #include <b64/cdecode.h>
 #include <zlib.h>
+
 #include "transport.h"
-#include "err.h"
 #include "ledger.h"
+#include "debug.h"
 
 
 static int pack_compress(char *in, size_t in_len, char *out, size_t *out_len) {

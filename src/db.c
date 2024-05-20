@@ -4,9 +4,10 @@
 #include <gcrypt.h>
 #include <time.h>
 
+#include <rerr.h>
+
 #include "db.h"
 #include "digest.h"
-#include "err.h"
 #include "endian.h"
 #include "debug.h"
 #include "hex.h"
@@ -53,8 +54,6 @@ int db_start(struct db_ctx *ctx) {
 
 int db_add(struct db_ctx *ctx, char *key, size_t key_len, char *data, size_t data_len) {
 	int r;
-	char s[1024];
-	size_t c;
 
 	ctx->k.mv_data = key;
 	ctx->k.mv_size = key_len;

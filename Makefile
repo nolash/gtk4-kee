@@ -5,6 +5,8 @@ core: subs
 gtk: core
 	make -C src/gtk
 
+src: subs
+
 subs: glade
 	make -C src
 

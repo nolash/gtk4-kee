@@ -1,8 +1,8 @@
 #include <gtk/gtk.h>
 
+#include "debug.h"
 #include "view.h"
 #include "nav.h"
-#include "err.h"
 
 static struct KeeView view;
 
