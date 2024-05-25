@@ -61,17 +61,17 @@ static int create_handle(gcry_cipher_hd_t *h, const char *key, const char *nonce
 
 	e = gcry_cipher_open(h, GCRY_CIPHER_CHACHA20, GCRY_CIPHER_MODE_POLY1305, GCRY_CIPHER_SECURE);
 	if (e) {
-		return ERR_NOCRYPTO;
+		return 1;
 	}
 	e = gcry_cipher_setkey(*h, key, CHACHA20_KEY_LENGTH_BYTES);
 	if (e) {
-		return ERR_NOCRYPTO;
+		return 1;
 	}
 	e = gcry_cipher_setiv(*h, nonce, CHACHA20_NONCE_LENGTH_BYTES);
 	if (e) {
-		return ERR_NOCRYPTO;
+		return 1;
 	}
-	return ERR_OK;
+	return 0;
 }
 
 
@@ -80,6 +80,7 @@ static void free_handle(gcry_cipher_hd_t *h) {
 }
 
 int encryptb (char *ciphertext, size_t ciphertext_len, const char *indata, size_t indata_len, const char *key, const char *nonce) {
+	const char *p;
 	int r;
 	gcry_cipher_hd_t h;
 	gcry_error_t e;
@@ -87,13 +88,14 @@ int encryptb (char *ciphertext, size_t ciphertext_len, const char *indata, size_
 
 	r = create_handle(&h, key, nonce);
 	if (r) {
-		return r;
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, NULL);
 	}
 	memcpy(indata_raw, indata, indata_len);
 	padb(indata_raw, ciphertext_len, indata_len);
 	e = gcry_cipher_encrypt(h, (unsigned char*)ciphertext, ciphertext_len, (const unsigned char*)indata_raw, ciphertext_len);
 	if (e) {
-		return ERR_NOCRYPTO;
+		p = gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, (char*)p);
 	}
 
 	free_handle(&h);
@@ -102,6 +104,7 @@ int encryptb (char *ciphertext, size_t ciphertext_len, const char *indata, size_
 }
 
 int encrypt(char *ciphertext, size_t ciphertext_len, const char *indata, const char *key, const char *nonce) {
+	char *p;
 	int r;
 	gcry_cipher_hd_t h;
 	gcry_error_t e;
@@ -109,13 +112,14 @@ int encrypt(char *ciphertext, size_t ciphertext_len, const char *indata, const c
 
 	r = create_handle(&h, key, nonce);
 	if (r) {
-		return r;
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, NULL);
 	}
 
 	pad(indata_raw, ciphertext_len, indata);
 	e = gcry_cipher_encrypt(h, (unsigned char*)ciphertext, ciphertext_len, (const unsigned char*)indata_raw, ciphertext_len);
 	if (e) {
-		return ERR_NOCRYPTO;
+		p = (char*)gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, p);
 	}
 
 	free_handle(&h);
@@ -124,27 +128,29 @@ int encrypt(char *ciphertext, size_t ciphertext_len, const char *indata, const c
 }
 
 int decryptb(char *outdata, const char *ciphertext, size_t ciphertext_len, const char *key, const char *nonce) {
+	char *p;
 	int r;
 	gcry_cipher_hd_t h;
 	gcry_error_t e;
 
 	r = create_handle(&h, key, nonce);
 	if (r) {
-		return r;
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, NULL);
 	}
 
 	e = gcry_cipher_decrypt(h, outdata, ciphertext_len, ciphertext, ciphertext_len);
 	if (e) {
-		return ERR_NOCRYPTO;
+		p = (char*)gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, p);
 	}
 
 	free_handle(&h);
 
 	return ERR_OK;
-
 }
 
 int decrypt(char *outdata, const char *ciphertext, size_t ciphertext_len, const char *key, const char *nonce) {
+	char *p;
 	int r;
 	gcry_cipher_hd_t h;
 	gcry_error_t e;
@@ -153,12 +159,13 @@ int decrypt(char *outdata, const char *ciphertext, size_t ciphertext_len, const 
 	outdata_raw[0] = 0;
 	r = create_handle(&h, key, nonce);
 	if (r) {
-		return r;
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, NULL);
 	}
 
 	e = gcry_cipher_decrypt(h, outdata_raw, ciphertext_len, ciphertext, ciphertext_len);
 	if (e) {
-		return ERR_NOCRYPTO;
+		p = (char*)gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_NOCRYPTO, p);
 	}
 	//outdata->assign(outdata_raw);
 	strcpy(outdata, outdata_raw);
@@ -175,19 +182,19 @@ static int key_apply_public(struct gpg_store *gpg, gcry_sexp_t key) {
 
 	pubkey = gcry_sexp_find_token(key, "public-key", 10);
 	if (pubkey == NULL) {
-		return 1;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 	pubkey = gcry_sexp_find_token(pubkey, "q", 1);
 	if (pubkey == NULL) {
-		return 1;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 	c = PUBKEY_LENGTH;
 	p = (char*)gcry_sexp_nth_data(pubkey, 1, &c);
 	if (p == NULL) {
-		return 1;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 	memcpy(gpg->public_key, p, PUBKEY_LENGTH);
-	return 0;
+	return ERR_OK;
 }
 
 static char *key_filename(struct gpg_store *gpg, char *path) {
@@ -212,7 +219,7 @@ static int key_from_data(gcry_sexp_t *key, const char *indata, size_t indata_len
 
 	e = gcry_sexp_new(key, indata, indata_len, 0);
 	if (e != GPG_ERR_NO_ERROR) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 	return ERR_OK;
 }
@@ -229,7 +236,7 @@ static int key_from_file(gcry_sexp_t *key, const char *path, const char *passphr
 
 	f = fopen(path, "r");
 	if (f == NULL) {
-		return ERR_NOKEY;
+		return debug_logerr(LLOG_ERROR, ERR_NOKEY, NULL);
 	}
 
 	/// \todo length must be in the ciphertext
@@ -243,26 +250,26 @@ static int key_from_file(gcry_sexp_t *key, const char *path, const char *passphr
 		i += c;
 	}
 	if (i == 0) {
-		return ERR_NOKEY;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFILE, (char*)path);
 	}
 	fclose(f);
 
 	outdata = malloc(i);
 	r = decryptb((char*)outdata, v, i, passphrase, nonce);
 	if (r) {
-		return ERR_NOKEY;
+		return r;
 	}
 	//r = key_from_data(key, (char*)outdata, l);
 	c = (size_t)(*((int*)outdata));
 	p = (char*)(outdata+sizeof(int));
 	r = key_from_data(key, p, c);
 	free(outdata);
-	return r;
+	return ERR_OK;
 }
 
 static int key_create(struct gpg_store *gpg, gcry_sexp_t *key) {
 	int r;
-	char *p;
+	const char *p;
 	const char *sexp_quick = "(genkey(ecc(flags eddsa)(curve Ed25519)))";
 	//char *pv;
 	gcry_sexp_t in;
@@ -270,25 +277,26 @@ static int key_create(struct gpg_store *gpg, gcry_sexp_t *key) {
 
 	e = gcry_sexp_new(&in, (const void*)sexp_quick, strlen(sexp_quick), 0);
 	if (e) {
-		printf("error sexp: %s\n", gcry_strerror(e));
-		return (int)e;
+		p = gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, (char*)p);
 	}
 	e = gcry_pk_genkey(key, in);
 	if (e) {
-		printf("error gen: %s\n", gcry_strerror(e));
-		return (int)e;
+		p = gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, (char*)p);
 	}
 	p = (char*)gcry_pk_get_keygrip(*key, (unsigned char*)gpg->fingerprint);
 	if (p == NULL) {
-		return ERR_KEYFAIL;
+		p = gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, (char*)p);
 	}
 
 	r = key_apply_public(gpg, *key);
 	if (r) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
-	return 0;
+	return ERR_OK;
 }
 
 /**
@@ -312,7 +320,7 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 
 	r = key_create(gpg, key);
 	if (r) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
 	kl = gcry_sexp_sprint(*key, GCRYSEXP_FMT_CANON, NULL, 0);
@@ -335,24 +343,24 @@ static int key_create_file(struct gpg_store *gpg, gcry_sexp_t *key, const char *
 	gcry_create_nonce(nonce, CHACHA20_NONCE_LENGTH_BYTES);
 	r = encryptb(ciphertext, c, v, m+sizeof(int), passphrase, nonce);
 	if (r) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
 	p = key_filename(gpg, path);
 	if (p == NULL) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
 	f = fopen((char*)path, "w");
 	if (f == NULL) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 	l = c;
 
 	c = fwrite(nonce, CHACHA20_NONCE_LENGTH_BYTES, 1, f);
 	if (c != 1) {
 		fclose(f);
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 	i = 0;
 	c = 1;
@@ -378,12 +386,12 @@ int gpg_key_create(struct gpg_store *gpg, const char *passphrase) {
 
 	r = key_create_file(gpg, &key, passphrase);
 	if (r) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
 	p = key_filename(gpg, key_path);
 	if (p == NULL) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
 	strcpy(link_path, gpg->path);
@@ -392,12 +400,12 @@ int gpg_key_create(struct gpg_store *gpg, const char *passphrase) {
 
 	r = unlink(link_path);
 	if (r == -1 && errno != ENOENT) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
 	r = symlink(key_path, link_path);
 	if (r) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 	return ERR_OK;
 }
@@ -416,7 +424,7 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 			strcpy(p, "kee.key");
 			r = key_from_file(&gpg->k, path, passphrase);
 			if (r) {
-				return ERR_FAIL;
+				return debug_logerr(LLOG_WARNING, ERR_KEYFAIL, NULL);
 			}
 			break;
 		case KEE_GPG_FIND_FINGERPRINT:
@@ -425,25 +433,25 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 			c = 41;
 			r = bin_to_hex((const unsigned char*)criteria, FINGERPRINT_LENGTH, (unsigned char*)p, &c);
 			if (r) {
-				return ERR_FAIL;
+				return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 			}
 			r = key_from_file(&gpg->k, path, passphrase);
 			if (r) {
-				return ERR_FAIL;
+				return debug_logerr(LLOG_WARNING, ERR_KEYFAIL, NULL);
 			}
 			break;
 		default:
-			return ERR_FAIL;
+			return debug_logerr(LLOG_WARNING, ERR_FAIL, NULL);
 	}
 
 	p = (char*)gcry_pk_get_keygrip(gpg->k, (unsigned char*)gpg->fingerprint);
 	if (p == NULL) {
-		return ERR_KEYFAIL;
+		return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
 	}
 
 	r = key_apply_public(gpg, gpg->k);
 	if (r) {
-		return ERR_FAIL;
+		return debug_logerr(LLOG_ERROR, ERR_FAIL, NULL);
 	}
 	
 	return ERR_OK;
@@ -451,24 +459,22 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 
 
 int gpg_verify(gcry_sexp_t *sig, gcry_sexp_t *key, const char *v) {
+	const char *p;
 	gcry_error_t e;
 	gcry_sexp_t data;
 	size_t err_offset;
-	char in[BUFLEN];
 
 	e = gcry_sexp_build(&data, &err_offset, "(data(flags eddsa)(hash-algo sha512)(value %b))", 64, v);
 	if (e) {
-		sprintf(in, "error sign sexp data build: %s\n", gcry_strerror(e));
-		debug_log(DEBUG_ERROR, in);
-		return ERR_KEYFAIL;
+		p = gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_FAIL, (char*)p);
 	}
 	e = gcry_pk_verify(*sig, data, *key);
 	if (e != GPG_ERR_NO_ERROR) {
-		sprintf(in, "error verify: %s\n", gcry_strerror(e));
-		debug_log(DEBUG_ERROR, in);
-		return 1;
+		p = gcry_strerror(e);
+		return debug_logerr(LLOG_ERROR, ERR_FAIL, (char*)p);
 	}
-	return 0;
+	return ERR_OK;
 }
 
 char *gpg_store_get_fingerprint(struct gpg_store *gpg) {

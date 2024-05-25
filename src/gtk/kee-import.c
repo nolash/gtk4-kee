@@ -138,14 +138,14 @@ static void kee_import_handle_import_data_text(KeeImport *o, GString *v, GtkText
 	g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 	g_action_activate(act, NULL);
 }
-
-static void accept_cmd(KeeImport *o, char cmd) {
-	o->cmd_accept = cmd;
-}
-
-static int check_cmd(KeeImport *o, char cmd) {
-	return 1;
-}
+//
+//static void accept_cmd(KeeImport *o, char cmd) {
+//	o->cmd_accept = cmd;
+//}
+//
+//static int check_cmd(KeeImport *o, char cmd) {
+//	return 1;
+//}
 
 
 /// \todo too long, split up

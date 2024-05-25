@@ -6,6 +6,7 @@ INCLUDES :=  -I..
 CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0 zbar` $(INCLUDES) -Wall -DRERR -DRERR_N_PREFIX=2
 LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir gstreamer-1.0 libqrencode zbar` -lb64 -llash -ltasn1 -lcmime -lldap
 LDFLAGS += $(LIBS) 
+AUXLIBS := `pkg-config --libs kee`
 
 all: obj_debug $(OBJS)
 
@@ -17,7 +18,7 @@ obj_debug: util
 
 %.o: %.c
 #	$(CC) $(CFLAGS) $< -o test_$* debug.o testutil.o $(LINKOBJS) $(LDFLAGS)
-	$(CC) $(CFLAGS) $< -o test_$* testutil.o $(LINKOBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) $< -o test_$* testutil.o $(LINKOBJS) $(LDFLAGS) $(AUXLIBS)
 
 #test_run: $(wildcard test_*)
 #	./$<

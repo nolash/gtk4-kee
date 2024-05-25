@@ -14,7 +14,7 @@ void debug_log(enum debugLevel level, const char *s) {
 	fprintf(stderr, "%s\n", s);
 }
 
-extern void debug_logerr(enum lloglvl_e lvl, char *msg, int err);
+extern int debug_logerr(enum lloglvl_e lvl, int err, char *msg);
 
 
 int kee_test_db(struct kee_test_t *t) {

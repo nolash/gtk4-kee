@@ -28,7 +28,7 @@ int kee_context_init(struct kee_context *ctx, struct kee_settings *settings) {
 	kee_entry_store_set_resolve(ctx->entry_store, (char*)settings->resource);
 
 	//ctx->resolver.locator = malloc(KEE_LOCATOR_LENGTH);
-	ctx->resolver.locator = settings->resource;
+	ctx->resolver.locator = (char*)settings->resource;
 	return ERR_OK;
 }
 

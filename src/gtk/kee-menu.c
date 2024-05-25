@@ -10,7 +10,6 @@
 #include "context.h"
 #include "debug.h"
 
-#define G_LOG_DOMAIN "Kee"
 
 typedef struct {
 } KeeMenuPrivate;
@@ -201,6 +200,7 @@ static void kee_menu_header_update(KeeMenu *o, const char *label) {
 		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
 		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
 	} else if (!(strcmp(label, "import"))) {
+	} else if (!(strcmp(label, "transport"))) {
 	} else {
 		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "unknown nav label: %s", label);
 	}

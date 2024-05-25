@@ -32,6 +32,6 @@ enum debugLevel {
  */
 //void debug_log(enum debugLevel level, const char *s);
 void debug_log(enum debugLevel level, const char *s);
-void debug_logerr(enum lloglvl_e, char *s, int err);
+int debug_logerr(enum lloglvl_e, int err, char *s);
 
 #endif

@@ -28,7 +28,6 @@
 #include "transport.h"
 #include "qr.h"
 
-#define G_LOG_DOMAIN "Kee"
 
 typedef struct {
 } KeeEntryPrivate;

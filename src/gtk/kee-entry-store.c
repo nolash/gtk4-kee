@@ -11,8 +11,6 @@
 #include "cadiz.h"
 #include "ledger.h"
 
-#define G_LOG_DOMAIN "Kee"
-
 
 typedef struct {
 } KeeEntryStorePrivate;

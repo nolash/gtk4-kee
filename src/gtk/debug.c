@@ -2,8 +2,6 @@
 
 #include "debug.h"
 
-#define G_LOG_DOMAIN "Kee"
-
 
 void debug_log(enum debugLevel level, const char *s) {
 	int loglevel;
@@ -21,4 +19,4 @@ void debug_log(enum debugLevel level, const char *s) {
 	g_log(G_LOG_DOMAIN, loglevel, s);
 }
 
-extern void debug_logerr(enum lloglvl_e lvl, char *msg, int err);
+extern int debug_logerr(enum lloglvl_e lvl, int err, char *msg);
