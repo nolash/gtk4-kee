@@ -230,10 +230,8 @@ int write_data() {
 
 int write_defs() {
 	char *p;
-	char *pr;
 	struct beamenu_node *o;
 	char buf[1024];
-	char buf_r[1024];
 	char k[KEYMAXLEN + 1];
 	int c;
 	int f;
@@ -241,11 +239,6 @@ int write_defs() {
 	int r;
 	int i;
 
-	p = "\nchar *beamenu_dst_r[] = {\n";
-	strcpy(buf_r, p);
-	l = strlen(p);
-	pr = buf_r + l;
-	
 	f = open("beamenu_defs.h", O_WRONLY | O_CREAT, S_IRWXU);
 
 	r = 0;
@@ -262,8 +255,6 @@ int write_defs() {
 	for (i = 0; i < BEAMENU_N_DST; i++) {
 		o = beamenu_get(i);
 		strcpy(k, o->cn);
-		c = sprintf(pr, "\t\"%s\",\n", k);
-		pr += c;
 		r = uc(k);
 		sprintf(buf, "#define BEAMENU_DST_%s %d\n", k, i);
 		l = strlen(buf);
@@ -274,9 +265,9 @@ int write_defs() {
 		}
 		r += c;
 	}
-	sprintf(pr, "};\n");
-	l = strlen(buf_r);
-	c = write(f, buf_r, l);
+	sprintf(buf, "\nextern char *beamenu_dst_r[];\n");
+	l = strlen(buf);
+	c = write(f, buf, l);
 	if (c != l) {
 		close(f);
 		return 0;
@@ -297,6 +288,58 @@ int write_defs() {
 	return r;
 }
 
+
+int write_impl() {
+	char *p;
+	struct beamenu_node *o;
+	char buf[1024];
+	char k[KEYMAXLEN + 1];
+	int r;
+	int c;
+	int i;
+	int l;
+	int f;
+
+	f = open("beamenu_defs.c", O_WRONLY | O_CREAT, S_IRWXU);
+
+	r = 0;
+	p = "char *beamenu_dst_r[] = {\n";
+	strcpy(buf, p);
+	l = strlen(p);
+	c = write(f, buf, l);
+	if (c != l) {
+		close(f);
+		return 0;
+	}
+	r += c;
+	p += c;
+
+	for (i = 0; i < BEAMENU_N_DST; i++) {
+		o = beamenu_get(i);
+		strcpy(k, o->cn);
+		sprintf(buf, "\t\"%s\",\n", k);
+		l = strlen(buf);
+		c = write(f, buf, l);
+		if (c != l) {
+			close(f);
+			return 0;
+		}
+		r += c;
+	}
+
+	p = "};\n";
+	strcpy(buf, p);
+	l = strlen(p);
+	c = write(f, buf, l);
+	if (c != l) {
+		close(f);
+		return 0;
+	}
+	r += c;
+
+	close(f);
+	return r;
+}
 
 int main(int argc, char **argv) {
 	int i;
@@ -377,6 +420,11 @@ int main(int argc, char **argv) {
 	}
 
 	r = write_defs();
+	if (!r) {
+		return 1;
+	}
+
+	r = write_impl();
 	if (!r) {
 		return 1;
 	}

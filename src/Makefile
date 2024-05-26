@@ -6,7 +6,7 @@ LDFLAGS += $(LIBS)
 
 #all: aux resource $(OBJS)
 #	$(CC) $(CFLAGS) main.c -o a.out $(OBJS) $(LDFLAGS) aux/varint/varint.o
-all: aux $(OBJS)
+all: asn aux $(OBJS)
 
 asn:
 	make -C asn1 compile

@@ -9,7 +9,7 @@
 #include "settings.h"
 #include "context.h"
 #include "state.h"
-#include "view.h"
+//#include "view.h"
 #include "menu.h"
 #include "kee-import.h"
 #include "kee-entry-list.h"
@@ -88,8 +88,9 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 	widget = kee_entry_list_new(G_LIST_MODEL(ctx->entry_store), win);
 	kee_menu_add(win, "view", widget);
 
-	kee_menu_next(win, "view");
-	kee_menu_next(win, "unlock");
+	//kee_menu_next(win, "view");
+	kee_menu_next(win, BEAMENU_DST_LIST);
+	kee_menu_next(win, BEAMENU_DST_KEY);
 
 	import = kee_import_new(win);
 	kee_menu_add(win, "import", GTK_WIDGET(import));

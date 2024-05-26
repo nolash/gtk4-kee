@@ -247,12 +247,10 @@ int kee_menu_set(KeeMenu *o, GtkWidget *widget) {
 
 int kee_menu_prev(KeeMenu *o) {
 	GtkWidget *widget;
-	const char *label;
 
 	widget = kee_nav_back();
 	gtk_stack_set_visible_child(o->stack, widget);
 
-	//label = gtk_stack_get_visible_child_name(o->stack);
 	kee_menu_header_update(o, KEE_NAV_LABEL);
 
 	return ERR_OK;
