@@ -211,7 +211,7 @@ int write_data() {
 	}
 	
 	l = beamenu_export(buf, BEAMENU_EXIT_SIZE);
-	f = open("beamenu.dat", O_WRONLY | O_CREAT, S_IRWXU);
+	f = open("beamenu.dat", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
 	while (l > 0) {
 		c = write(f, buf, l);
 		if (!c) {
@@ -239,7 +239,7 @@ int write_defs() {
 	int r;
 	int i;
 
-	f = open("beamenu_defs.h", O_WRONLY | O_CREAT, S_IRWXU);
+	f = open("beamenu_defs.h", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
 
 	r = 0;
 	p = "#ifndef BEAMENU_DEFS_H_\n#define BEAMENU_DEFS_H_\n\n";
@@ -300,7 +300,7 @@ int write_impl() {
 	int l;
 	int f;
 
-	f = open("beamenu_defs.c", O_WRONLY | O_CREAT, S_IRWXU);
+	f = open("beamenu_defs.c", O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
 
 	r = 0;
 	p = "char *beamenu_dst_r[] = {\n";
