@@ -6,7 +6,7 @@
 #define BEAMENU_CN_MAXLEN 32
 
 #ifndef BEAMENU_N_DST
-#define BEAMENU_N_DST 0
+#define BEAMENU_N_DST 1
 #endif
 
 #ifndef BEAMENU_N_EXITS
@@ -17,6 +17,7 @@
 
 
 struct beamenu_node {
+	int i;
 	char *cn;
 	int dst[BEAMENU_N_EXITS]; // all are 0
 };
@@ -26,7 +27,9 @@ void beamenu_free();
 void beamenu_set(int idx_node, int idx_exit, int idx_dst);
 struct beamenu_node *beamenu_get(int idx_node);
 int beamenu_load_file(const char *path, int msize);
-int beamenu_move(int idx_exit);
 int beamenu_export(char *out, int width);
+int beamenu_use_exit(int idx_exit);
+int beamenu_get_exit(int idx_exit);
+int beamenu_jump(int idx);
 
 #endif

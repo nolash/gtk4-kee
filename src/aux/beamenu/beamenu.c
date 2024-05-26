@@ -11,7 +11,6 @@ int beamenu_now;
 int beamenu_register(int idx, char *cn) {
 	int i;
 	int l;
-	char *p;
 
 	l = strlen(cn) + 1;
 	if (node[idx].cn) {
@@ -25,12 +24,12 @@ int beamenu_register(int idx, char *cn) {
 	for (i = 0; i < BEAMENU_N_EXITS; i++) {
 		node[idx].dst[i] = 0;
 	}
+	node[idx].i = idx;
 	return 0;
 }
 
 void beamenu_free() {
 	int i;
-	char *p;
 
 	for (i = 0; i <= BEAMENU_N_DST; i++) {
 		if (node[i].cn) {
@@ -47,27 +46,39 @@ void beamenu_set(int idx_node, int idx_exit, int idx_dst) {
 	o->dst[idx_exit] = idx_dst;
 }
 
-int beamenu_move(int idx_exit) {
-	struct beamenu_node *o;
-	int r;
+int beamenu_use_exit(int idx_exit) {
 	int idx;
 
-	o = beamenu_get(beamenu_now);
-	idx = idx_exit;
-	r = o->dst[idx_exit];
-	switch(r) {
+	idx = beamenu_get_exit(idx_exit);
+	switch(idx) {
 		case BEAMENU_INACTIVE:
-			return 1;
+			return -1;
 			break;
 		case BEAMENU_ROOT:
 			idx = 0;
 			break;
 		default:
-			idx = r;
+			if (idx_exit < 0 || idx_exit >= BEAMENU_N_EXITS) {
+				return -2;
+			}
 	}
 
+	return beamenu_jump(idx);
+}
+
+int beamenu_get_exit(int idx_exit) {
+	struct beamenu_node *o;
+
+	if (idx_exit == BEAMENU_ROOT) {
+		return idx_exit;
+	}
+	o = beamenu_get(beamenu_now);
+	return o->dst[idx_exit];
+}
+
+int beamenu_jump(int idx) {
 	beamenu_now = idx;
-	return 0;
+	return idx;
 }
 
 struct beamenu_node *beamenu_get(int idx_node) {
@@ -76,4 +87,3 @@ struct beamenu_node *beamenu_get(int idx_node) {
 	}
 	return &node[idx_node];
 }
-

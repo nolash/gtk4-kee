@@ -12,7 +12,6 @@ int beamenu_load_file(const char *path, int msize) {
 	int ii;
 	size_t c;
 	char p[BEAMENU_CN_MAXLEN + 1];
-	struct beamenu_node *o;
 
 	f = open(path, O_RDONLY);
 	if (f < 0) {

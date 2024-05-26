@@ -67,7 +67,6 @@ char* rerrstr(int code, char *buf) {
 	char v;
 	char *src;
 	char *dst;
-	int i;
 
 	splitcode(code, &k, &v);
 

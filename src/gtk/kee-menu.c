@@ -18,7 +18,7 @@ struct _KeeMenu {
 	GtkApplicationWindow parent;
 	GtkHeaderBar *head;
 	GtkStack *stack;
-	struct KeeNav nav;
+	//struct KeeNav nav;
 	struct kee_context *ctx;
 };
 
@@ -35,7 +35,8 @@ static void kee_menu_act_back(GAction *act, GVariant *param, KeeMenu *menu) {
 static void kee_menu_act_import(GAction *act, GVariant *param, KeeMenu *menu) {
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "act import");
 	//gtk_stack_set_visible_child_name(stack, "import");
-	kee_menu_next(menu, "import");
+	//kee_menu_next(menu, "import");
+	kee_menu_next(menu, BEAMENU_DST_IMPORT);
 }
 
 static void kee_menu_act_new_entry(GAction *act, GVariant *param, KeeMenu *menu) {
@@ -43,7 +44,8 @@ static void kee_menu_act_new_entry(GAction *act, GVariant *param, KeeMenu *menu)
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "act new entry");
 	//gtk_stack_set_visible_child_name(stack, "import");
-	kee_menu_next(menu, "entry");
+	//kee_menu_next(menu, "entry");
+	kee_menu_next(menu, BEAMENU_DST_NEW);
 
 	o = g_object_new(KEE_TYPE_ENTRY, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
 	kee_entry_set_signer(o, &menu->ctx->gpg);
@@ -97,7 +99,8 @@ static void kee_menu_act_import_entry(GAction *act, GVariant *param, KeeMenu *me
 				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail set entry widget view mode");
 				return;
 			}
-			kee_menu_next(menu, "entry");
+			//kee_menu_next(menu, "entry");
+			kee_menu_next(menu, BEAMENU_DST_NEW);
 			r = kee_menu_set(menu, GTK_WIDGET(entry));
 			if (r) {
 				g_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "fail replace menu entry content");
@@ -122,9 +125,9 @@ static void kee_menu_class_init(KeeMenuClass *kls) {
 
 static void kee_menu_init(KeeMenu *o) {
 	//memset(&o->nav, 0, sizeof(struct KeeNav));
-	o->nav.c = 0;
-	o->nav.widgets[0] = 0;
-	o->nav.now = 0;
+	//o->nav.c = 0;
+	//o->nav.widgets[0] = 0;
+	//o->nav.now = 0;
 	o->head = GTK_HEADER_BAR(gtk_header_bar_new());
 	o->stack = GTK_STACK(gtk_stack_new());
 }
@@ -133,6 +136,8 @@ KeeMenu* kee_menu_new(GtkApplication *gapp, struct kee_context *ctx) {
 	KeeMenu *o;
 	GtkWidget *butt;
 	GSimpleAction *act;
+
+	kee_nav_init((char*)settings_get(ctx->settings, SETTINGS_DATA));
 
 	o = g_object_new(KEE_TYPE_MENU, "application", gapp, NULL);
 	o->ctx = ctx;
@@ -211,11 +216,15 @@ int kee_menu_add(KeeMenu *o, const char *label, GtkWidget *widget) {
 	return ERR_OK;
 }
 
-GtkWidget* kee_menu_next(KeeMenu *o, const char *label) {
+//GtkWidget* kee_menu_next(KeeMenu *o, const char *label) {
+GtkWidget* kee_menu_next(KeeMenu *o, int menu_id) {
 	GtkWidget *widget;
+	char *label;
 
+	label = beamenu_dst_r[menu_id];
 	widget = gtk_stack_get_child_by_name(o->stack, label);
-	kee_nav_push(&o->nav, widget);
+	//kee_nav_push(&o->nav, widget);
+	kee_nav_set(widget, menu_id);
 	gtk_stack_set_visible_child(o->stack, widget);
 	kee_menu_header_update(o, label);
 	return widget;
@@ -225,7 +234,8 @@ int kee_menu_set(KeeMenu *o, GtkWidget *widget) {
 	GtkBox *container;
 	GtkWidget *widget_old;
 
-	container = GTK_BOX(o->nav.now);
+	//container = GTK_BOX(o->nav.now);
+	container = GTK_BOX(KEE_NAV_NOW);
 
 	widget_old = gtk_widget_get_first_child(GTK_WIDGET(container));
 	if (widget_old) {
@@ -236,12 +246,14 @@ int kee_menu_set(KeeMenu *o, GtkWidget *widget) {
 }
 
 int kee_menu_prev(KeeMenu *o) {
+	GtkWidget *widget;
 	const char *label;
 
-	kee_nav_pop(&o->nav);
-	gtk_stack_set_visible_child(o->stack, o->nav.now);
-	label = gtk_stack_get_visible_child_name(o->stack);
-	kee_menu_header_update(o, label);
+	widget = kee_nav_back();
+	gtk_stack_set_visible_child(o->stack, widget);
+
+	//label = gtk_stack_get_visible_child_name(o->stack);
+	kee_menu_header_update(o, KEE_NAV_LABEL);
 
 	return ERR_OK;
 }

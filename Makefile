@@ -8,7 +8,7 @@ gtk: core
 src: subs
 
 subs: glade
-	make -C src
+	make -C src all
 
 glade:
 	gtk4-builder-tool simplify --3to4 glade.ui > src/gtk/main.ui

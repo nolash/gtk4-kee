@@ -3,7 +3,6 @@ INCLUDES := `pkg-config --cflags libgcrypt lmdb libxdg-basedir libqrencode zbar`
 CFLAGS +=  $(INCLUDES) -Wall
 LIBS := `pkg-config --libs libgcrypt zlib lmdb libxdg-basedir libqrencode zbar` -lb64 -llash
 LDFLAGS += $(LIBS)
-AUXLIBS := `pkg-config --libs kee`
 
 #all: aux resource $(OBJS)
 #	$(CC) $(CFLAGS) main.c -o a.out $(OBJS) $(LDFLAGS) aux/varint/varint.o
@@ -17,13 +16,14 @@ asn:
 	$(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
 
 aux:
-	make -C aux
+	echo "foo"
+	make -C aux all
 
 clean:
 	rm -vf *.o
 	make -C gtk clean
 	make -C asn1 clean
 	make -C tests clean
-#	make -C aux clean
+	make -C aux clean
 
 .PHONY: clean aux

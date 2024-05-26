@@ -6,7 +6,7 @@ LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir gstreamer-1.0
 LDFLAGS += $(LIBS) 
 AUXLIBS := `pkg-config --libs kee`
 
-all: resource $(OBJS)
+all: menu resource $(OBJS)
 	$(CC) $(CFLAGS) main.c -o a.out $(LINKOBJS) $(LDFLAGS) $(AUXLIBS)
 
 %.o: %.c
@@ -20,7 +20,12 @@ clean:
 	rm -vf a.out
 	rm -vf a_dev.out
 	rm -vf resources.c
+	rm -vf beamenu_defs.h
+	rm -vf beamenu.dat
 	make -C tests clean
 
 resource:
 	glib-compile-resources kee.gresource.xml --target=resources.c --generate-source
+
+menu:
+	../aux/beamenu/beamenu_gen menu.txt

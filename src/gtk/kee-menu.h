@@ -4,6 +4,7 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
+#include "beamenu_defs.h"
 #include "context.h"
 
 /// \todo rename to kee-win
@@ -24,7 +25,8 @@ G_DECLARE_FINAL_TYPE(KeeMenu, kee_menu, KEE, MENU, GtkApplicationWindow);
 
 KeeMenu* kee_menu_new(GtkApplication *app, struct kee_context *ctx);
 int kee_menu_add(KeeMenu *o, const char *k, GtkWidget *v);
-GtkWidget* kee_menu_next(KeeMenu *o, const char *k);
+//GtkWidget* kee_menu_next(KeeMenu *o, const char *k);
+GtkWidget* kee_menu_next(KeeMenu *o, int menu_id);
 int kee_menu_prev(KeeMenu *o);
 int kee_menu_set(KeeMenu *o, GtkWidget *widget);
 

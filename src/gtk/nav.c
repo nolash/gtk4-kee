@@ -1,76 +1,71 @@
+#include <string.h>
+
 #include <gtk/gtk.h>
+#include <beamenu.h>
 
 #include "nav.h"
+#include "beamenu_defs.h"
 
-//static void kee_nav_log(struct KeeNav *nav) {
-//	char s[128];
-//	char out[1024];
-//	int c;
-//	int i;
-//
-//	c = 0;
-//	for (i = 0; i < nav->c + 1; i++) {
-//		sprintf(s, "[%d:%p] ", i, nav->widgets[i]);
-//		sprintf(out+c, s);
-//		c += strlen(s);
-//	}
-//	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "nav now %p: %s", nav->now, out);
-//}
 
-int kee_nav_push(struct KeeNav *nav, GtkWidget *page) {
-	nav->c++;
-	nav->widgets[nav->c] = page;
-	nav->now = nav->widgets[nav->c];
-//	kee_nav_log(nav);
+static GtkWidget* widgets[KEE_NAV_N_DST];
+
+int kee_nav_init(const char *path) {
+	char *p;
+	char fullpath[1024];
+
+	p = stpcpy(fullpath, path);
+	if (*(p-1) != '/') {
+		*p = '/';
+		p++;
+	}
+	p = strcpy(p, "beamenu.dat");
+
+	return beamenu_load_file(fullpath, 1);
+}
+
+int kee_nav_set(GtkWidget *widget, int menu_id) {
+	if (widgets[menu_id]) {
+		return 1;
+	}
+	widgets[menu_id] = widget;
+	beamenu_jump(menu_id);
 	return 0;
 }
 
-GtkWidget* kee_nav_pop(struct KeeNav *nav) {
-	if (nav->c == 0) {
+int kee_nav_unset(int menu_id) {
+	if (widgets[menu_id] == NULL) {
+		return 1;
+	}
+	widgets[menu_id] = 0x0;
+	return 0;
+}
+
+GtkWidget* kee_nav_back() {
+	GtkWidget *widget;
+	int r;
+
+	r = beamenu_use_exit(KEE_NAV_EXIT_BACK);
+	if (r < 0) {
 		return NULL;
 	}
-	//r = nav->widgets[nav->c];
-	nav->c--;
-	nav->now = nav->widgets[nav->c];
-	return nav->now;
-//	kee_nav_log(nav);
+	if (widgets[r] == NULL) {
+		return NULL;
+	}
+	widget = widgets[r];
+	widgets[r] = 0x0;
+	return widget;
 }
 
+GtkWidget* kee_nav_get() {
+	struct beamenu_node *o;
 
-int kee_nav_is_top(struct KeeNav *nav) {
-	return nav->c == 0;
+	o = beamenu_get(-1);
+	return widgets[o->i];
 }
 
+char *kee_nav_get_label() {
+	struct beamenu_node *o;
 
-//
-//void kee_nav_push(struct KeeNav *nav, GtkWidget *page) {
-//	struct KeeNav *nav_old;
-//
-//	nav_old = malloc(sizeof(struct KeeNav));
-//	nav_old->prev = nav->prev;
-//	nav_old->now = nav->now;
-//	nav->prev = nav_old;
-//	nav->now = page;
-//}
-//
-//
-//GtkWidget* kee_nav_pop(struct KeeNav *nav) {
-//	struct KeeNav *nav_old;
-//	GtkWidget *r;
-//
-//	if (!nav->prev) {
-//		return NULL;
-//	}
-//	
-//	r = nav->now;
-//	nav_old = nav->prev->prev;
-//	nav->now = nav->prev->now;
-//	free(nav->prev);
-//	nav->prev = nav_old;
-//	return r;
-//}
-//
-//
-//int kee_nav_is_top(struct KeeNav *nav) {
-//	return !nav->prev;
-//}
+	o = beamenu_get(-1);
+	return beamenu_dst_r[o->i];
+}

@@ -27,7 +27,8 @@ static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *me
 
 	o = KEE_ENTRY(gtk_single_selection_get_selected_item(sel));
 	g_object_take_ref(G_OBJECT(o));
-	kee_menu_next(menu, "entry");
+	//kee_menu_next(menu, "entry");
+	kee_menu_next(menu, BEAMENU_DST_NEW);
 	if (kee_entry_modeswitch(o, KEE_ENTRY_VIEWMODE_FULL)) {
 		kee_menu_set(menu, GTK_WIDGET(o));
 	}

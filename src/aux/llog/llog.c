@@ -184,14 +184,10 @@ char* llog_add_x(const char *k, long long v) {
 	char *p;
 	int c;
 	char i;
-	long long r;
 	char *b;
 
-	r = 0;
 	p = kvstart((char*)k);
 	c = 0;
-	//b = (char*)&r;
-	//b += (sizeof(r) - 1);
 	b = (char*)&v;
 	b += (sizeof(v) - 1);
 

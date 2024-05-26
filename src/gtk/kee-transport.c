@@ -67,7 +67,7 @@ static void kee_transport_render(KeeTransport *o) {
 
 	widget = gtk_widget_get_ancestor(GTK_WIDGET(o), KEE_TYPE_MENU);
 	menu = KEE_MENU(widget);
-	kee_menu_next(menu, "transport");
+	kee_menu_next(menu, BEAMENU_DST_TRANSPORT);
 }
 
 /// \todo share buffer with image data?
