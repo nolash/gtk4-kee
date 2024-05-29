@@ -189,25 +189,30 @@ KeeMenu* kee_menu_new(GtkApplication *gapp, struct kee_context *ctx) {
 }
 
 
-/// \todo less strcmp
-static void kee_menu_header_update(KeeMenu *o, const char *label) {
+//static void kee_menu_header_update(KeeMenu *o, const char *label) {
+static void kee_menu_header_update(KeeMenu *o, int menu_id) {
 	GAction *act;
 
-	if (!(strcmp(label, "unlock"))) {
-	} else if (!(strcmp(label, "view"))) {
-		act = g_action_map_lookup_action(G_ACTION_MAP(o), "import");
-		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
-		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
-		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
-		act = g_action_map_lookup_action(G_ACTION_MAP(o), "new_entry");
-		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
-	} else if (!(strcmp(label, "entry"))) {
-		act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
-		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
-	} else if (!(strcmp(label, "import"))) {
-	} else if (!(strcmp(label, "transport"))) {
-	} else {
-		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "unknown nav label: %s", label);
+	switch (menu_id) {
+		case BEAMENU_DST_KEY:
+			break;
+		case BEAMENU_DST_LIST:
+			act = g_action_map_lookup_action(G_ACTION_MAP(o), "import");
+			g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+			act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
+			g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
+			act = g_action_map_lookup_action(G_ACTION_MAP(o), "new_entry");
+			g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+			break;
+		case BEAMENU_DST_NEW:
+			act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
+			g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+		case BEAMENU_DST_IMPORT:
+			break;
+		case BEAMENU_DST_TRANSPORT:
+			break;
+		default:
+			g_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "unknown nav label: %s", beamenu_dst_r[menu_id]);
 	}
 }
 
@@ -226,7 +231,8 @@ GtkWidget* kee_menu_next(KeeMenu *o, int menu_id) {
 	//kee_nav_push(&o->nav, widget);
 	kee_nav_set(widget, menu_id);
 	gtk_stack_set_visible_child(o->stack, widget);
-	kee_menu_header_update(o, label);
+	//kee_menu_header_update(o, label);
+	kee_menu_header_update(o, menu_id);
 	return widget;
 }
 
@@ -251,7 +257,7 @@ int kee_menu_prev(KeeMenu *o) {
 	widget = kee_nav_back();
 	gtk_stack_set_visible_child(o->stack, widget);
 
-	kee_menu_header_update(o, KEE_NAV_LABEL);
+	kee_menu_header_update(o, KEE_NAV_IDX);
 
 	return ERR_OK;
 }

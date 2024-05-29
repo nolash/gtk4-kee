@@ -7,6 +7,7 @@
 
 #define KEE_NAV_NOW kee_nav_get()
 #define KEE_NAV_LABEL kee_nav_get_label()
+#define KEE_NAV_IDX kee_nav_get_idx()
 
 #ifndef KEE_NAV_N_DST
 #define KEE_NAV_N_DST BEAMENU_N_DST + 1
@@ -19,6 +20,7 @@ int kee_nav_init(const char *path);
 int kee_nav_set(GtkWidget *, int idx);
 int kee_nav_unset(int idx);
 GtkWidget* kee_nav_get();
+int kee_nav_get_idx();
 char* kee_nav_get_label();
 GtkWidget* kee_nav_back(); // returns new current widget
 

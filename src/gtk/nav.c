@@ -69,3 +69,10 @@ char *kee_nav_get_label() {
 	o = beamenu_get(-1);
 	return beamenu_dst_r[o->i];
 }
+
+int kee_nav_get_idx() {
+	struct beamenu_node *o;
+	
+	o = beamenu_get(-1);
+	return o->i;
+}

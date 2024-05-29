@@ -124,6 +124,7 @@ int set(int c) {
 	ENTRY o;
 	ENTRY *p;
 	int v;
+	int *entry_index;
 
 	o.key = (char*)tmpk;
 	if (*o.key == 0) {
@@ -137,7 +138,9 @@ int set(int c) {
 	if (!p) {
 		return 1;
 	}
-	v = *((int*)p->data);
+	entry_index = (int*)(p->data);
+	entry_index += c;
+	v = *entry_index;
 	beamenu_set(c, tmpc, v);
 	if (debug) {
 		fprintf(stderr, "set %d %d %d\n", c, tmpc, v);

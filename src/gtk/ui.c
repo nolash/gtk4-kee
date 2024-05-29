@@ -82,25 +82,30 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 	win = kee_menu_new(gapp, ctx);
 
 	widget = GTK_WIDGET(kee_key_new(&ctx->gpg));
-	kee_menu_add(win, "unlock", widget);
+	//kee_menu_add(win, "unlock", widget);
+	kee_menu_add(win, beamenu_dst_r[BEAMENU_DST_KEY], widget);
 	g_signal_connect (widget, "unlock", G_CALLBACK(ui_handle_unlock), win);
 
 	widget = kee_entry_list_new(G_LIST_MODEL(ctx->entry_store), win);
-	kee_menu_add(win, "view", widget);
+	//kee_menu_add(win, "view", widget);
+	kee_menu_add(win, beamenu_dst_r[BEAMENU_DST_LIST], widget);
 
 	//kee_menu_next(win, "view");
 	kee_menu_next(win, BEAMENU_DST_LIST);
 	kee_menu_next(win, BEAMENU_DST_KEY);
 
 	import = kee_import_new(win);
-	kee_menu_add(win, "import", GTK_WIDGET(import));
+	//kee_menu_add(win, "import", GTK_WIDGET(import));
+	kee_menu_add(win, beamenu_dst_r[BEAMENU_DST_IMPORT], GTK_WIDGET(import));
 	//g_signal_connect(import, "data_available", G_CALLBACK(ui_handle_import), win);
 
 	widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-	kee_menu_add(win, "entry", widget);
+	//kee_menu_add(win, "entry", widget);
+	kee_menu_add(win, beamenu_dst_r[BEAMENU_DST_NEW], widget);
 
 	trans = g_object_new(KEE_TYPE_TRANSPORT, "orientation", GTK_ORIENTATION_VERTICAL, NULL);
-	kee_menu_add(win, "transport", GTK_WIDGET(trans));
+	//kee_menu_add(win, "transport", GTK_WIDGET(trans));
+	kee_menu_add(win, beamenu_dst_r[BEAMENU_DST_TRANSPORT], GTK_WIDGET(trans));
 
 	/// \todo make kee-entry action map/group?
 	act = g_simple_action_new("qr", G_VARIANT_TYPE_STRING);
@@ -110,7 +115,6 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 	act = g_simple_action_new("commit", G_VARIANT_TYPE_STRING);
 	g_action_map_add_action(G_ACTION_MAP(gapp), G_ACTION(act));
 	g_signal_connect(act, "activate", G_CALLBACK(kee_transport_handle_qr), trans);
-
 
 	gtk_window_present(GTK_WINDOW (win));
 }
