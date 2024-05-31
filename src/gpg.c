@@ -511,7 +511,6 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 	//unsigned char fingerprint[20] = { 0x00 };
 	unsigned char fingerprint[41] = { 0x00 };
 	//size_t fingerprint_len = 41;
-	size_t fingerprint_len = 41;
 	//char passphrase_hash[m_passphrase_digest_len];
 	char passphrase_hash[gpg->passphrase_digest_len];
 

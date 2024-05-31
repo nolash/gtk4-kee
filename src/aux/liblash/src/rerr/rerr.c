@@ -62,6 +62,8 @@ char *rerrstrv(int code) {
 	char v;
 	splitcode(code, &k, &v);
 	return strv(k, v);
+#else
+	return "";
 #endif
 }
 

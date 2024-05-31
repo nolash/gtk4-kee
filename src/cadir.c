@@ -10,7 +10,6 @@
 /// \todo fail on file size too big for buffer
 //int cadiz_resolve(const char *locator, enum CadizKeyType key_type, const char *key, char *out, size_t *out_len) {
 int cadiz_resolve(Cadiz *cadiz, const char *key, char *out, size_t *out_len) {
-	int r;
 	int c;
 	int fd;
 	char *p;
