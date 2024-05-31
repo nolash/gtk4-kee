@@ -1,8 +1,15 @@
 #ifndef BEAMENU_H_
 #define BEAMENU_H_
 
+#define BEAMENU_EXIT_SIZE 1
+
 #define BEAMENU_INACTIVE 0x0
-#define BEAMENU_ROOT 0xffffffff
+
+#if BEAMENU_EXIT_SIZE == 1
+#define BEAMENU_ROOT 0xff
+#define BEAMENU_DEFAULT 0xfe
+#endif
+
 #define BEAMENU_CN_MAXLEN 32
 
 #ifndef BEAMENU_N_DST
@@ -13,7 +20,6 @@
 #define BEAMENU_N_EXITS 0
 #endif
 
-#define BEAMENU_EXIT_SIZE 1
 
 
 struct beamenu_node {

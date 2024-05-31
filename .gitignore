@@ -7,3 +7,7 @@ beamenu_defs.c
 src/aux/**/*test*
 src/aux/**/.gitignore
 src/gtk/resources.c
+src/gtk/beamenu_defs.*
+src/tests/test_*
+src/asn1/schema_entry_asn1_tab.c
+src/asn1/generate_asn1

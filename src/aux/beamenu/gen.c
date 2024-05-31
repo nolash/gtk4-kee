@@ -133,6 +133,18 @@ int set(int c) {
 			fprintf(stderr, "set zero %d %d\n", c, tmpc);
 		}
 		return 0;
+	} else if (*o.key == '_') {
+		beamenu_set(c, tmpc, BEAMENU_DEFAULT);
+		if (debug) {
+			fprintf(stderr, "set default %d %d\n", c, tmpc);
+		}
+		return 0;
+	} else if (*o.key == '/') {
+		beamenu_set(c, tmpc, BEAMENU_ROOT);
+		if (debug) {
+			fprintf(stderr, "set root %d %d\n", c, tmpc);
+		}
+		return 0;
 	}
 	p = hsearch(o, FIND);
 	if (!p) {
@@ -163,6 +175,7 @@ int linkscan(int f, int l, int *c) {
 		}
 	}
 
+	// add input validator, enforce character ranges
 	if (tmpm == MODE_READ) {
 		while(tmpbi < l) {
 			v = buf[tmpbi];

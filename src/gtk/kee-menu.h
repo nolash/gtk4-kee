@@ -27,7 +27,7 @@ KeeMenu* kee_menu_new(GtkApplication *app, struct kee_context *ctx);
 int kee_menu_add(KeeMenu *o, const char *k, GtkWidget *v);
 //GtkWidget* kee_menu_next(KeeMenu *o, const char *k);
 GtkWidget* kee_menu_next(KeeMenu *o, int menu_id);
-int kee_menu_prev(KeeMenu *o);
+int kee_menu_prev(KeeMenu *o, int force);
 int kee_menu_set(KeeMenu *o, GtkWidget *widget);
 
 G_END_DECLS

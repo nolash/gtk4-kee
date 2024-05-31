@@ -46,5 +46,8 @@ testdata: testdata_schema
 	python testdata_asn1.py
 	make -C src/tests testdata
 
+testdata_gtk: gtk testdata
+	cd testdata && ln -svf ../src/gtk/beamenu.dat beamenu.dat
+
 doc:
 	pandoc -fgfm -tplain README.md > README

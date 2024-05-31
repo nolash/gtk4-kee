@@ -29,7 +29,7 @@ struct _KeeMenuClass {
 G_DEFINE_TYPE(KeeMenu, kee_menu, GTK_TYPE_APPLICATION_WINDOW);
 
 static void kee_menu_act_back(GAction *act, GVariant *param, KeeMenu *menu) {
-	kee_menu_prev(menu);
+	kee_menu_prev(menu, 0);
 }
 
 static void kee_menu_act_import(GAction *act, GVariant *param, KeeMenu *menu) {
@@ -133,11 +133,15 @@ static void kee_menu_init(KeeMenu *o) {
 }
 
 KeeMenu* kee_menu_new(GtkApplication *gapp, struct kee_context *ctx) {
+	int r;
 	KeeMenu *o;
 	GtkWidget *butt;
 	GSimpleAction *act;
 
-	kee_nav_init((char*)settings_get(ctx->settings, SETTINGS_DATA));
+	r = kee_nav_init((char*)settings_get(ctx->settings, SETTINGS_DATA));
+	if (r) {
+		return NULL;
+	}
 
 	o = g_object_new(KEE_TYPE_MENU, "application", gapp, NULL);
 	o->ctx = ctx;
@@ -190,7 +194,7 @@ KeeMenu* kee_menu_new(GtkApplication *gapp, struct kee_context *ctx) {
 
 
 //static void kee_menu_header_update(KeeMenu *o, const char *label) {
-static void kee_menu_header_update(KeeMenu *o, int menu_id) {
+static void kee_menu_header_update_explicit(KeeMenu *o, int menu_id) {
 	GAction *act;
 
 	switch (menu_id) {
@@ -216,6 +220,35 @@ static void kee_menu_header_update(KeeMenu *o, int menu_id) {
 	}
 }
 
+static void kee_menu_header_update(KeeMenu *o) {
+	GAction *act;
+	int v;
+
+	v = kee_nav_get_exit(KEE_NAV_EXIT_BACK);
+	act = g_action_map_lookup_action(G_ACTION_MAP(o), "back");
+	if (v) {
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+	} else {
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
+	}
+
+	v = kee_nav_get_exit(KEE_NAV_EXIT_NEW);
+	act = g_action_map_lookup_action(G_ACTION_MAP(o), "new_entry");
+	if (v) {
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+	} else {
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
+	}
+
+	v = kee_nav_get_exit(KEE_NAV_EXIT_IMPORT);
+	act = g_action_map_lookup_action(G_ACTION_MAP(o), "import");
+	if (v) {
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), true);
+	} else {
+		g_simple_action_set_enabled(G_SIMPLE_ACTION(act), false);
+	}
+}
+
 int kee_menu_add(KeeMenu *o, const char *label, GtkWidget *widget) {
 	gtk_stack_add_named(o->stack, widget, label);
 	return ERR_OK;
@@ -232,7 +265,8 @@ GtkWidget* kee_menu_next(KeeMenu *o, int menu_id) {
 	kee_nav_set(widget, menu_id);
 	gtk_stack_set_visible_child(o->stack, widget);
 	//kee_menu_header_update(o, label);
-	kee_menu_header_update(o, menu_id);
+	//kee_menu_header_update(o, menu_id);
+	kee_menu_header_update(o);
 	return widget;
 }
 
@@ -251,13 +285,14 @@ int kee_menu_set(KeeMenu *o, GtkWidget *widget) {
 	return 0;
 }
 
-int kee_menu_prev(KeeMenu *o) {
+int kee_menu_prev(KeeMenu *o, int force) {
 	GtkWidget *widget;
 
-	widget = kee_nav_back();
+	widget = kee_nav_back(force);
 	gtk_stack_set_visible_child(o->stack, widget);
 
-	kee_menu_header_update(o, KEE_NAV_IDX);
+	//kee_menu_header_update(o, KEE_NAV_IDX);
+	kee_menu_header_update(o);
 
 	return ERR_OK;
 }

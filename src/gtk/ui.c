@@ -30,7 +30,7 @@ static void ui_handle_unlock(KeeKey *o, KeeMenu *menu) {
 	gtk_window_set_title(GTK_WINDOW(menu), fingerprint);
 	
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "key is unlocked");
-	kee_menu_prev(menu);
+	kee_menu_prev(menu, 1);
 }
 
 //static void ui_handle_import(KeeImport *import, GString *v, KeeMenu *menu) {
@@ -80,6 +80,9 @@ void ui_build(GtkApplication *gapp, struct kee_context *ctx) {
 	KeeImport *import;
 
 	win = kee_menu_new(gapp, ctx);
+	if (!win) {
+		debug_log(DEBUG_CRITICAL, "menu init fail");
+	}
 
 	widget = GTK_WIDGET(kee_key_new(&ctx->gpg));
 	//kee_menu_add(win, "unlock", widget);
