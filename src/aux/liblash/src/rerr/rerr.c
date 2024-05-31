@@ -46,10 +46,14 @@ static char *strv(short k, char v) {
 #endif
 
 char *rerrpfx(int code) {
+#ifdef RERR
 	short k;
 	char v;
 	splitcode(code, &k, &v);
 	return rerr_pfx[k];
+#else
+	return "";
+#endif
 }
 
 char *rerrstrv(int code) {

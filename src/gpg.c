@@ -198,18 +198,12 @@ static int key_apply_public(struct gpg_store *gpg, gcry_sexp_t key) {
 }
 
 static char *key_filename(struct gpg_store *gpg, char *path) {
-	int r;
 	char *p;
-	size_t c;
 
 	strcpy((char*)path, gpg->path);
 	p = (char*)path + strlen((char*)path);
 
-	c = 41;
-	r = bin_to_hex((unsigned char*)gpg->fingerprint, 20, (unsigned char*)p, &c);
-	if (r) {
-		return NULL;
-	}
+	b2h((unsigned char*)gpg->fingerprint, 20, (unsigned char*)p);
 
 	return path;
 }
@@ -413,7 +407,6 @@ int gpg_key_create(struct gpg_store *gpg, const char *passphrase) {
 /// \todo add key unload to destroy memory
 int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mode_e mode, const void *criteria) {
 	int r;
-	size_t c;
 	char *p;
 	char path[1024];
 
@@ -430,11 +423,7 @@ int gpg_key_load(struct gpg_store *gpg, const char *passphrase, enum gpg_find_mo
 		case KEE_GPG_FIND_FINGERPRINT:
 			strcpy(path, gpg->path);
 			p = path + strlen(path);
-			c = 41;
-			r = bin_to_hex((const unsigned char*)criteria, FINGERPRINT_LENGTH, (unsigned char*)p, &c);
-			if (r) {
-				return debug_logerr(LLOG_ERROR, ERR_KEYFAIL, NULL);
-			}
+			b2h((const unsigned char*)criteria, FINGERPRINT_LENGTH, (unsigned char*)p);
 			r = key_from_file(&gpg->k, path, passphrase);
 			if (r) {
 				return debug_logerr(LLOG_WARNING, ERR_KEYFAIL, NULL);
@@ -560,7 +549,7 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		//gcry_pk_get_keygrip(k, fingerprint);
 		gcry_pk_get_keygrip(k, (unsigned char*)gpg->fingerprint);
 		//bin_to_hex(fingerprint, 20, (unsigned char*)gpg->fingerprint, &fingerprint_len);
-		bin_to_hex((unsigned char*)gpg->fingerprint, 20, (unsigned char*)fingerprint, &fingerprint_len);
+		b2h((unsigned char*)gpg->fingerprint, 20, (unsigned char*)fingerprint);
 		char ppp[4096];
 		//sprintf(ppp, "created key %s from %s", m_fingerprint, pp);
 		sprintf(ppp, "created key %s from %s", fingerprint, pp);
@@ -569,7 +558,7 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 		//gcry_pk_get_keygrip(k, fingerprint);
 		gcry_pk_get_keygrip(k, (unsigned char*)gpg->fingerprint);
 		//bin_to_hex(fingerprint, 20, (unsigned char*)gpg->fingerprint, &fingerprint_len);
-		bin_to_hex((unsigned char*)gpg->fingerprint, 20, (unsigned char*)fingerprint, &fingerprint_len);
+		b2h((unsigned char*)gpg->fingerprint, 20, (unsigned char*)fingerprint);
 		char pp[4096];
 		//sprintf(pp, "found key %s in %s", (unsigned char*)m_fingerprint, p.c_str());
 		sprintf(pp, "found key %s in path: %s", fingerprint, p);

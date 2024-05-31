@@ -185,7 +185,8 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 
 	buf = gtk_entry_get_buffer(o->form->bob_pubkey);
 	b = (char*)gtk_entry_buffer_get_text(buf);
-	c = hex2bin(b, (unsigned char*)o->ledger.pubkey_bob);
+	//c = hex2bin(b, (unsigned char*)o->ledger.pubkey_bob);
+	c = h2b(b, (unsigned char*)o->ledger.pubkey_bob);
 	if (c == 0) {
 //		g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "invalid counterparty public key data");
 //		return;
@@ -484,10 +485,8 @@ static int process_entry_ledger(KeeEntry *o) {
 	last_value_length = 129;
 	strcpy(last_value, "uid=");
 	if (o->bob_dn.uid == NULL) {
-		r = bin_to_hex((unsigned char*)o->ledger.pubkey_bob, 32, (unsigned char*)last_value+4, &last_value_length);
-		if (r) {
-			return ERR_FAIL;
-		}
+		b2h((unsigned char*)o->ledger.pubkey_bob, 32, (unsigned char*)last_value+4);
+		last_value_length = 65;
 		r = kee_dn_from_str(&o->bob_dn, last_value, last_value_length+4);
 		if (r) {
 			return ERR_FAIL;

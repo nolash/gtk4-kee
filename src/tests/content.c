@@ -16,7 +16,7 @@ int main() {
 	char digest[64];
 	size_t l;
 
-	hex2bin(hash_of_foo, (unsigned char*)digest);
+	h2b(hash_of_foo, (unsigned char*)digest);
 
 	cadiz.locator = "./testdata/resource";
 

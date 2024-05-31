@@ -1,9 +1,9 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <hex.h>
 
 #include "cadiz.h"
-#include "hex.h"
 
 
 /// \todo replace with fadfada
@@ -29,11 +29,9 @@ int cadiz_resolve(Cadiz *cadiz, const char *key, char *out, size_t *out_len) {
 
 	p = path + c + 1;
 	l = 129; 
-	r = bin_to_hex((unsigned char*)key, 64, (unsigned char*)p, &l);
-	if (r) {
-		return 1;
-	}
-	p += l;
+	//r = bin_to_hex((unsigned char*)key, 64, (unsigned char*)p, &l);
+	b2h((unsigned char*)key, 64, (unsigned char*)p);
+	p += 128;
 	*p = 0;
 
 	fd = open(path, O_RDONLY);

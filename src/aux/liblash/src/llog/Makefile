@@ -1,4 +1,5 @@
 OBJS := $(patsubst %.c,%.o,$(filter-out test.c,$(wildcard *.c)))
+SOBJS := $(patsubst %.c,%.so.o,$(filter-out test.c,$(wildcard *.c)))
 INCLUDES := -I.
 CFLAGS += $(INCLUDES)
 VERSION = 0.0.1
@@ -18,3 +19,10 @@ clean:
 
 archive:
 	git archive --format=tar.gz HEAD -o llog-$(VERSION).tar.gz
+
+%.so.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@ -fpic
+
+shared: $(SOBJS)
+
+

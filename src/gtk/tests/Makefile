@@ -7,12 +7,13 @@ CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0 libqrencode` $(INCLUDES) -Wa
 #LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0` -lb64 -lvarint -lcmime -llash
 LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir  gstreamer-1.0  libqrencode` -lb64 -lcmime -llash -ltasn1 -lldap
 LDFLAGS += $(LIBS) 
-AUXLIBS := `pkg-config --libs kee`
+#AUXLIBS := `pkg-config --libs kee`
 
 all: $(OBJS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $< -o test_$* $(LINKOBJS) $(LDFLAGS) $(AUXLIBS)
+#	$(CC) $(CFLAGS) $< -o test_$* $(LINKOBJS) $(LDFLAGS) $(AUXLIBS)
+	$(CC) $(CFLAGS) $< -o test_$* $(LINKOBJS) $(LDFLAGS) ../../aux/beamenu/beamenu.o  ../../aux/beamenu/import.o
 
 test_run: $(wildcard test_*)
 	./$<

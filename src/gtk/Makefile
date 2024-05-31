@@ -2,12 +2,11 @@ OBJS := $(patsubst %.c,%.o,$(filter-out main.c beamenu_defs.c,$(wildcard *.c)))
 LINKOBJS := $(wildcard ../*.o) $(OBJS)
 INCLUDES :=  -I.. -I../aux/include
 CFLAGS +=  `pkg-config --cflags gtk4  gstreamer-1.0  libtasn1 libqrencode zbar` $(INCLUDES) -g3 -Wall
-LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir gstreamer-1.0 libtasn1 libqrencode zbar` -lb64 -lcmime -llash -lldap
+LIBS := `pkg-config --libs gtk4 zlib lmdb libgcrypt libxdg-basedir gstreamer-1.0 libtasn1 libqrencode zbar` -lb64 -lcmime -llash -lldap -L../aux/lib
 LDFLAGS += $(LIBS) 
-AUXLIBS := `pkg-config --libs kee`
 
 all: menu resource $(OBJS)
-	$(CC) $(CFLAGS) main.c -o a.out $(LINKOBJS) $(LDFLAGS) $(AUXLIBS) beamenu_defs.o
+	$(CC) $(CFLAGS) main.c -o a.out $(LINKOBJS) $(LDFLAGS) ../aux/beamenu/beamenu.o ../aux/beamenu/import.o beamenu_defs.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)

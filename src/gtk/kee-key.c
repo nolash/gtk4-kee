@@ -90,10 +90,7 @@ KeeKey* kee_key_new(struct gpg_store *gpg) {
 }
 
 const char *kee_key_get_fingerprint(KeeKey *o, char *fingerprint) {
-	size_t fingerprint_len;
-
-	fingerprint_len = 41;
-	bin_to_hex((unsigned char*)o->gpg->fingerprint, 20, (unsigned char*)fingerprint, &fingerprint_len);
+	b2h((unsigned char*)o->gpg->fingerprint, 20, (unsigned char*)fingerprint);
 	//strcpy(fingerprint, o->gpg->fingerprint);
 	return fingerprint;
 }

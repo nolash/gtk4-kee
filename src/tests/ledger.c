@@ -39,19 +39,19 @@ int test_parse() {
 	kee_ledger_init(&ledger);
 	kee_ledger_reset_cache(&ledger);
 
-	c = hex2bin(test_ledger_data, (unsigned char*)data);
+	c = h2b(test_ledger_data, (unsigned char*)data);
 	r = kee_ledger_parse(&ledger, data, c);
 	if (r) {
 		return 1;
 	}
 
-	c = hex2bin(test_item_data_a, (unsigned char*)data);
+	c = h2b(test_item_data_a, (unsigned char*)data);
 	ledger_item_a = kee_ledger_parse_item_db(&ledger, data, c);
 	if (ledger_item_a == NULL) {
 		return 1;
 	}
 
-	c = hex2bin(test_item_data_b, (unsigned char*)data);
+	c = h2b(test_item_data_b, (unsigned char*)data);
 	ledger_item_b = kee_ledger_parse_item_db(&ledger, data, c);
 	if (ledger_item_b == NULL) {
 		return 1;
