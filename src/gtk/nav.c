@@ -64,7 +64,7 @@ GtkWidget* kee_nav_back(int force) {
 	}
 	if (r == 0 || r == BEAMENU_DEFAULT) {
 		if (stack_crsr < 2) {
-			debug_log(DEBUG_CRITICAL, "menu stack underrun");
+			debug_log(DEBUG_WARNING, "menu stack underrun");
 			return NULL;
 		}
 		r = stack[stack_crsr-1];
