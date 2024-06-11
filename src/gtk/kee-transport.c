@@ -42,12 +42,22 @@ static void kee_transport_init(KeeTransport *o) {
 	o->image_data = malloc(QR_IMAGE_SIZE);
 }
 
-static void kee_transport_handle_continue(GAction *Act, GVariant *v, void *o) {
+static void kee_transport_handle_continue(GAction *act, GVariant *v, KeeMenu *o) {
+	int menu_id;
 	debug_log(DEBUG_DEBUG, "continue");
+
+	menu_id = kee_menu_peek(1);
+	switch(menu_id) {
+		case BEAMENU_DST_NEW:
+			kee_menu_next(o, BEAMENU_DST_IMPORT);
+			break;
+		default:
+			debug_log(DEBUG_CRITICAL, "you should check in to see what condition my condition is in");
+	}
 }
 
 /// \todo find a way to modify underlying bytes and keep the stack from pixbuf to widget
-static void kee_transport_render(KeeTransport *o) {
+static void kee_transport_render(KeeTransport *o, const gchar *mode) {
 	KeeMenu *menu;
 	GtkWidget *widget;
 	GdkTexture *texture;
@@ -81,14 +91,14 @@ static void kee_transport_render(KeeTransport *o) {
 	act = g_simple_action_new("transport_continue", NULL);
 	gtk_actionable_set_action_name(GTK_ACTIONABLE(widget), "win.transport_continue");
 	g_action_map_add_action(G_ACTION_MAP(menu), G_ACTION(act));
-	g_signal_connect(act, "activate", G_CALLBACK(kee_transport_handle_continue), NULL);
+	g_signal_connect(act, "activate", G_CALLBACK(kee_transport_handle_continue), menu);
 	g_simple_action_set_enabled(act, true);
 
 	kee_menu_next(menu, BEAMENU_DST_TRANSPORT);
 }
 
 /// \todo share buffer with image data?
-void kee_transport_handle_qr(GAction *Act, GVariant *v, KeeTransport *o) {
+void kee_transport_handle_qr(GAction *act, GVariant *v, KeeTransport *o) {
 	char *p;
 	char *pp;
 	int i;
@@ -133,5 +143,5 @@ void kee_transport_handle_qr(GAction *Act, GVariant *v, KeeTransport *o) {
 		}
 	}
 	o->image_size = width_pixels * width_pixels;
-	kee_transport_render(o);
+	kee_transport_render(o, g_action_get_name(act));
 }

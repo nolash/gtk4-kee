@@ -296,3 +296,7 @@ int kee_menu_prev(KeeMenu *o, int force) {
 
 	return ERR_OK;
 }
+
+int kee_menu_peek(int ridx) {
+	return kee_nav_get_stack_idx(ridx+1);
+}

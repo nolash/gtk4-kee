@@ -29,6 +29,7 @@ int kee_menu_add(KeeMenu *o, const char *k, GtkWidget *v);
 GtkWidget* kee_menu_next(KeeMenu *o, int menu_id);
 int kee_menu_prev(KeeMenu *o, int force);
 int kee_menu_set(KeeMenu *o, GtkWidget *widget);
+int kee_menu_peek(int reverse_idx);
 
 G_END_DECLS
 

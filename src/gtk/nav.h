@@ -23,6 +23,7 @@ int kee_nav_init(const char *path);
 int kee_nav_set(GtkWidget *, int idx);
 int kee_nav_unset(int idx);
 GtkWidget* kee_nav_get();
+int kee_nav_get_stack_idx(int idx);
 int kee_nav_get_idx();
 char* kee_nav_get_label();
 GtkWidget* kee_nav_back(); // returns new current widget

@@ -108,6 +108,10 @@ int kee_nav_get_idx() {
 	return o->i;
 }
 
+int kee_nav_get_stack_idx(int idx) {
+	return stack[stack_crsr-idx];
+}
+
 int kee_nav_get_exit(int exit_id) {
 	struct beamenu_node *o;
 	o = beamenu_get(-1);
