@@ -7,6 +7,7 @@
 #include "kee-menu.h"
 #include "err.h"
 #include "qr.h"
+#include "debug.h"
 
 
 typedef struct {
@@ -41,12 +42,17 @@ static void kee_transport_init(KeeTransport *o) {
 	o->image_data = malloc(QR_IMAGE_SIZE);
 }
 
+static void kee_transport_handle_continue(GAction *Act, GVariant *v, void *o) {
+	debug_log(DEBUG_DEBUG, "continue");
+}
+
 /// \todo find a way to modify underlying bytes and keep the stack from pixbuf to widget
 static void kee_transport_render(KeeTransport *o) {
 	KeeMenu *menu;
 	GtkWidget *widget;
 	GdkTexture *texture;
 	GdkPixbuf *pixbuf;
+	GSimpleAction *act;
 	GBytes *bytes;
 	size_t width_bytes;
 	size_t width_pixels;
@@ -61,12 +67,23 @@ static void kee_transport_render(KeeTransport *o) {
 	if (widget) {
 		gtk_box_remove(GTK_BOX(o), widget);
 	}
+
 	widget = gtk_picture_new_for_paintable(GDK_PAINTABLE(texture));
 	gtk_picture_set_content_fit(GTK_PICTURE(widget), GTK_CONTENT_FIT_SCALE_DOWN);
 	gtk_box_append(GTK_BOX(o), widget);
 
 	widget = gtk_widget_get_ancestor(GTK_WIDGET(o), KEE_TYPE_MENU);
 	menu = KEE_MENU(widget);
+
+	widget = gtk_button_new_with_label("continue");
+	gtk_box_append(GTK_BOX(o), widget);
+
+	act = g_simple_action_new("transport_continue", NULL);
+	gtk_actionable_set_action_name(GTK_ACTIONABLE(widget), "win.transport_continue");
+	g_action_map_add_action(G_ACTION_MAP(menu), G_ACTION(act));
+	g_signal_connect(act, "activate", G_CALLBACK(kee_transport_handle_continue), NULL);
+	g_simple_action_set_enabled(act, true);
+
 	kee_menu_next(menu, BEAMENU_DST_TRANSPORT);
 }
 

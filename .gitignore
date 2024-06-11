@@ -14,3 +14,4 @@ src/asn1/schema_entry_asn1_tab.c
 src/asn1/generate_asn1
 src/aux/include
 src/aux/lib
+__pycache__

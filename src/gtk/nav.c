@@ -28,6 +28,8 @@ int kee_nav_init(const char *path) {
 }
 
 int kee_nav_set(GtkWidget *widget, int menu_id) {
+	char s[256];
+
 	if (widgets[menu_id]) {
 		return 1;
 	}
@@ -35,6 +37,8 @@ int kee_nav_set(GtkWidget *widget, int menu_id) {
 	beamenu_jump(menu_id);
 	stack[stack_crsr] = menu_id;
 	stack_crsr++;
+	sprintf(s, "set nav menu_id %d (%s)", menu_id, beamenu_dst_r[menu_id]);
+	debug_log(DEBUG_INFO, s);
 	return 0;
 }
 
@@ -47,6 +51,7 @@ int kee_nav_unset(int menu_id) {
 }
 
 GtkWidget* kee_nav_back(int force) {
+	char s[64];
 	GtkWidget *widget;
 	int r;
 
@@ -71,6 +76,8 @@ GtkWidget* kee_nav_back(int force) {
 		kee_nav_unset(r);
 		stack_crsr--;
 		r = stack[stack_crsr-1];
+		sprintf(s, "back nav menu_id %d (%s)", r, beamenu_dst_r[r]);
+		debug_log(DEBUG_INFO, s);
 	}
 
 	if (widgets[r] == NULL) {

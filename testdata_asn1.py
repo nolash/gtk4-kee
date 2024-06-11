@@ -162,7 +162,7 @@ class LedgerSigner:
         b = wt.getvalue()
 
         filename = to_key_filename(keyname)
-        fp = os.path.join(self.crypto_dir, keyname + '.key.sexp')
+        fp = os.path.join(self.crypto_dir, filename + '.key.sexp')
         w = open(fp, 'wb')
         w.write(b)
         w.close()
@@ -180,7 +180,7 @@ class LedgerSigner:
         r = cph.encrypt(bl + b)
         r = padbytes(r)
 
-        fp = os.path.join(self.crypto_dir, keyname + '.key.bin')
+        fp = os.path.join(self.crypto_dir, filename + '.key.bin')
         w = open(fp, 'wb')
         w.write(nonce + r)
         w.close()
@@ -199,9 +199,14 @@ class LedgerSigner:
         wt.write(pubk)
         wt.write(b"))))")
         b = wt.getvalue()
-        fp = os.path.join(self.crypto_dir, keyname + '.pubkey.sexp')
+        fp = os.path.join(self.crypto_dir, filename + '.pubkey.sexp')
         w = open(fp, "wb")
         w.write(b)
+        w.close()
+
+        fp = os.path.join(self.crypto_dir, filename + '.pubkey.txt')
+        w = open(fp, "w")
+        w.write(pubk.hex())
         w.close()
 
 
