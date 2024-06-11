@@ -22,7 +22,8 @@ run: gtk all
 	G_DEBUG=3 G_MESSAGES_DEBUG=3 ./src/gtk/a.out
 
 debug: gtk all
-	G_DEBUG=all G_MESSAGES_DEBUG=all ./src/gtk/a.out
+	#G_DEBUG=all G_MESSAGES_DEBUG=all ./src/gtk/a.out
+	G_DEBUG=all G_MESSAGES_DEBUG=Kee ./src/gtk/a.out
 
 gdb: gtk all
 	G_DEBUG=all G_MESSAGES_DEBUG=all gdb ./src/gtk/a.out

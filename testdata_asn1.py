@@ -37,7 +37,14 @@ logg = logging.getLogger()
 fake = Faker()
 fake.add_provider(lorem)
 
+
 FLAGS_SIGNER_IS_BOB = 1 << 0
+
+def to_key_filename(keyname):
+    filename = keyname.lower()
+    filename = filename.replace(" ", "_")
+    return filename
+
 
 class LedgerMode(enum.IntEnum):
     REQUEST = 0
@@ -141,7 +148,8 @@ class LedgerSigner:
         return self.names[k]
 
 
-    def __write_key(self, keyname, outdir, pin):
+
+    def __write_key(self, keyname, outdir, pin, alias=None):
         (pk, pubk) = self.keypair[keyname]
         wt = io.BytesIO()
         wt.write(b"(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(5:flags5:eddsa)(1:q32:")
@@ -152,6 +160,8 @@ class LedgerSigner:
         wt.write(pk)
         wt.write(b"))))")
         b = wt.getvalue()
+
+        filename = to_key_filename(keyname)
         fp = os.path.join(self.crypto_dir, keyname + '.key.sexp')
         w = open(fp, 'wb')
         w.write(b)
@@ -163,7 +173,7 @@ class LedgerSigner:
         l = len(b)
         bl = l.to_bytes(4, byteorder='little')
         h = hashlib.new('sha256')
-        h.update(b'1234')
+        h.update(pin.encode('utf-8'))
         z_pin = h.digest()
         nonce = os.urandom(12)
         cph = ChaCha20_Poly1305.new(key=z_pin, nonce=nonce)
@@ -179,6 +189,11 @@ class LedgerSigner:
         lp = os.path.join(self.crypto_dir, gk.keygrip)
         os.symlink(fp, lp)
 
+        # symlink key to alias
+        if alias != None:
+            lp = os.path.join(self.crypto_dir, alias + '.key.bin')
+            os.symlink(fp, lp)
+
         wt = io.BytesIO()
         wt.write(b"(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(5:flags5:eddsa)(1:q32:")
         wt.write(pubk)
@@ -190,7 +205,7 @@ class LedgerSigner:
         w.close()
 
 
-    def create_key(self, keyname, outdir=None, pin='1234'):
+    def create_key(self, keyname, outdir=None, pin='1234', alias=None):
         k = ECC.generate(curve='Ed25519')
         pk_pkcs8 = k.export_key(format='DER')
         pk_der = Crypto.IO.PKCS8.unwrap(pk_pkcs8)
@@ -201,7 +216,7 @@ class LedgerSigner:
         self.keypair[keyname] = (pk, pubk)
         self.pubkey_rindex[pubk] = keyname
 
-        self.__write_key(keyname, outdir, pin)
+        self.__write_key(keyname, outdir, pin, alias=alias)
         
         self.names[keyname] = fake.name()
 
@@ -621,7 +636,10 @@ if __name__ == '__main__':
         for i in range(int(count_ledgers)):
             bob_name = 'Bob ' + fake.last_name()
             keys.append(bob_name)
-            bob = signer.create_key(bob_name, outdir=data_dir)
+            alias = None
+            if i == 0:
+                alias = 'bob'
+            bob = signer.create_key(bob_name, outdir=data_dir, pin='4321', alias=alias)
 #            bob_key = os.path.join(crypto_dir, 'bob.key.bin')
 #            bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
 #            try:

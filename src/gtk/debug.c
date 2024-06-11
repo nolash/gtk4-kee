@@ -2,6 +2,8 @@
 
 #include "debug.h"
 
+#define G_LOG_DOMAIN "Kee"
+
 
 void debug_log(enum debugLevel level, const char *s) {
 	int loglevel;
