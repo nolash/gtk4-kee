@@ -9,10 +9,10 @@
 #define RERR_N_PFX 0
 #endif
 
-void rerr_init();
+void rerr_init(const char *coreprefix);
 void rerr_register(int pfx, char *label, void *start);
 char* rerrstr(int code, char *buf);
 char* rerrstrv(int code);
-char* rerrpfx(int code);
+const char* rerrpfx(int code);
 
 #endif // RERR_H

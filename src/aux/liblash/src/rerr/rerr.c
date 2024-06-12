@@ -2,7 +2,7 @@
 
 #ifdef RERR
 static char** rerr[RERR_N_PFX + 1];
-static char* rerr_pfx[RERR_N_PFX + 1];
+static const char* rerr_pfx[RERR_N_PFX + 1];
 char *rerr_base[3] = {
 	"OK",
 	"FAIL",
@@ -10,7 +10,7 @@ char *rerr_base[3] = {
 };
 #endif
 
-void rerr_init() {
+void rerr_init(const char *coreprefix) {
 #ifdef RERR
 	int i;
 
@@ -19,7 +19,7 @@ void rerr_init() {
 		rerr_pfx[i] = 0x0;	
 	}
 	rerr[0] = rerr_base;
-	rerr_pfx[0] = 0x0;
+	rerr_pfx[0] = coreprefix;
 #endif
 }
 
@@ -45,7 +45,7 @@ static char *strv(short k, char v) {
 }
 #endif
 
-char *rerrpfx(int code) {
+const char *rerrpfx(int code) {
 #ifdef RERR
 	short k;
 	char v;

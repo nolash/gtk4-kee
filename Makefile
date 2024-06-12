@@ -52,3 +52,6 @@ testdata_gtk: gtk testdata
 
 doc:
 	pandoc -fgfm -tplain README.md > README
+
+cmd: src
+	make -C src/cmd
