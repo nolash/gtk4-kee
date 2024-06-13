@@ -101,5 +101,31 @@ int main(int argc, char **argv) {
 		return cli_exit(&cli, ERR_FAIL);
 	}
 
+	c = KEE_CLI_BUFMAX;
+	r = kee_ledger_serialize_open(&ledger, b, &c);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "cannot serialize ledger");
+		return cli_exit(&cli, ERR_FAIL);
+	}
+
+	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_LEDGER, KEE_CLI_BUFMAX);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output init fail");
+		return cli_exit(&cli, ERR_FAIL);
+	}
+
+	r = kee_transport_write(&trans, b, c);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output process fail");
+		return cli_exit(&cli, ERR_FAIL);
+	}
+
+	c = KEE_CLI_BUFMAX;
+	r = kee_transport_next(&trans, b, &c);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output writeout fail");
+		return cli_exit(&cli, ERR_FAIL);
+	}
+
 	return cli_exit(&cli, 0);
 }
