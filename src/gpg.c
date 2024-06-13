@@ -16,12 +16,14 @@
 #define BUFLEN 1024 * 1024
 
 #ifdef RERR
-char *_rerr[5] = {
+char *_rerr[7] = {
+	"",
 	"Crypto backend",
 	"Auth fail",
 	"Unlock fail",
 	"Sign reject",
 	"Resource fail",
+	"No key found",
 };
 #endif
 

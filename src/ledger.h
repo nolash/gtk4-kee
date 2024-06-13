@@ -9,7 +9,7 @@
 #include "db.h"
 #include "digest.h"
 
-#define ERRR_PFX_LEDGER 0x200
+#define RERR_PFX_LEDGER 0x200
 /// Ledger state has already been signed
 #define ERR_ALREADY_SIGNED 0x201
 

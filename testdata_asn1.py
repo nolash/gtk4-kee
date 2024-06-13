@@ -209,6 +209,8 @@ class LedgerSigner:
         w.write(pubk.hex())
         w.close()
 
+        return gk.keygrip
+
 
     def create_key(self, keyname, outdir=None, pin='1234', alias=None):
         k = ECC.generate(curve='Ed25519')
@@ -221,11 +223,11 @@ class LedgerSigner:
         self.keypair[keyname] = (pk, pubk)
         self.pubkey_rindex[pubk] = keyname
 
-        self.__write_key(keyname, outdir, pin, alias=alias)
+        keygrip = self.__write_key(keyname, outdir, pin, alias=alias)
         
         self.names[keyname] = fake.name()
 
-        return pubk
+        return (pubk, keygrip,)
 
 
     def sign(self, keyname, msg):
@@ -637,6 +639,7 @@ if __name__ == '__main__':
     items_min_in = os.environ.get('ITEM_MIN', '1')
     items_max_in = os.environ.get('ITEM_MAX', '20')
 
+    mainbob_keygrip = None
     with env.begin(write=True) as tx:
         for i in range(int(count_ledgers)):
             bob_name = 'Bob ' + fake.last_name()
@@ -645,6 +648,8 @@ if __name__ == '__main__':
             if i == 0:
                 alias = 'bob'
             bob = signer.create_key(bob_name, outdir=data_dir, pin='4321', alias=alias)
+            if i == 0:
+                mainbob_keygrip = bob[1]
 #            bob_key = os.path.join(crypto_dir, 'bob.key.bin')
 #            bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
 #            try:
@@ -654,7 +659,8 @@ if __name__ == '__main__':
 #            os.symlink(bob_key, bob_key_sym)
             
             c = 2 + random.randint(int(items_min_in), int(items_max_in))
-            r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=c, alice=alice, bob=bob)
+
+            r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=c, alice=alice[0], bob=bob[0])
 
             v = r.pop(0)
 
@@ -687,6 +693,9 @@ if __name__ == '__main__':
     except FileNotFoundError:
         pass
     os.symlink(bob_key, bob_key_sym)
+    bob_keygrip_sym = os.path.join(crypto_dir_r, mainbob_keygrip)
+    os.symlink(bob_key, bob_keygrip_sym)
+
 
     r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=1, alice=alice, bob=bob)
     d = os.path.dirname(__file__)

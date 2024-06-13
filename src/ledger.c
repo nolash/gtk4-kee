@@ -16,6 +16,13 @@
 #include "wire.h"
 
 
+#ifdef RERR
+char *_rerr_ledger[2] = {
+	"",
+	"Already signed",
+};
+#endif
+int _ledger_init = 0;
 char zero_content[64];
 
 /// \todo consolidate with get_message_data
@@ -495,10 +502,24 @@ void kee_ledger_free(struct kee_ledger_t *ledger) {
 
 void kee_ledger_init(struct kee_ledger_t *ledger) {
 	memset(ledger, 0, sizeof(struct kee_ledger_t));
+#ifdef RERR
+	if (_ledger_init) {
+		return;
+	}
+	rerr_register(RERR_PFX_LEDGER, "ledger", _rerr_ledger);
+	_ledger_init = 1;
+#endif
 }
 
 void kee_ledger_item_init(struct kee_ledger_item_t *item) {
 	memset(item, 0, sizeof(struct kee_ledger_item_t));
+#ifdef RERR
+	if (_ledger_init) {
+		return;
+	}
+	rerr_register(RERR_PFX_LEDGER, "ledger", _rerr_ledger);
+	_ledger_init = 1;
+#endif
 }
 
 int kee_ledger_parse(struct kee_ledger_t *ledger, const char *data, size_t data_len) {

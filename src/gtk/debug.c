@@ -5,7 +5,7 @@
 #define G_LOG_DOMAIN "Kee"
 
 
-void debug_log(enum debugLevel level, const char *s) {
+void debug_log(int level, const char *s) {
 	int loglevel;
 
 	switch(level) {

@@ -1,6 +1,6 @@
 #include "debug.h"
 
-void debug_log(enum debugLevel level, const char *s);
+void debug_log(int level, const char *s);
 
 int debug_logerr(enum lloglvl_e lvl, int err, char *msg) {
 	char *e;

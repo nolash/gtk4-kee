@@ -99,6 +99,7 @@ int settings_init(struct kee_settings *z) {
 	}
 	strcpy((char*)z->video_device, ss);
 
+
 	return ERR_OK;
 }
 

@@ -10,7 +10,7 @@
 #include "db.h"
 #include "debug.h"
 
-void debug_log(enum debugLevel level, const char *s) {
+void debug_log(int level, const char *s) {
 	fprintf(stderr, "%s\n", s);
 }
 
