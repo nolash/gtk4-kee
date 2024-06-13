@@ -10,6 +10,8 @@ struct kee_cli_t {
 	struct kee_settings settings;
 	struct gpg_store gpg;
 	char *passphrase;
+	char *result;
+	size_t result_len;
 };
 
 int cli_init(struct kee_cli_t *cli, const char *passphrase);

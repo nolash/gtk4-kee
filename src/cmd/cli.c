@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "gpg.h"
 #include "err.h"
@@ -52,6 +53,27 @@ int cli_init(struct kee_cli_t *cli, const char *passphrase) {
 }
 
 int cli_exit(struct kee_cli_t *cli, int err) {
+	int f;
+	int c;
+	int r;
+
+	if (cli->result != NULL) {
+		if (err != ERR_OK) {
+			f = STDERR_FILENO;
+		} else {
+			f = STDOUT_FILENO;
+		}
+		c = cli->result_len;
+		while (c > 0) {
+			r = write(f, cli->result, c);
+			if (r == 0) {
+				debug_logerr(LLOG_CRITICAL, ERR_FAIL, "cli result output fail");
+				err = ERR_FAIL;
+				break;
+			}
+			c -= r;
+		}
+	}
 	cli_free(cli);
 	return err;
 }

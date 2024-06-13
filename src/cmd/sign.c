@@ -127,5 +127,8 @@ int main(int argc, char **argv) {
 		return cli_exit(&cli, ERR_FAIL);
 	}
 
+	cli.result = b;
+	cli.result_len = (size_t)c;
+
 	return cli_exit(&cli, 0);
 }
