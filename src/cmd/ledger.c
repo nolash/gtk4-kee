@@ -18,6 +18,38 @@ void debug_log(int lvl, const char *s) {
 }
 
 
+int act_sign(struct kee_cli_t *cli, struct kee_ledger_t *ledger, char *buf) {
+	int r;
+	long unsigned int c;
+
+	r = kee_ledger_sign(ledger, ledger->last_item, &cli->gpg, cli->passphrase);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, r, "ledger sign fail");
+		return ERR_FAIL;
+	}
+
+	c = KEE_CLI_BUFMAX;
+	r = kee_ledger_serialize_open(ledger, buf, &c);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "cannot serialize ledger");
+		return ERR_FAIL;
+	}
+
+	r = cli_encode(cli, buf, &c);
+	if (r) {
+		return r;
+	}
+
+	cli->result = buf;
+	cli->result_len = (size_t)c;
+
+	return ERR_OK;
+}
+
+int act_print(struct kee_cli_t *cli, struct kee_ledger_t *ledger, char *buf) {
+	return ERR_OK;
+}
+
 
 int main(int argc, char **argv) {
 	struct kee_ledger_t ledger;
@@ -35,12 +67,17 @@ int main(int argc, char **argv) {
 		return cli_exit(&cli, ERR_FAIL);
 	} 
 
-	if (argc < 2) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "usage: kee-sign <file>");
+	r = cli_args(&cli, argc, argv);
+	if (r) {
 		return cli_exit(&cli, ERR_FAIL);
 	}
 
-	f = open(*(argv+1), O_RDONLY);
+	if (cli.poslen != 1) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "usage: kee-sign [opts] <file>");
+		return cli_exit(&cli, ERR_FAIL);
+	}
+
+	f = open(*(cli.posarg), O_RDONLY);
 	if (f < 0) {
 		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "argument is not a file that can be opened");
 		return cli_exit(&cli, ERR_FAIL);
@@ -80,26 +117,22 @@ int main(int argc, char **argv) {
 	sprintf(dbg, "parsed ledger: %s", ledger.content.subject);
 	debug_log(DEBUG_INFO, dbg);
 
-	r = kee_ledger_sign(&ledger, ledger.last_item, &cli.gpg, cli.passphrase);
-	if (r) {
-		debug_logerr(LLOG_CRITICAL, r, "ledger sign fail");
-		return cli_exit(&cli, ERR_FAIL);
+	switch(cli.act) {
+		case ACT_SIGN:
+			r = act_sign(&cli, &ledger, b);
+			if (r) {
+				debug_logerr(LLOG_CRITICAL, ERR_FAIL, "sign command fail");
+			}
+			break;
+		case ACT_PRINT:
+			r = act_print(&cli, &ledger, b);
+			if (r) {
+				debug_logerr(LLOG_CRITICAL, ERR_FAIL, "print command fail");
+			}
+		default:
+			debug_logerr(LLOG_CRITICAL, ERR_FAIL, "invalid command");
+			r = ERR_FAIL;
 	}
 
-	c = KEE_CLI_BUFMAX;
-	r = kee_ledger_serialize_open(&ledger, b, &c);
-	if (r) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "cannot serialize ledger");
-		return cli_exit(&cli, ERR_FAIL);
-	}
-
-	r = cli_encode(&cli, b, &c);
-	if (r) {
-		return cli_exit(&cli, r);
-	}
-
-	cli.result = b;
-	cli.result_len = (size_t)c;
-
-	return cli_exit(&cli, 0);
+	return cli_exit(&cli, r);
 }

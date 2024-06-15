@@ -40,6 +40,39 @@ static void cli_free(struct kee_cli_t *cli) {
 	}
 }
 
+int cli_args(struct kee_cli_t *cli, int argc, char **argv) {
+	int arg;
+
+	arg = 0;
+	while (arg > -1) {
+		arg = getopt(argc, argv, "py");
+		switch (arg) {
+			case 'p':
+				if (cli->act) {
+					return 1;
+				}
+				cli->act = ACT_PRINT;
+				break;
+			case 'y':
+				if (cli->act) {
+					return 1;
+				}
+				cli->act = ACT_SIGN;
+				break;
+			case '?':
+				debug_logerr(LLOG_CRITICAL, ERR_FAIL, "invalid argument");
+				break;
+			default:
+				break;
+		}
+	}
+
+	cli->posarg = argv + optind;
+	cli->poslen = argc - optind;
+
+	return 0;
+}
+
 int cli_init(struct kee_cli_t *cli, const char *passphrase) {
 	memset(cli, 0, sizeof(struct kee_cli_t));
 	err_init();
