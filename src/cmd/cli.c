@@ -1,10 +1,12 @@
 #include <string.h>
 #include <stdlib.h>
+
 #include <unistd.h>
 
 #include "gpg.h"
 #include "err.h"
 #include "debug.h"
+#include "transport.h"
 
 #include "cli.h"
 
@@ -49,6 +51,53 @@ int cli_init(struct kee_cli_t *cli, const char *passphrase) {
 		return ERR_FAIL;
 	}
 	cli_set_passphrase(cli, passphrase);
+	return ERR_OK;
+}
+
+int cli_decode(struct kee_cli_t *cli, char *in, long unsigned int *in_size) {
+	int r;
+	r = kee_transport_single(&cli->trans, KEE_TRANSPORT_BASE64, KEE_CMD_IMPORT, 0);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport init fail");
+		return ERR_FAIL;
+	}
+
+	r = kee_transport_write(&cli->trans, in, *in_size);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "parse transport fail");
+		return ERR_FAIL;
+	}
+
+	*in_size = KEE_CLI_BUFMAX;
+	r = kee_transport_read(&cli->trans, in, in_size);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "unwrap transport fail");
+		return ERR_FAIL;
+	}
+	return ERR_OK;
+}
+
+int cli_encode(struct kee_cli_t *cli, char *out, long unsigned int *out_size) {
+	int r;
+
+	r = kee_transport_single(&cli->trans, KEE_TRANSPORT_BASE64, KEE_CMD_LEDGER, KEE_CLI_BUFMAX);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output init fail");
+		return ERR_FAIL;
+	}
+
+	r = kee_transport_write(&cli->trans, out, *out_size);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output process fail");
+		return ERR_FAIL;
+	}
+
+	*out_size = KEE_CLI_BUFMAX;
+	r = kee_transport_next(&cli->trans, out, out_size);
+	if (r) {
+		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output writeout fail");
+		return ERR_FAIL;
+	}
 	return ERR_OK;
 }
 

@@ -20,7 +20,6 @@ void debug_log(int lvl, const char *s) {
 
 
 int main(int argc, char **argv) {
-	struct kee_transport_t trans;
 	struct kee_ledger_t ledger;
 	struct kee_cli_t cli;
 	char dbg[4096];
@@ -67,25 +66,11 @@ int main(int argc, char **argv) {
 	sprintf(dbg, "Read %lu bytes from %s", c, *(argv+1));
 	debug_log(DEBUG_INFO, dbg);
 
-	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_IMPORT, 0);
+	r = cli_decode(&cli, b, &c);
 	if (r) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport init fail");
-		return cli_exit(&cli, ERR_FAIL);
+		return cli_exit(&cli, r);
 	}
-
-	r = kee_transport_write(&trans, b, c);
-	if (r) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "parse transport fail");
-		return cli_exit(&cli, ERR_FAIL);
-	}
-
-	c = KEE_CLI_BUFMAX;
-	r = kee_transport_read(&trans, b, &c);
-	if (r) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "unwrap transport fail");
-		return cli_exit(&cli, ERR_FAIL);
-	}
-
+	
 	r = kee_ledger_parse_open(&ledger, &cli.gpg, b, c);
 	if (r) {
 		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "not valid ledger data");
@@ -108,23 +93,9 @@ int main(int argc, char **argv) {
 		return cli_exit(&cli, ERR_FAIL);
 	}
 
-	r = kee_transport_single(&trans, KEE_TRANSPORT_BASE64, KEE_CMD_LEDGER, KEE_CLI_BUFMAX);
+	r = cli_encode(&cli, b, &c);
 	if (r) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output init fail");
-		return cli_exit(&cli, ERR_FAIL);
-	}
-
-	r = kee_transport_write(&trans, b, c);
-	if (r) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output process fail");
-		return cli_exit(&cli, ERR_FAIL);
-	}
-
-	c = KEE_CLI_BUFMAX;
-	r = kee_transport_next(&trans, b, &c);
-	if (r) {
-		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "transport output writeout fail");
-		return cli_exit(&cli, ERR_FAIL);
+		return cli_exit(&cli, r);
 	}
 
 	cli.result = b;
