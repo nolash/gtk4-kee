@@ -697,7 +697,7 @@ if __name__ == '__main__':
     os.symlink(bob_key, bob_keygrip_sym)
 
 
-    r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=1, alice=alice, bob=bob)
+    r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=1, alice=alice[0], bob=bob[0])
     d = os.path.dirname(__file__)
     import_dir = os.path.join(d, 'testdata', 'import')
     try:
