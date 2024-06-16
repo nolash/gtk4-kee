@@ -4,6 +4,7 @@
 #include <gcrypt.h>
 
 #include <rerr.h>
+#include <hex.h>
 
 #include "ledger.h"
 #include "cadiz.h"
@@ -861,7 +862,7 @@ int kee_ledger_sign(struct kee_ledger_t *ledger, struct kee_ledger_item_t *item,
 	return ERR_OK;
 }
 
-int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *out_len) {
+int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *out_len, enum kee_ledger_state_e mode) {
 	int r;
 	char err[1024];
 	char b[1024];
@@ -890,7 +891,7 @@ int kee_ledger_serialize_open(struct kee_ledger_t *ledger, char *out, size_t *ou
 	}
 
 	c = 1024;
-	r = kee_ledger_item_serialize(ledger->last_item, b, &c, KEE_LEDGER_STATE_RESPONSE);
+	r = kee_ledger_item_serialize(ledger->last_item, b, &c, mode);
 	if (r) {
 		return ERR_FAIL;	
 	}
@@ -1295,6 +1296,73 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 	return ERR_OK;
 }
 
+void kee_ledger_item_sprint(struct kee_ledger_item_t *item, char *out, size_t *char_len) {
+	char *p;
+
+	p = out;
+
+	p = stpcpy(p, "sig us\t");
+	if (memcmp(item->alice_signature, zero_content, SIGNATURE_LENGTH)) {
+		b2h((unsigned char*)item->alice_signature, SIGNATURE_LENGTH, (unsigned char*)p);
+		p += SIGNATURE_LENGTH * 2;
+	} else {
+		p = stpcpy(p, "(none)");
+	}
+	*p = 0x0a;
+	p++;
+
+	p = stpcpy(p, "sig them\t");
+	if (memcmp(item->bob_signature, zero_content, SIGNATURE_LENGTH)) {
+		b2h((unsigned char*)item->bob_signature, SIGNATURE_LENGTH, (unsigned char*)p);
+		p += SIGNATURE_LENGTH * 2;
+	} else {
+		p = stpcpy(p, "(none)");
+	}
+	*p = 0x0a;
+	p++;
+	
+	*char_len = (int)(p - out);
+}
+
+int kee_ledger_sprint(struct kee_ledger_t *ledger, char *out, size_t *char_len, int items) {
+	struct kee_ledger_item_t *item;
+	int i;
+	size_t c;
+	char *p;
+
+	p = out;
+
+	p = stpcpy(p, "taker\t");
+	b2h((unsigned char*)ledger->pubkey_alice, PUBKEY_LENGTH, (unsigned char*)p);
+	p += PUBKEY_LENGTH * 2;
+	*p = 0x0a;
+	p++;
+
+	p = stpcpy(p, "giver\t");
+	b2h((unsigned char*)ledger->pubkey_bob, PUBKEY_LENGTH, (unsigned char*)p);
+	p += PUBKEY_LENGTH * 2;
+	*p = 0x0a;
+	p++;
+
+	i = 0;
+	*char_len -= (int)(p - out);
+	item = ledger->last_item;
+	while (item != NULL) {
+		if (i == items) {
+			break;
+		}
+		c = *char_len;
+		kee_ledger_item_sprint(item, p, &c);
+		item = item->prev_item;
+		*char_len -= c;
+		p += c;
+		i++;
+	}
+
+	*p = 0x0;
+
+	return (int)((p + 1) - out);
+}
 
 
 /// \todo zero initiator need detect
@@ -1340,3 +1408,4 @@ enum kee_initiator_e kee_ledger_item_initiator(struct kee_ledger_t *ledger, stru
 	}
 	return initiator;
 }
+

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stddef.h>
 
 #include "ledger.h"
 #include "debug.h"
@@ -29,7 +30,7 @@ int act_sign(struct kee_cli_t *cli, struct kee_ledger_t *ledger, char *buf) {
 	}
 
 	c = KEE_CLI_BUFMAX;
-	r = kee_ledger_serialize_open(ledger, buf, &c);
+	r = kee_ledger_serialize_open(ledger, buf, &c, KEE_LEDGER_STATE_FINAL);
 	if (r) {
 		debug_logerr(LLOG_CRITICAL, ERR_FAIL, "cannot serialize ledger");
 		return ERR_FAIL;
@@ -46,7 +47,17 @@ int act_sign(struct kee_cli_t *cli, struct kee_ledger_t *ledger, char *buf) {
 	return ERR_OK;
 }
 
+/// \todo buf (and length) should be in internal cli struct
 int act_print(struct kee_cli_t *cli, struct kee_ledger_t *ledger, char *buf) {
+	int r;
+	size_t c;
+
+	c = KEE_CLI_BUFMAX;
+	r = kee_ledger_sprint(ledger, buf, &c, 1);
+
+	cli->result = buf;
+	cli->result_len = r;
+
 	return ERR_OK;
 }
 
@@ -100,7 +111,7 @@ int main(int argc, char **argv) {
 	close(f);
 
 	c = KEE_CLI_BUFMAX - l;
-	sprintf(dbg, "Read %lu bytes from %s", c, *(argv+1));
+	sprintf(dbg, "Read %lu bytes from %s", c, *(cli.posarg));
 	debug_log(DEBUG_INFO, dbg);
 
 	r = cli_decode(&cli, b, &c);
@@ -129,6 +140,7 @@ int main(int argc, char **argv) {
 			if (r) {
 				debug_logerr(LLOG_CRITICAL, ERR_FAIL, "print command fail");
 			}
+			break;
 		default:
 			debug_logerr(LLOG_CRITICAL, ERR_FAIL, "invalid command");
 			r = ERR_FAIL;
