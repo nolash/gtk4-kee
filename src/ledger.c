@@ -2,6 +2,7 @@
 #include <string.h>
 #include <libtasn1.h>
 #include <gcrypt.h>
+#include <time.h>
 
 #include <rerr.h>
 #include <hex.h>
@@ -1296,10 +1297,22 @@ int kee_ledger_verify(struct kee_ledger_t *ledger, int *idx) {
 	return ERR_OK;
 }
 
+/// \todo move to explicitly included source 
 void kee_ledger_item_sprint(struct kee_ledger_item_t *item, char *out, size_t *char_len) {
+	struct tm item_time;
+	int c;
 	char *p;
 
 	p = out;
+
+	p = stpcpy(p, "time\t");
+
+	gmtime_r(&item->time.tv_sec, &item_time);
+	c = strftime(p, *char_len, "%F", &item_time);
+	p += c;
+	*p = 0x0a;
+	p++;
+	*char_len -= c - 1;
 
 	p = stpcpy(p, "sig us\t");
 	if (memcmp(item->alice_signature, zero_content, SIGNATURE_LENGTH)) {
@@ -1320,6 +1333,18 @@ void kee_ledger_item_sprint(struct kee_ledger_item_t *item, char *out, size_t *c
 	}
 	*p = 0x0a;
 	p++;
+
+	c = sprintf(p, "us credit delta:\t%d\n", item->alice_credit_delta);
+	p += c;
+
+	c = sprintf(p, "them credit delta:\t%d\n", item->bob_credit_delta);
+	p += c;
+
+	c = sprintf(p, "us collateral delta:\t%d\n", item->alice_collateral_delta);
+	p += c;
+
+	c = sprintf(p, "them collateral delta:\t%d\n", item->bob_collateral_delta);
+	p += c;
 	
 	*char_len = (int)(p - out);
 }
