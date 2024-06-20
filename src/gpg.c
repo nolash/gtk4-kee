@@ -156,7 +156,9 @@ int decrypt(char *outdata, const char *ciphertext, size_t ciphertext_len, const 
 	int r;
 	gcry_cipher_hd_t h;
 	gcry_error_t e;
-	char outdata_raw[ciphertext_len] = {};
+	char outdata_raw[ciphertext_len];
+
+	memset(outdata_raw, 0, sizeof(outdata_raw));
 
 	outdata_raw[0] = 0;
 	r = create_handle(&h, key, nonce);

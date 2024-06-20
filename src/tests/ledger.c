@@ -89,7 +89,7 @@ int test_pair() {
 	}
 
 	out_len = 1024;
-	r = kee_ledger_serialize_open(&t.ledger, out, &out_len);
+	r = kee_ledger_serialize_open(&t.ledger, out, &out_len, KEE_LEDGER_STATE_RESPONSE);
 	if (r) {
 		return 1;
 	}

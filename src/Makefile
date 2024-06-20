@@ -1,7 +1,7 @@
 OBJS := $(patsubst %.c,%.o,$(filter-out main.c,$(wildcard *.c)))
-INCLUDES := `pkg-config --cflags libgcrypt lmdb libxdg-basedir libqrencode zbar` -Iaux/include
+INCLUDES := `pkg-config --cflags libgcrypt lmdb libxdg-basedir libqrencode zbar` -I./aux/include
 CFLAGS +=  $(INCLUDES) -Wall
-LIBS := `pkg-config --libs libgcrypt zlib lmdb libxdg-basedir libqrencode zbar` -lb64 -llash -Lsrc/aux/lib
+LIBS := `pkg-config --libs libgcrypt zlib lmdb libxdg-basedir libqrencode zbar` -L./aux/lib -lb64 -llash
 LDFLAGS += $(LIBS)
 
 #all: aux resource $(OBJS)
@@ -17,7 +17,7 @@ asn:
 
 aux:
 	echo "foo"
-	make -C aux all
+	make -C aux install
 
 clean:
 	rm -vf *.o

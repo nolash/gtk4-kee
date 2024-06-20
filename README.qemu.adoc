@@ -1,0 +1,145 @@
+Build kee in qemu debian vm
+===========================
+
+Instructions to run kee-gtk4 using qemu and Debian Bookworm (v12) network installer.
+
+Consider these instructions work in progress.
+
+First install qemu 
+
+-----
+
+# make disk image for the OS installation
+qemu-img create -f raw debian_12_kee.img 6G
+
+# run and complete the debian OS installer
+# from package choices, choose:
+# * gnome desktop
+# * ssh server
+# * standard system utilities
+# install the grub bootloader to the primary drive
+qemu-system-x86_64 --enable-kvm -m 2G --cdrom=/path/to/debian-12.5.0-amd64-netinst.iso --hda debian_12_kee.img
+
+-----
+
+After reboot, run again with out netinst image:
+
+-----
+
+qemu-system-x86_64 --enable-kvm -m 2G --hda debian_12_kee.img -net user,hostfwd=tcp::10022-:22 -net nic,model=rtl8139
+
+-----
+
+You can now ssh into the VM using local port 10022.
+
+Install packages
+----------------
+
+Below are lists of debian packages required and recommended for working with the project.
+
+Installing all packages requires around 8.5GB.
+
+-----
+
+# build kee
+make
+gcc
+pkg-config
+libgtk-4-1
+libgtk-4-dev
+libgstreamer-plugins-bad1.0-dev
+libgstreamer1.0-dev
+libb64-dev
+libgcrypt-dev
+libqrencode-dev
+libxdg-basedir-dev
+liblmdb-dev
+libldap-dev
+libzbar-dev
+zlib1g-dev
+libtasn1-6-dev
+libxml2-utils
+
+## execute kee tests and make testdata 
+python3
+python3-venv
+python3-dev
+
+## build docs
+pandoc
+
+## build the libcmime dependency
+cmake
+g++
+flex
+bison
+
+## recommended for poking around
+bsdextrautils
+lmdb-utils
+
+-----
+
+
+Prepare environment
+-------------------
+
+First build libcmime
+
+-----
+
+mkdir src
+cd src
+git clone git://holbrook.no/kee-gtk4
+git clone -b 0.2.2 git://holbrook.no/ext/c/libcmime
+cd libcmime
+mkdir build
+cd build
+cmake ..
+make install DESTDIR=$(realpath .)
+
+-----
+
+Then the main attraction.
+
+-----
+
+cd ../kee-gtk4
+python3 -m venv .venv
+source .venv/bin/activate
+
+-----
+
+Some environment hacks are needed to include the libcime in the non-standard location, aswell as enabling the application to run with test data.
+
+Save this to a file named `env.sh`
+
+-----
+
+#!/bin/bash
+
+cmime_path=$(realpath ../libcmime/build)
+root_path=$(realpath .)
+
+export PKG_CONFIG_PATH=${cmime_path}/usr/local/lib/pkgconfig:${root_path}
+export LIBRARY_PATH=${cmime_path}/usr/local/lib
+export LD_LIBRARY_PATH=${cmime_path}/usr/local/lib
+export C_INCLUDE_PATH=${cmime_path}/usr/local/include
+export CFLAGS="-g3 -DBEAMENU_N_EXITS=3 -DBEAMENU_N_DST=6 -DRERR"
+export KEE_PATH=${root_path}/testdata
+
+-----
+
+
+
+-----
+
+# bug makes you have to build twice, fails first time
+make gtk
+make gtk
+# same here
+make test
+make test
+
+-----
+

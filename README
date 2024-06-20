@@ -1,7 +1,6 @@
 kee
 
-This repository is a mirror. The upstream respository is
-git://holbrook.no/kee-gtk4.git
+The upstream respository is git://holbrook.no/kee-gtk4.git
 
 I am building a cryptographically counter-signed IOU application with
 linux phones (GTK4, phosh) as the primary targets.
