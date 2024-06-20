@@ -21,8 +21,9 @@ clean:
 run: gtk all
 	G_DEBUG=3 G_MESSAGES_DEBUG=3 ./src/gtk/a.out
 
-debug: gtk all
+debug: gtk testdata all
 	#G_DEBUG=all G_MESSAGES_DEBUG=all ./src/gtk/a.out
+	cd testdata && ln -svf ../src/gtk/beamenu.dat .
 	G_DEBUG=all G_MESSAGES_DEBUG="Kee Gio Glib" ./src/gtk/a.out
 
 gdb: gtk all

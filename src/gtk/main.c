@@ -41,7 +41,10 @@ int main(int argc, char **argv) {
 	gapp = gtk_application_new ("org.defalsify.Kee", G_APPLICATION_DEFAULT_FLAGS);
 
 	settings_new_from_xdg(&settings);
-	settings_init(&settings);
+	r = settings_init(&settings);
+	if (r) {
+		return r;
+	}
 
 	r = kee_context_init(&ctx, &settings);
 	if (r) {

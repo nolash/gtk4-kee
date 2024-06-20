@@ -105,14 +105,22 @@ Then the main attraction.
 -----
 
 cd ../kee-gtk4
+# needed for generation of test data
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 
 -----
 
-Some environment hacks are needed to include the libcime in the non-standard location, aswell as enabling the application to run with test data.
+Some environment hacks are needed.
 
-Save this to a file named `env.sh`
+* include the libcime in the non-standard location.
+* find shared libraries in src/aux at runtime.
+* enable the application to run with test data.
+
+The following takes care of that:
+
+(it can be saved to a file `env.sh` and which can be run with `source` in the terminal before compiling and/or running.
 
 -----
 
@@ -123,14 +131,14 @@ root_path=$(realpath .)
 
 export PKG_CONFIG_PATH=${cmime_path}/usr/local/lib/pkgconfig:${root_path}
 export LIBRARY_PATH=${cmime_path}/usr/local/lib
-export LD_LIBRARY_PATH=${cmime_path}/usr/local/lib
+export LD_LIBRARY_PATH=${cmime_path}/usr/local/lib:${root_path}/src/aux/lib
 export C_INCLUDE_PATH=${cmime_path}/usr/local/include
 export CFLAGS="-g3 -DBEAMENU_N_EXITS=3 -DBEAMENU_N_DST=6 -DRERR"
 export KEE_PATH=${root_path}/testdata
 
 -----
 
-
+Make and verify code as such:
 
 -----
 
