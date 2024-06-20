@@ -10,7 +10,7 @@ First install qemu
 -----
 
 # make disk image for the OS installation
-qemu-img create -f raw debian_12_kee.img 6G
+qemu-img create -f raw debian_12_kee.img 11G
 
 # run and complete the debian OS installer
 # from package choices, choose:
