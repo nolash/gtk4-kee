@@ -146,8 +146,22 @@ Make and verify code as such:
 make gtk
 make gtk
 # same here
-make test
-make test
+make test_src
 
 -----
 
+You need the GNOME desktop environment to run the application itself.
+
+That means the follwing cannot be run in terminal / `ssh`.
+
+-----
+
+# check if everything is all right.
+# ...twice, first time fails
+make test_gtk
+make test_gtk
+
+# run the application - with logging
+make debug
+
+-----
