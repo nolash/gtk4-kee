@@ -145,7 +145,7 @@ Make and verify code as such:
 # bug makes you have to build twice, fails first time
 make gtk
 make gtk
-# same here
+
 make test_src
 
 -----
