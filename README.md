@@ -6,6 +6,34 @@ I am building a cryptographically counter-signed IOU application with linux phon
 
 It will maintain bi-lateral mutual channels of credit and collateral. Each change is linked as a chain, and documentation for each change in embedded as [email-link MIME structures](https://datatracker.ietf.org/doc/html/rfc2049)
 
+It is currently in alpha state, and does not yet have a friendly introduction.
+
+See "Protocol" and "Concepts" headings below for more details on what this actually is aiming to become.
+
+
+## What it can do (currently)
+
+The UI state is still fragmented and does not yet implement a ful sequence of actions for creating and mutually signing ledger.
+
+However, a ledger can be created, counter-signed and imported by restarting UI as Alice, Bob and Alice respectively, and manually use the import option.
+
+What it _does_ have is:
+
+* GTK interface pages for
+    - Unlock wallet key
+    - List IOUs
+    - List IOU details and deltas (transactions)
+    - Import data and/or delta (QR or pasted text)
+    - Import summary and accept page
+    - Create new ledger entry page
+* Testdata generator for tests and demonstrating state of UI:
+    - Create keys for Alice and (main) Bob, aswell as two additional Bobs
+    - Symlinks to use (main) Bob key instead of Alice as identity for UI
+    - A configurable number of randomized ledger entries and deltas
+* CLI tool:
+    - Show details about a ledger entry
+    - Sign a ledger delta
+    
 
 ## Dependencies
 
