@@ -13,7 +13,7 @@ See "Protocol" and "Concepts" headings below for more details on what this actua
 
 ## What it can do (currently)
 
-The UI state is still fragmented and does not yet implement a ful sequence of actions for creating and mutually signing ledger.
+The UI state is still fragmented and does not yet implement a full sequence of actions for creating and mutually signing ledger.
 
 However, a ledger can be created, counter-signed and imported by restarting UI as Alice, Bob and Alice respectively, and manually use the import option.
 
@@ -27,7 +27,7 @@ What it _does_ have is:
     - Import summary and accept page
     - Create new ledger entry page
 * Testdata generator for tests and demonstrating state of UI:
-    - Create keys for Alice and (main) Bob, aswell as two additional Bobs
+    - Create keys for Alice and (main) Bob, as well as two additional Bobs
     - Symlinks to use (main) Bob key instead of Alice as identity for UI
     - A configurable number of randomized ledger entries and deltas
 * CLI tool:
@@ -69,7 +69,7 @@ The code expects objects from these source trees to be available somehow:
 | libcmime | [https://github.com/spmfilter/libcmime.git](https://github.com/spmfilter/libcmime.git) `(dd21eb096d162656e30243f60fc4bc35ad39ae6e)` | `0.2.2` | `18a8d46ebec575a79212acc2dc6af7fd7bdeba3a9b85a70677ed0b7785c5c04e` |
 | gst-plugins-rs | [https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs) `(a84bbc66f30573b62871db163c48afef75adf6ec)` | `1.22.10 (gstreamer)` | `691d5d52f59ec6322a2f6ddc1039ef47c9ac5e6328e2df1ef920629b46c659df` |
 
-You can close `liblash` with `git clone git://holbrook.no/liblash`
+You can clone `liblash` with `git clone git://holbrook.no/liblash`
 
 (\*liblash is now bundled in the `src/aux` directory)
 
@@ -207,7 +207,7 @@ Alice generates the _entry item_ and signs it:
 head = der(KeeEntryHead)
 headsum = sha512(head)
 entry = der(KeeEntry)
-msg = sha512(concat(head, entry)
+msg = sha512(concat(head, entry))
 sig = sign(msg) # TODO verify whether an additional sha512 on the message is performed by the internals
 copy(KeeEntry.signatureRequest, sig)
 ```
@@ -271,7 +271,7 @@ This implementation uses QR codes to exchange signature requests and signatures.
 
 ### QR exchange
 
-A separate transport container, `KeeTransport`, is used for this exchange, aswell as some additional encoding.
+A separate transport container, `KeeTransport`, is used for this exchange, as well as some additional encoding.
 
 ```
 container = KeeTransport(KeeEntryHead, KeeEntry)
@@ -295,7 +295,7 @@ Since decriptive content can potentially be of some size, a transport protocol s
 The `make testdata` script creates several useful data examples:
 
 - `testdata/mdb` which is the persistent storage of a ledger and required indicies. Can be easily viewed using the `mdb_dump` command. Key prefixes are defined in `src/db.h:enum DbKey`
-- `testdata/crypt` contains alice and bob's private and public keys in sexp format, aswell as an encrypted version of the private keys. The encryption used is `CHACHA20-POLY1305`, and password for both keys is `1234`. The `kee.key` symlink points to the private key (Alice) used by the GTK application.
+- `testdata/crypt` contains alice and bob's private and public keys in sexp format, as well as an encrypted version of the private keys. The encryption used is `CHACHA20-POLY1305`, and password for both keys is `1234`. The `kee.key` symlink points to the private key (Alice) used by the GTK application.
 - `testdata/crypt_reverse` contains a symlink `kee.key` to Bob's encrypted private key, enabling use of the GTK application as Bob.
 - `testdata/import` Three files respresenting all phases of the _entry item_ format:
     * `request` - without signatures.

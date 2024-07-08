@@ -34,7 +34,7 @@ What it does have is:
     -   Import summary and accept page
     -   Create new ledger entry page
 -   Testdata generator for tests and demonstrating state of UI:
-    -   Create keys for Alice and (main) Bob, aswell as two additional
+    -   Create keys for Alice and (main) Bob, as well as two additional
         Bobs
     -   Symlinks to use (main) Bob key instead of Alice as identity for
         UI
@@ -283,7 +283,7 @@ including:
 QR exchange
 
 A separate transport container, KeeTransport, is used for this exchange,
-aswell as some additional encoding.
+as well as some additional encoding.
 
     container = KeeTransport(KeeEntryHead, KeeEntry)
     raw = der(container)
@@ -310,7 +310,7 @@ The make testdata script creates several useful data examples:
     required indicies. Can be easily viewed using the mdb_dump command.
     Key prefixes are defined in src/db.h:enum DbKey
 -   testdata/crypt contains alice and bob's private and public keys in
-    sexp format, aswell as an encrypted version of the private keys. The
+    sexp format, as well as an encrypted version of the private keys. The
     encryption used is CHACHA20-POLY1305, and password for both keys is
     1234. The kee.key symlink points to the private key (Alice) used by
     the GTK application.
