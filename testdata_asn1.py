@@ -629,17 +629,16 @@ if __name__ == '__main__':
     keys = ['alice']
 
     alice_key = os.path.join(crypto_dir, 'alice.key.bin')
-    try:
-        os.unlink('kee.key')
-    except FileNotFoundError:
-        pass
+    #try:
+    #    os.unlink('kee.key')
+    #except FileNotFoundError:
+    #    pass
     alice_key_sym = 'kee.key'
     #dfd = os.open(crypto_dir, os.O_DIRECTORY | os.O_RDONLY)
     #os.symlink(alice_key, alice_key_sym, dir_fd=dfd)
     #os.close(dfd)
     od = os.getcwd()
-    os.symlink(alice_key, os.path.join(od, alice_key_sym))
-    print(">>> key sym {} {} {}".format(alice_key, os.path.join(od, alice_key_sym), od))
+    #os.symlink(alice_key, os.path.join(od, alice_key_sym))
     os.chdir(crypto_dir)
     #alice_key_sym = os.path.join(crypto_dir, alice_key_sym)
     os.symlink(os.path.basename(alice_key), alice_key_sym)
@@ -699,12 +698,12 @@ if __name__ == '__main__':
     bob_key = os.path.join(crypto_dir, 'bob.key.bin')
     #bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
     bob_key_sym = 'kee.key'
-    try:
-        os.unlink('kee.key')
-    except FileNotFoundError:
-        pass
+    #try:
+    #    os.unlink('kee.key')
+    #except FileNotFoundError:
+    #    pass
     od = os.getcwd()
-    os.symlink(bob_key, os.path.join(od, bob_key_sym))
+    #os.symlink(bob_key, os.path.join(od, bob_key_sym))
     #bob_keygrip_sym = os.path.join(crypto_dir_r, mainbob_keygrip)
     os.chdir(crypto_dir_r)
     #os.symlink(os.path.basename(bob_key), bob_keygrip_sym)

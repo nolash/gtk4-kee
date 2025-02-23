@@ -19,6 +19,7 @@ clean:
 
 
 run: gtk all
+	cd testdata && ln -svf ../src/gtk/beamenu.dat .
 	G_DEBUG=3 G_MESSAGES_DEBUG=3 ./src/gtk/a.out
 
 debug: gtk testdata all
