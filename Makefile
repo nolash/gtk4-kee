@@ -26,7 +26,7 @@ debug: gtk testdata all
 	cd testdata && ln -svf ../src/gtk/beamenu.dat .
 	G_DEBUG=all G_MESSAGES_DEBUG="Kee Gio Glib" ./src/gtk/a.out
 
-gdb: gtk all
+gdb: gtk testdata all
 	G_DEBUG=all G_MESSAGES_DEBUG=all gdb ./src/gtk/a.out
 
 

@@ -186,13 +186,16 @@ class LedgerSigner:
         w.close()
 
         # symlink key to keygrip
-        lp = os.path.join(self.crypto_dir, gk.keygrip)
-        os.symlink(fp, lp)
+        #lp = os.path.join(self.crypto_dir, gk.keygrip)
+        od = os.getcwd()
+        os.chdir(self.crypto_dir)
+        os.symlink(os.path.basename(fp), gk.keygrip)
 
         # symlink key to alias
         if alias != None:
-            lp = os.path.join(self.crypto_dir, alias + '.key.bin')
-            os.symlink(fp, lp)
+            lp = alias + '.key.bin'
+            os.symlink(os.path.basename(fp), lp)
+        os.chdir(od)
 
         wt = io.BytesIO()
         wt.write(b"(8:key-data(10:public-key(3:ecc(5:curve7:Ed25519)(5:flags5:eddsa)(1:q32:")
@@ -631,9 +634,16 @@ if __name__ == '__main__':
     except FileNotFoundError:
         pass
     alice_key_sym = 'kee.key'
-    os.symlink(alice_key, alice_key_sym)
-    alice_key_sym = os.path.join(crypto_dir, alice_key_sym)
-    os.symlink(alice_key, alice_key_sym)
+    #dfd = os.open(crypto_dir, os.O_DIRECTORY | os.O_RDONLY)
+    #os.symlink(alice_key, alice_key_sym, dir_fd=dfd)
+    #os.close(dfd)
+    od = os.getcwd()
+    os.symlink(alice_key, os.path.join(od, alice_key_sym))
+    print(">>> key sym {} {} {}".format(alice_key, os.path.join(od, alice_key_sym), od))
+    os.chdir(crypto_dir)
+    #alice_key_sym = os.path.join(crypto_dir, alice_key_sym)
+    os.symlink(os.path.basename(alice_key), alice_key_sym)
+    os.chdir(od)
 
     count_ledgers = os.environ.get('COUNT', '1')
     items_min_in = os.environ.get('ITEM_MIN', '1')
@@ -687,15 +697,20 @@ if __name__ == '__main__':
     keys.append(bob_name)
     bob = signer.create_key(bob_name, outdir=data_dir)
     bob_key = os.path.join(crypto_dir, 'bob.key.bin')
-    bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
+    #bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
+    bob_key_sym = 'kee.key'
     try:
         os.unlink('kee.key')
     except FileNotFoundError:
         pass
-    os.symlink(bob_key, bob_key_sym)
-    bob_keygrip_sym = os.path.join(crypto_dir_r, mainbob_keygrip)
-    os.symlink(bob_key, bob_keygrip_sym)
-
+    od = os.getcwd()
+    os.symlink(bob_key, os.path.join(od, bob_key_sym))
+    #bob_keygrip_sym = os.path.join(crypto_dir_r, mainbob_keygrip)
+    os.chdir(crypto_dir_r)
+    #os.symlink(os.path.basename(bob_key), bob_keygrip_sym)
+    os.symlink(os.path.basename(bob_key), bob_key_sym)
+    os.symlink(os.path.basename(bob_key), mainbob_keygrip)
+    os.chdir(od)
 
     r = generate_ledger(dbi, data_dir, signer, bob_name, ledger_item_count=1, alice=alice[0], bob=bob[0])
     d = os.path.dirname(__file__)

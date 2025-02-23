@@ -164,6 +164,13 @@ export KEE_KEY_PATH=$(realpath ./testdata/crypt_reverse)
 ```
 
 
+### pip problems
+
+As of february 2025, I was not able to build pygcrypt or lmdb anymore on my archlinux system. Workaround was to ignore some pointer bloopers:
+
+`CPPFLAGS="-Wno-implicit-function-declaration -Wno-incompatible-pointer-types" pip install --no-cache --force-reinstall -r requirements.txt`
+
+
 ## Protocol
 
 TODO: The terms need to be tightened up; don't use different terms for same thing.

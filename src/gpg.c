@@ -519,6 +519,7 @@ int gpg_store_check(struct gpg_store *gpg, const char *passphrase) {
 	char passphrase_hash[gpg->passphrase_digest_len];
 
 	p = gpg->path;
+	k = 0;
 
 	//digest(passphrase_hash, passphrase);
 	gpg_store_digest(gpg, passphrase_hash, passphrase);
