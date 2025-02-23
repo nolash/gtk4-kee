@@ -624,23 +624,13 @@ if __name__ == '__main__':
 
     signer = LedgerSigner(crypto_dir)
     alice = signer.create_key('alice', outdir=data_dir)
-    #bob = bob(d)
 
     keys = ['alice']
 
     alice_key = os.path.join(crypto_dir, 'alice.key.bin')
-    #try:
-    #    os.unlink('kee.key')
-    #except FileNotFoundError:
-    #    pass
     alice_key_sym = 'kee.key'
-    #dfd = os.open(crypto_dir, os.O_DIRECTORY | os.O_RDONLY)
-    #os.symlink(alice_key, alice_key_sym, dir_fd=dfd)
-    #os.close(dfd)
     od = os.getcwd()
-    #os.symlink(alice_key, os.path.join(od, alice_key_sym))
     os.chdir(crypto_dir)
-    #alice_key_sym = os.path.join(crypto_dir, alice_key_sym)
     os.symlink(os.path.basename(alice_key), alice_key_sym)
     os.chdir(od)
 
@@ -659,13 +649,6 @@ if __name__ == '__main__':
             bob = signer.create_key(bob_name, outdir=data_dir, pin='4321', alias=alias)
             if i == 0:
                 mainbob_keygrip = bob[1]
-#            bob_key = os.path.join(crypto_dir, 'bob.key.bin')
-#            bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
-#            try:
-#                os.unlink('kee.key')
-#            except FileNotFoundError:
-#                pass
-#            os.symlink(bob_key, bob_key_sym)
             
             c = 2 + random.randint(int(items_min_in), int(items_max_in))
 
@@ -696,17 +679,9 @@ if __name__ == '__main__':
     keys.append(bob_name)
     bob = signer.create_key(bob_name, outdir=data_dir)
     bob_key = os.path.join(crypto_dir, 'bob.key.bin')
-    #bob_key_sym = os.path.join(crypto_dir_r, 'kee.key')
     bob_key_sym = 'kee.key'
-    #try:
-    #    os.unlink('kee.key')
-    #except FileNotFoundError:
-    #    pass
     od = os.getcwd()
-    #os.symlink(bob_key, os.path.join(od, bob_key_sym))
-    #bob_keygrip_sym = os.path.join(crypto_dir_r, mainbob_keygrip)
     os.chdir(crypto_dir_r)
-    #os.symlink(os.path.basename(bob_key), bob_keygrip_sym)
     os.symlink(os.path.basename(bob_key), bob_key_sym)
     os.symlink(os.path.basename(bob_key), mainbob_keygrip)
     os.chdir(od)
