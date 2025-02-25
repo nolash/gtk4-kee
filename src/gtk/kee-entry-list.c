@@ -23,6 +23,8 @@ static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *me
 	GtkSingleSelection *sel;
 	KeeEntry *o;
 
+	debug_log(DEBUG_DEBUG, "handle select");
+
 	sel = GTK_SINGLE_SELECTION(gtk_list_view_get_model(view));
 
 	o = KEE_ENTRY(gtk_single_selection_get_selected_item(sel));
@@ -33,13 +35,14 @@ static void kee_entry_list_handle_select(GtkListView *view, guint i, KeeMenu *me
 		kee_menu_set(menu, GTK_WIDGET(o));
 	}
 
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "list item selected %d", i);
+	//debug_log(DEBUG_DEBUG, "list item selected %d", i);
+	debug_log(DEBUG_DEBUG, "list item selected");
 }
 
 
 /// \todo first member is probably not entry list
 static void kee_entry_list_handle_setup(GtkListItemFactory* o, GtkListItem *item) {
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "entry list setup");
+	debug_log(DEBUG_DEBUG, "entry list setup");
 }
 
 static void kee_entry_list_handle_bind(GtkListItemFactory *o,  GtkListItem *item) {
@@ -87,6 +90,7 @@ GtkWidget* kee_entry_list_new(GListModel *model, KeeMenu *win) {
 	sel = gtk_single_selection_new(model);
 
 	view = gtk_list_view_new(GTK_SELECTION_MODEL(sel), o->factory);
+	gtk_list_view_set_single_click_activate(GTK_LIST_VIEW(view), 1);
 	g_signal_connect(view, "activate", G_CALLBACK(kee_entry_list_handle_select), win);
 
 	gtk_box_append(GTK_BOX(o), view);

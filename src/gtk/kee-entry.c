@@ -249,6 +249,10 @@ static void kee_entry_handle_add(GtkButton *butt, KeeEntry *o) {
 	g_action_activate(act, transport_data);
 }
 
+static void kee_entry_handle_item_select(GtkListView *view, guint i, void *v) {
+	debug_log(DEBUG_DEBUG, "entry item selected");
+}
+
 static void kee_entry_handle_item_setup(GtkListItemFactory* o, GtkListItem *item) {
 	GtkWidget *box;
 
@@ -260,16 +264,20 @@ static void kee_entry_handle_item_bind(GtkListItemFactory *o,  GtkListItem *item
 	GtkWidget *box;
 	GtkWidget *box_item;
 
+	debug_log(DEBUG_DEBUG, "handle item bind");
+
 	box = gtk_list_item_get_child(item);
 	box_item = gtk_list_item_get_item(item);
+	if (gtk_widget_get_parent(box_item) != NULL) {
+		return;
+	}
 	g_object_take_ref(G_OBJECT(box_item));
 	gtk_box_append(GTK_BOX(box), box_item);
-	
 }
 
 /// \todo free reference to self from parent box necessary..?
 static void kee_entry_dispose(GObject *o) {
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "disposing entry");
+	debug_log(DEBUG_DEBUG, "disposing entry");
 }
 
 static void kee_entry_finalize(GObject *o) {
@@ -283,7 +291,7 @@ static void kee_entry_finalize(GObject *o) {
 		free(entry->form);
 	}
 
-	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "tearing down entry");
+	debug_log(DEBUG_DEBUG, "tearing down entry");
 	//G_OBJECT_CLASS(kee_entry_parent_class)->finalize(o);
 }
 
@@ -447,6 +455,7 @@ static void kee_entry_init_list_widget(KeeEntry *o) {
 	model = kee_entry_item_store_new(o->db, &o->ledger, o->resolver);
 	sel = gtk_single_selection_new(G_LIST_MODEL(model));
 	view = gtk_list_view_new(GTK_SELECTION_MODEL(sel), GTK_LIST_ITEM_FACTORY(factory));
+	g_signal_connect(view, "activate", G_CALLBACK(kee_entry_handle_item_select), NULL);
 	gtk_box_append(GTK_BOX(o->display), GTK_WIDGET(view));
 
 }
